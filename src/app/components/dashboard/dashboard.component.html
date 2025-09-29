@@ -1,7 +1,23 @@
 <div class="dashboard">
   <header class="dashboard-header">
-    <h1>💰 PLANEJAMENTO FINANCEIRO</h1>
-    <h2>📊 DASHBOARD FINANCEIRO</h2>
+    <div class="header-content">
+      <div class="header-left">
+        <h1>💰 PLANEJAMENTO FINANCEIRO</h1>
+        <h2>📊 DASHBOARD FINANCEIRO</h2>
+      </div>
+      
+      <div class="header-right">
+        <div class="theme-selector">
+          <label for="theme-select">Tema:</label>
+          <select id="theme-select" (change)="alterarTema($any($event.target).value)" [value]="temaAtual">
+            <option *ngFor="let tema of temasDisponiveis" [value]="tema.id">
+              {{ tema.nome }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
     <div class="navigation">
       <button class="nav-btn" [class.active]="!showDespesaList && !showDadosMensais" (click)="voltarDashboard()">
         📊 Dashboard
@@ -51,22 +67,27 @@
 
     <!-- Conteúdo Principal -->
     <div class="main-content">
-      <!-- Gráfico de Despesas -->
-      <section class="grafico-section">
-        <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
-      </section>
-
-      <!-- Listagem de Despesas do Mês -->
-      <section class="despesas-mes-atual">
-        <div class="section-header">
-          <h3>📋 Despesas do Mês Atual</h3>
-          <div class="section-actions">
-            <span class="total-count">{{ despesasDoMes.length }} despesas</span>
-            <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Nova Despesa</button>
+      <!-- Cards lado a lado -->
+      <div class="cards-lado-a-lado">
+        <!-- Card do Gráfico de Despesas -->
+        <section class="card-grafico">
+          <div class="card-body">
+            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
           </div>
-        </div>
-        
-        <div class="despesas-grid" *ngIf="despesasDoMes.length > 0; else noDespesas">
+        </section>
+
+        <!-- Card das Despesas do Mês -->
+        <section class="card-despesas-mes">
+          <div class="card-header">
+            <h3>📋 Despesas do Mês Atual</h3>
+            <div class="card-actions">
+              <span class="total-count">{{ despesasDoMes.length }} despesas</span>
+              <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Nova Despesa</button>
+            </div>
+          </div>
+          
+          <div class="card-body">
+            <div class="despesas-grid" *ngIf="despesasDoMes.length > 0; else noDespesas">
           <div *ngFor="let despesa of despesasDoMes" class="despesa-card" [ngClass]="getDespesaStatusClass(despesa)">
             <div class="despesa-header">
               <div class="despesa-categoria">
@@ -128,17 +149,19 @@
               </div>
             </div>
           </div>
-        </div>
-        
-        <ng-template #noDespesas>
-          <div class="no-despesas">
-            <div class="no-despesas-icon">📝</div>
-            <h4>Nenhuma despesa cadastrada</h4>
-            <p>Adicione suas despesas para começar o controle financeiro</p>
-            <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Adicionar Primeira Despesa</button>
+            </div>
+            
+            <ng-template #noDespesas>
+              <div class="no-despesas">
+                <div class="no-despesas-icon">📝</div>
+                <h4>Nenhuma despesa cadastrada</h4>
+                <p>Adicione suas despesas para começar o controle financeiro</p>
+                <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Adicionar Primeira Despesa</button>
+              </div>
+            </ng-template>
           </div>
-        </ng-template>
-      </section>
+        </section>
+      </div>
     </div>
 
     <!-- Alertas de Vencimento -->
