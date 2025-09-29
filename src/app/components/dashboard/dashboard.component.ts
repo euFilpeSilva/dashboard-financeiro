@@ -49,6 +49,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showDespesaList = false;
   showDadosMensais = false;
   
+  // Modo de visualização das despesas do mês
+  modoVisualizacaoDespesas: 'grade' | 'lista' = 'grade';
+  
   // Sistema de temas
   temaAtual = 'classico';
   temasDisponiveis = [
@@ -70,6 +73,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.carregarDados();
     this.carregarTema();
+    this.carregarPreferenciaVisualizacao();
   }
 
   ngOnDestroy(): void {
@@ -288,5 +292,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private salvarTema(temaId: string): void {
     localStorage.setItem('dashboard-tema', temaId);
+  }
+
+  // Método para alternar modo de visualização das despesas
+  alterarVisualizacaoDespesas(modo: 'grade' | 'lista'): void {
+    this.modoVisualizacaoDespesas = modo;
+    localStorage.setItem('dashboard-modo-visualizacao', modo);
+  }
+
+  // Método para carregar preferência de visualização
+  private carregarPreferenciaVisualizacao(): void {
+    const modoSalvo = localStorage.getItem('dashboard-modo-visualizacao') as 'grade' | 'lista';
+    if (modoSalvo && (modoSalvo === 'grade' || modoSalvo === 'lista')) {
+      this.modoVisualizacaoDespesas = modoSalvo;
+    }
   }
 }

@@ -81,74 +81,155 @@
           <div class="card-header">
             <h3>📋 Despesas do Mês Atual</h3>
             <div class="card-actions">
+              <div class="view-toggle">
+                <button 
+                  class="toggle-btn" 
+                  [class.active]="modoVisualizacaoDespesas === 'grade'"
+                  (click)="alterarVisualizacaoDespesas('grade')"
+                  title="Visualização em Grade">
+                  ⊞ Grade
+                </button>
+                <button 
+                  class="toggle-btn" 
+                  [class.active]="modoVisualizacaoDespesas === 'lista'"
+                  (click)="alterarVisualizacaoDespesas('lista')"
+                  title="Visualização em Lista">
+                  ☰ Lista
+                </button>
+              </div>
               <span class="total-count">{{ despesasDoMes.length }} despesas</span>
               <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Nova Despesa</button>
             </div>
           </div>
           
           <div class="card-body">
-            <div class="despesas-grid" *ngIf="despesasDoMes.length > 0; else noDespesas">
-          <div *ngFor="let despesa of despesasDoMes" class="despesa-card" [ngClass]="getDespesaStatusClass(despesa)">
-            <div class="despesa-header">
-              <div class="despesa-categoria">
-                <div class="categoria-icon" [style.background-color]="despesa.categoria.cor">
-                  {{ despesa.categoria.icon || '💳' }}
+            <!-- Visualização em Grade -->
+            <div *ngIf="modoVisualizacaoDespesas === 'grade'">
+              <div class="despesas-grid-otimizada" *ngIf="despesasDoMes.length > 0; else noDespesas">
+                <div *ngFor="let despesa of despesasDoMes" class="despesa-card-compact" [ngClass]="getDespesaStatusClass(despesa)">
+                <div class="despesa-header-compact">
+                  <div class="categoria-info">
+                    <div class="categoria-icon-compact" [style.background-color]="despesa.categoria.cor">
+                      {{ despesa.categoria.icon || '💳' }}
+                    </div>
+                    <span class="categoria-nome-compact">{{ despesa.categoria.nome }}</span>
+                  </div>
+                  
+                  <div class="despesa-actions-compact">
+                    <button class="action-btn-compact edit-btn" (click)="editarDespesa(despesa)" title="Editar">
+                      ✏️
+                    </button>
+                    <button class="action-btn-compact delete-btn" (click)="excluirDespesa(despesa)" title="Excluir">
+                      🗑️
+                    </button>
+                  </div>
                 </div>
-                <span class="categoria-nome">{{ despesa.categoria.nome }}</span>
+                
+                <div class="despesa-body-compact">
+                  <h4 class="despesa-descricao-compact" [title]="despesa.descricao">{{ despesa.descricao }}</h4>
+                  
+                  <div class="info-grid">
+                    <div class="info-row">
+                      <span class="info-label-compact">💰</span>
+                      <span class="info-value-compact valor">{{ formatarMoeda(despesa.valor) }}</span>
+                    </div>
+                    
+                    <div class="info-row">
+                      <span class="info-label-compact">📅</span>
+                      <span class="info-value-compact" [ngClass]="getVencimentoClass(despesa)">
+                        {{ formatarData(despesa.dataVencimento) }}
+                      </span>
+                    </div>
+                    
+                    <div class="info-row">
+                      <span class="info-label-compact">⚡</span>
+                      <span class="info-value-compact prioridade-compact" [ngClass]="getPrioridadeClass(despesa.prioridade)">
+                        {{ getPrioridadeTexto(despesa.prioridade) }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div class="status-footer">
+                    <button class="status-toggle-compact" 
+                            [ngClass]="despesa.paga ? 'pago' : 'pendente'"
+                            (click)="toggleStatusPagamento(despesa)">
+                      <span class="status-icon-compact">{{ despesa.paga ? '✅' : '⏳' }}</span>
+                      <span class="status-text-compact">{{ despesa.paga ? 'Pago' : 'Pendente' }}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <div class="despesa-actions">
-                <button class="action-btn edit-btn" (click)="editarDespesa(despesa)" title="Editar">
-                  ✏️
-                </button>
-                <button class="action-btn delete-btn" (click)="excluirDespesa(despesa)" title="Excluir">
-                  �️
-                </button>
               </div>
             </div>
-            
-            <div class="despesa-body">
-              <h4 class="despesa-descricao">{{ despesa.descricao }}</h4>
-              <div class="despesa-info">
-                <div class="info-item">
-                  <span class="info-label">Valor:</span>
-                  <span class="info-value valor">{{ formatarMoeda(despesa.valor) }}</span>
-                </div>
-                
-                <div class="info-item">
-                  <span class="info-label">Vencimento:</span>
-                  <span class="info-value" [ngClass]="getVencimentoClass(despesa)">
-                    {{ formatarData(despesa.dataVencimento) }}
-                  </span>
-                </div>
-                
-                <div class="info-item">
-                  <span class="info-label">Prioridade:</span>
-                  <span class="info-value prioridade" [ngClass]="getPrioridadeClass(despesa.prioridade)">
-                    {{ getPrioridadeTexto(despesa.prioridade) }}
-                  </span>
-                </div>
+
+            <!-- Visualização em Lista -->
+            <div *ngIf="modoVisualizacaoDespesas === 'lista'">
+              <div class="despesas-lista" *ngIf="despesasDoMes.length > 0; else noDespesas">
+              <div class="lista-header">
+                <div class="header-col col-categoria">Categoria</div>
+                <div class="header-col col-descricao">Descrição</div>
+                <div class="header-col col-valor">Valor</div>
+                <div class="header-col col-vencimento">Vencimento</div>
+                <div class="header-col col-prioridade">Prioridade</div>
+                <div class="header-col col-status">Status</div>
+                <div class="header-col col-acoes">Ações</div>
               </div>
               
-              <div class="despesa-footer">
-                <div class="status-section">
-                  <span class="status-label">Status:</span>
-                  <button class="status-toggle" 
-                          [ngClass]="despesa.paga ? 'pago' : 'pendente'"
-                          (click)="toggleStatusPagamento(despesa)">
-                    <span class="status-icon">{{ despesa.paga ? '✅' : '⏳' }}</span>
-                    <span class="status-text">{{ despesa.paga ? 'Pago' : 'Pendente' }}</span>
-                  </button>
-                </div>
-                
-                <div class="pagamento-info" *ngIf="despesa.paga && despesa.dataPagamento">
-                  <small class="data-pagamento">
-                    Pago em: {{ formatarData(despesa.dataPagamento) }}
-                  </small>
+              <div class="lista-body">
+                <div *ngFor="let despesa of despesasDoMes" class="despesa-row" [ngClass]="getDespesaStatusClass(despesa)">
+                  <div class="row-col col-categoria">
+                    <div class="categoria-compact">
+                      <div class="categoria-icon-small" [style.background-color]="despesa.categoria.cor">
+                        {{ despesa.categoria.icon || '💳' }}
+                      </div>
+                      <span class="categoria-nome-small">{{ despesa.categoria.nome }}</span>
+                    </div>
+                  </div>
+                  
+                  <div class="row-col col-descricao">
+                    <span class="despesa-descricao-compact" [title]="despesa.descricao">
+                      {{ despesa.descricao }}
+                    </span>
+                  </div>
+                  
+                  <div class="row-col col-valor">
+                    <span class="valor-compact">{{ formatarMoeda(despesa.valor) }}</span>
+                  </div>
+                  
+                  <div class="row-col col-vencimento">
+                    <span class="vencimento-compact" [ngClass]="getVencimentoClass(despesa)">
+                      {{ formatarData(despesa.dataVencimento) }}
+                    </span>
+                  </div>
+                  
+                  <div class="row-col col-prioridade">
+                    <span class="prioridade-compact" [ngClass]="getPrioridadeClass(despesa.prioridade)">
+                      {{ getPrioridadeTexto(despesa.prioridade) }}
+                    </span>
+                  </div>
+                  
+                  <div class="row-col col-status">
+                    <button class="status-toggle-compact" 
+                            [ngClass]="despesa.paga ? 'pago' : 'pendente'"
+                            (click)="toggleStatusPagamento(despesa)"
+                            [title]="despesa.paga ? 'Despesa paga' : 'Marcar como pago'">
+                      <span class="status-icon-compact">{{ despesa.paga ? '✅' : '⏳' }}</span>
+                    </button>
+                  </div>
+                  
+                  <div class="row-col col-acoes">
+                    <div class="acoes-compact">
+                      <button class="action-btn-compact edit-btn" (click)="editarDespesa(despesa)" title="Editar">
+                        ✏️
+                      </button>
+                      <button class="action-btn-compact delete-btn" (click)="excluirDespesa(despesa)" title="Excluir">
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+              </div>
             </div>
             
             <ng-template #noDespesas>
@@ -162,7 +243,6 @@
           </div>
         </section>
       </div>
-    </div>
 
     <!-- Alertas de Vencimento -->
     <div *ngIf="despesasVencidas.length > 0" class="alertas vencidas">
