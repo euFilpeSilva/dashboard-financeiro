@@ -5,10 +5,200 @@
   box-sizing: border-box;
 }
 
+:root {
+  // Paleta de cores baseada na imagem
+  --bg-primary: #1a1d2e;
+  --bg-secondary: #2a2f45;
+  --bg-card: #1e2337;
+  --bg-card-hover: #242842;
+  
+  // Cores de destaque
+  --color-green: #10b981;
+  --color-green-light: #34d399;
+  --color-red: #ef4444;
+  --color-red-light: #f87171;
+  --color-blue: #3b82f6;
+  --color-blue-light: #60a5fa;
+  --color-yellow: #f59e0b;
+  --color-yellow-light: #fbbf24;
+  
+  // Texto
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  // Bordas
+  --border-color: #374151;
+  --border-hover: #4b5563;
+}
+
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
   padding: 0;
-  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  background: var(--bg-primary);
   min-height: 100vh;
+  color: var(--text-primary);
+  overflow-x: hidden;
 }
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Botões globais */
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  &.btn-primary {
+    background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-light) 100%);
+    color: white;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    }
+  }
+  
+  &.btn-success {
+    background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-light) 100%);
+    color: white;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+  }
+  
+  &.btn-danger {
+    background: linear-gradient(135deg, var(--color-red) 0%, var(--color-red-light) 100%);
+    color: white;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    }
+  }
+  
+  &.btn-warning {
+    background: linear-gradient(135deg, var(--color-yellow) 0%, var(--color-yellow-light) 100%);
+    color: white;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+    }
+  }
+}
+
+/* Cards globais */
+.card {
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    background: var(--bg-card-hover);
+    border-color: var(--border-hover);
+  }
+}
+
+/* Cards especiais com bordas coloridas */
+.card-green {
+  border-left: 4px solid var(--color-green);
+}
+
+.card-red {
+  border-left: 4px solid var(--color-red);
+}
+
+.card-blue {
+  border-left: 4px solid var(--color-blue);
+}
+
+.card-yellow {
+  border-left: 4px solid var(--color-yellow);
+}
+
+/* Formulários globais */
+.form-group {
+  margin-bottom: 20px;
+  
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+  
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-blue);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      background: var(--bg-card);
+    }
+    
+    &::placeholder {
+      color: var(--text-muted);
+    }
+  }
+}
+
+/* Utilitários de cores */
+.text-green { color: var(--color-green); }
+.text-red { color: var(--color-red); }
+.text-blue { color: var(--color-blue); }
+.text-yellow { color: var(--color-yellow); }
+.text-white { color: var(--text-primary); }
+.text-muted { color: var(--text-muted); }
+
+/* Backgrounds */
+.bg-green { background: var(--color-green); }
+.bg-red { background: var(--color-red); }
+.bg-blue { background: var(--color-blue); }
+.bg-yellow { background: var(--color-yellow); }
+
+/* Utilitários */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-left { text-align: left; }
+
+.mt-1 { margin-top: 10px; }
+.mt-2 { margin-top: 20px; }
+.mt-3 { margin-top: 30px; }
+
+.mb-1 { margin-bottom: 10px; }
+.mb-2 { margin-bottom: 20px; }
+.mb-3 { margin-bottom: 30px; }
+
+.ml-1 { margin-left: 10px; }
+.mr-1 { margin-right: 10px; }
+
+.p-1 { padding: 10px; }
+.p-2 { padding: 20px; }
+.p-3 { padding: 30px; }

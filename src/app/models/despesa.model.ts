@@ -52,3 +52,45 @@ export interface PeriodoFinanceiro {
   ano: number;
   descricao: string;
 }
+
+// Novas interfaces para dados mensais
+export interface DadosMensais {
+  mes: number;
+  ano: number;
+  descricao: string;
+  entradas: number;
+  despesas: number;
+  saldo: number;
+}
+
+export interface ComparativoMensal {
+  janeiro: DadosMensais;
+  outubro: DadosMensais;
+  novembro: DadosMensais;
+  dezembro: DadosMensais;
+}
+
+export interface DestaqueMensal {
+  tipo: 'entrada' | 'despesa' | 'melhor-saldo' | 'pior-saldo';
+  valor: number;
+  mes: string;
+  descricao: string;
+  cor: string;
+}
+
+export interface VisualizacaoTipo {
+  id: 'resumida' | 'detalhada';
+  nome: string;
+  descricao: string;
+}
+
+export interface GraficoBarra {
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+    backgroundColor: string;
+    borderColor?: string;
+    borderWidth?: number;
+  }[];
+}

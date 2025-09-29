@@ -1,0 +1,29 @@
+.chart-container {
+  position: relative;
+  height: 350px;
+  width: 100%;
+  padding: 20px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+
+  canvas {
+    max-height: 100%;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+    border-color: var(--border-hover);
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 280px;
+    padding: 15px;
+  }
+}

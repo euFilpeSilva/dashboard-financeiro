@@ -2,14 +2,23 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
-import { ResumoDashboard, DespesaPorCategoria, Despesa, PeriodoFinanceiro } from '../../models/despesa.model';
+import { 
+  ResumoDashboard, 
+  DespesaPorCategoria, 
+  Despesa, 
+  PeriodoFinanceiro,
+  DadosMensais,
+  DestaqueMensal,
+  VisualizacaoTipo
+} from '../../models/despesa.model';
 import { ChartComponent } from '../chart/chart.component';
+import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DespesaListComponent } from '../despesa-list/despesa-list.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ChartComponent, DespesaListComponent],
+  imports: [CommonModule, ChartComponent, DespesaListComponent, ChartBarComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -30,7 +39,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
   periodoAtual: PeriodoFinanceiro = { mes: 0, ano: 0, descricao: '' };
+  
+  // Novos dados para seção mensal
+  dadosMensais: DadosMensais[] = [];
+  destaquesMensais: DestaqueMensal[] = [];
+  
+  // Estados de navegação
   showDespesaList = false;
+  showDadosMensais = false;
+  
+  // Tipos de visualização
+  tiposVisualizacao: VisualizacaoTipo[] = [
+    { id: 'resumida', nome: 'Resumida (Todos os meses)', descricao: 'Visão geral de todos os meses' },
+    { id: 'detalhada', nome: 'Detalhada (Mês específico)', descricao: 'Análise detalhada por mês' }
+  ];
+  
+  visualizacaoAtiva: VisualizacaoTipo = this.tiposVisualizacao[0];
 
   constructor(private despesaService: DespesaService) {}
 
@@ -78,6 +102,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe(periodo => {
         this.periodoAtual = periodo;
       });
+
+    // Carregar dados mensais
+    this.despesaService.getDadosMensais()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(dados => {
+        this.dadosMensais = dados;
+      });
+
+    // Carregar destaques mensais
+    this.despesaService.getDestaquesMensais()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(destaques => {
+        this.destaquesMensais = destaques;
+      });
   }
 
   formatarMoeda(valor: number): string {
@@ -100,5 +138,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getSaldoClass(): string {
     return this.resumo.saldoPrevisto >= 0 ? 'saldo-positivo' : 'saldo-negativo';
+  }
+
+  // Métodos de navegação
+  mostrarDespesas(): void {
+    this.showDespesaList = true;
+    this.showDadosMensais = false;
+  }
+
+  mostrarDadosMensais(): void {
+    this.showDadosMensais = true;
+    this.showDespesaList = false;
+  }
+
+  voltarDashboard(): void {
+    this.showDespesaList = false;
+    this.showDadosMensais = false;
+  }
+
+  alterarVisualizacao(tipo: VisualizacaoTipo): void {
+    this.visualizacaoAtiva = tipo;
   }
 }

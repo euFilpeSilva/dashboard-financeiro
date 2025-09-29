@@ -1,6 +1,17 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, combineLatest, map } from 'rxjs';
-import { Despesa, Entrada, ResumoDashboard, DespesaPorCategoria, PeriodoFinanceiro, Prioridade } from '../models/despesa.model';
+import { 
+  Despesa, 
+  Entrada, 
+  ResumoDashboard, 
+  DespesaPorCategoria, 
+  PeriodoFinanceiro, 
+  Prioridade,
+  DadosMensais,
+  ComparativoMensal,
+  DestaqueMensal,
+  GraficoBarra
+} from '../models/despesa.model';
 import { CATEGORIAS_PADRAO } from '../models/categorias.data';
 
 @Injectable({
@@ -292,5 +303,149 @@ export class DespesaService {
       ano,
       descricao: this.formatarMesAno(mes, ano)
     });
+  }
+
+  // Métodos para dados mensais históricos
+  private gerarDadosHistoricos(): DadosMensais[] {
+    return [
+      {
+        mes: 1,
+        ano: 2025,
+        descricao: 'Janeiro de 2025',
+        entradas: 4130.13,
+        despesas: 250.50,
+        saldo: 3879.63
+      },
+      {
+        mes: 10,
+        ano: 2025,
+        descricao: 'Outubro de 2025',
+        entradas: 7003.53,
+        despesas: 2794.97,
+        saldo: 4208.56
+      },
+      {
+        mes: 11,
+        ano: 2025,
+        descricao: 'Novembro de 2025',
+        entradas: 4130.13,
+        despesas: 1521.64,
+        saldo: 2608.49
+      },
+      {
+        mes: 12,
+        ano: 2025,
+        descricao: 'Dezembro de 2025',
+        entradas: 1500.00,
+        despesas: 1200.00,
+        saldo: 300.00
+      }
+    ];
+  }
+
+  getDadosMensais(): Observable<DadosMensais[]> {
+    return new Observable(observer => {
+      observer.next(this.gerarDadosHistoricos());
+    });
+  }
+
+  getComparativoMensal(): Observable<ComparativoMensal> {
+    return this.getDadosMensais().pipe(
+      map(dados => {
+        const janeiro = dados.find(d => d.mes === 1)!;
+        const outubro = dados.find(d => d.mes === 10)!;
+        const novembro = dados.find(d => d.mes === 11)!;
+        const dezembro = dados.find(d => d.mes === 12)!;
+
+        return {
+          janeiro,
+          outubro,
+          novembro,
+          dezembro
+        };
+      })
+    );
+  }
+
+  getDestaquesMensais(): Observable<DestaqueMensal[]> {
+    return this.getDadosMensais().pipe(
+      map(dados => {
+        const maiorEntrada = dados.reduce((max, atual) => 
+          atual.entradas > max.entradas ? atual : max
+        );
+        
+        const maiorDespesa = dados.reduce((max, atual) => 
+          atual.despesas > max.despesas ? atual : max
+        );
+        
+        const melhorSaldo = dados.reduce((max, atual) => 
+          atual.saldo > max.saldo ? atual : max
+        );
+        
+        const piorSaldo = dados.reduce((min, atual) => 
+          atual.saldo < min.saldo ? atual : min
+        );
+
+        return [
+          {
+            tipo: 'entrada' as const,
+            valor: maiorEntrada.entradas,
+            mes: maiorEntrada.descricao,
+            descricao: 'Maior Entrada',
+            cor: '#10b981'
+          },
+          {
+            tipo: 'despesa' as const,
+            valor: maiorDespesa.despesas,
+            mes: maiorDespesa.descricao,
+            descricao: 'Maior Despesa',
+            cor: '#ef4444'
+          },
+          {
+            tipo: 'melhor-saldo' as const,
+            valor: melhorSaldo.saldo,
+            mes: melhorSaldo.descricao,
+            descricao: 'Melhor Saldo',
+            cor: '#3b82f6'
+          },
+          {
+            tipo: 'pior-saldo' as const,
+            valor: piorSaldo.saldo,
+            mes: piorSaldo.descricao,
+            descricao: 'Pior Saldo',
+            cor: '#f59e0b'
+          }
+        ];
+      })
+    );
+  }
+
+  getGraficoComparativo(): Observable<GraficoBarra> {
+    return this.getDadosMensais().pipe(
+      map(dados => {
+        const labels = dados.map(d => d.descricao.split(' de ')[0]);
+        
+        return {
+          labels,
+          datasets: [
+            {
+              label: 'Entradas',
+              data: dados.map(d => d.entradas),
+              backgroundColor: '#10b981'
+            },
+            {
+              label: 'Despesas',
+              data: dados.map(d => d.despesas),
+              backgroundColor: '#ef4444'
+            },
+            {
+              label: 'Saldo',
+              data: dados.map(d => d.saldo),
+              backgroundColor: '#3b82f6'
+            }
+          ]
+        };
+      })
+    );
   }
 }
