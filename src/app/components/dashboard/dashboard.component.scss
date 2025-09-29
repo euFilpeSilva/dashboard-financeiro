@@ -136,43 +136,349 @@
 
   .main-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: 1fr 1fr;
     gap: 30px;
     margin-bottom: 30px;
 
-    section {
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 15px;
-      padding: 25px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    .grafico-section {
+      background: transparent;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      
+      app-chart {
+        display: block;
+        width: 100%;
+      }
+    }
 
-      h3 {
-        margin: 0 0 20px 0;
-        font-size: 1.3rem;
-        font-weight: 600;
+    .despesas-mes-atual {
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+        border-color: var(--border-hover);
+      }
+
+      .section-header {
+        background: linear-gradient(135deg, var(--color-green) 0%, var(--color-green-light) 100%);
+        padding: 20px;
+        color: white;
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 10px;
+
+        h3 {
+          margin: 0;
+          font-size: 1.3rem;
+          font-weight: bold;
+        }
+
+        .section-actions {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+
+          .total-count {
+            font-size: 0.9rem;
+            opacity: 0.9;
+          }
+
+          .btn {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+
+            &:hover {
+              background: rgba(255, 255, 255, 0.3);
+              transform: translateY(-1px);
+            }
+          }
+        }
       }
 
-      &.despesas-outubro {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(102, 187, 106, 0.2));
+      .despesas-grid {
+        padding: 20px;
+        display: grid;
+        gap: 15px;
+        max-height: 500px;
+        overflow-y: auto;
+
+        .despesa-card {
+          background: var(--bg-secondary);
+          border-radius: 12px;
+          border: 1px solid var(--border-color);
+          padding: 16px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border-color: var(--border-hover);
+          }
+
+          &.despesa-paga {
+            opacity: 0.7;
+            border-left: 4px solid var(--color-green);
+          }
+
+          &.despesa-vencida {
+            border-left: 4px solid var(--color-red);
+            background: rgba(239, 68, 68, 0.1);
+          }
+
+          &.despesa-proxima-vencimento {
+            border-left: 4px solid var(--color-yellow);
+            background: rgba(245, 158, 11, 0.1);
+          }
+
+          &.despesa-normal {
+            border-left: 4px solid var(--color-blue);
+          }
+
+          .despesa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+
+            .despesa-categoria {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+
+              .categoria-icon {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.9rem;
+              }
+
+              .categoria-nome {
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                font-weight: 500;
+              }
+            }
+
+            .despesa-actions {
+              display: flex;
+              gap: 8px;
+
+              .action-btn {
+                width: 32px;
+                height: 32px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                &.edit-btn {
+                  background: rgba(59, 130, 246, 0.2);
+                  color: var(--color-blue);
+
+                  &:hover {
+                    background: rgba(59, 130, 246, 0.3);
+                    transform: scale(1.1);
+                  }
+                }
+
+                &.delete-btn {
+                  background: rgba(239, 68, 68, 0.2);
+                  color: var(--color-red);
+
+                  &:hover {
+                    background: rgba(239, 68, 68, 0.3);
+                    transform: scale(1.1);
+                  }
+                }
+              }
+            }
+          }
+
+          .despesa-body {
+            .despesa-descricao {
+              margin: 0 0 12px 0;
+              font-size: 1.1rem;
+              font-weight: 600;
+              color: var(--text-primary);
+            }
+
+            .despesa-info {
+              display: grid;
+              gap: 8px;
+              margin-bottom: 15px;
+
+              .info-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .info-label {
+                  font-size: 0.85rem;
+                  color: var(--text-secondary);
+                }
+
+                .info-value {
+                  font-weight: 500;
+                  font-size: 0.9rem;
+
+                  &.valor {
+                    color: var(--text-primary);
+                    font-weight: bold;
+                  }
+
+                  &.vencimento-normal {
+                    color: var(--text-secondary);
+                  }
+
+                  &.vencimento-proximo {
+                    color: var(--color-yellow);
+                  }
+
+                  &.vencimento-atrasado {
+                    color: var(--color-red);
+                  }
+
+                  &.vencimento-pago {
+                    color: var(--color-green);
+                  }
+
+                  &.prioridade {
+                    padding: 2px 8px;
+                    border-radius: 12px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    text-transform: uppercase;
+
+                    &.prioridade-alta {
+                      background: rgba(239, 68, 68, 0.2);
+                      color: var(--color-red);
+                    }
+
+                    &.prioridade-media {
+                      background: rgba(245, 158, 11, 0.2);
+                      color: var(--color-yellow);
+                    }
+
+                    &.prioridade-baixa {
+                      background: rgba(16, 185, 129, 0.2);
+                      color: var(--color-green);
+                    }
+                  }
+                }
+              }
+            }
+
+            .despesa-footer {
+              padding-top: 12px;
+              border-top: 1px solid var(--border-color);
+
+              .status-section {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 8px;
+
+                .status-label {
+                  font-size: 0.85rem;
+                  color: var(--text-secondary);
+                }
+
+                .status-toggle {
+                  display: flex;
+                  align-items: center;
+                  gap: 6px;
+                  padding: 6px 12px;
+                  border: none;
+                  border-radius: 20px;
+                  cursor: pointer;
+                  font-size: 0.8rem;
+                  font-weight: 500;
+                  transition: all 0.3s ease;
+
+                  &.pago {
+                    background: rgba(16, 185, 129, 0.2);
+                    color: var(--color-green);
+
+                    &:hover {
+                      background: rgba(16, 185, 129, 0.3);
+                    }
+                  }
+
+                  &.pendente {
+                    background: rgba(245, 158, 11, 0.2);
+                    color: var(--color-yellow);
+
+                    &:hover {
+                      background: rgba(245, 158, 11, 0.3);
+                    }
+                  }
+
+                  .status-icon {
+                    font-size: 0.9rem;
+                  }
+                }
+              }
+
+              .pagamento-info {
+                .data-pagamento {
+                  font-size: 0.75rem;
+                  color: var(--text-muted);
+                }
+              }
+            }
+          }
+        }
       }
 
-      &.segunda-metade {
-        background: linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 183, 77, 0.2));
-      }
+      .no-despesas {
+        padding: 60px 20px;
+        text-align: center;
+        color: var(--text-muted);
 
-      &.grafico-section {
-        grid-column: 1 / -1;
-        background: linear-gradient(135deg, rgba(156, 39, 176, 0.2), rgba(186, 104, 200, 0.2));
-      }
+        .no-despesas-icon {
+          font-size: 3rem;
+          margin-bottom: 15px;
+          opacity: 0.6;
+        }
 
-      &.observacoes {
-        grid-column: 1 / -1;
-        background: linear-gradient(135deg, rgba(96, 125, 139, 0.2), rgba(120, 144, 156, 0.2));
+        h4 {
+          margin: 0 0 10px 0;
+          color: var(--text-secondary);
+          font-size: 1.2rem;
+        }
+
+        p {
+          margin: 0 0 20px 0;
+          color: var(--text-muted);
+          font-size: 0.9rem;
+        }
+
+        .btn {
+          padding: 12px 24px;
+          font-size: 0.9rem;
+        }
       }
+    }
+
+    @media (max-width: 1200px) {
+      grid-template-columns: 1fr;
     }
   }
 

@@ -1,3 +1,43 @@
-<div class="chart-wrapper">
-  <canvas #chartCanvas></canvas>
+<div class="chart-section">
+  <div class="chart-header">
+    <h3>Gráfico de Despesas</h3>
+  </div>
+  
+  <div class="chart-content">
+    <div class="chart-wrapper" *ngIf="despesasPorCategoria.length > 0; else noData">
+      <canvas #chartCanvas></canvas>
+    </div>
+    
+    <div class="chart-legend-sidebar">
+      <div class="legend-header">
+        <h4>Distribuição de Despesas</h4>
+      </div>
+      
+      <div class="legend-items">
+        <div *ngFor="let categoria of despesasPorCategoria" class="legend-item">
+          <div class="legend-indicator">
+            <div class="legend-color" [style.background-color]="categoria.categoria.cor"></div>
+            <span class="legend-label">{{ categoria.categoria.nome }}</span>
+          </div>
+          <div class="legend-values">
+            <span class="legend-amount">{{ formatarMoeda(categoria.valor) }}</span>
+            <span class="legend-percentage">({{ categoria.percentual.toFixed(1) }}%)</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="legend-total">
+        <div class="total-line">
+          <span class="total-label">Total:</span>
+          <span class="total-amount">{{ formatarMoedaTotal() }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #noData>
+    <div class="no-data-message">
+      <p>Nenhum dado disponível para exibir o gráfico</p>
+    </div>
+  </ng-template>
 </div>

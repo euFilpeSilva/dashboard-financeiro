@@ -51,63 +51,93 @@
 
     <!-- Conteúdo Principal -->
     <div class="main-content">
-      <!-- Despesas Outubro/2025 -->
-      <section class="despesas-outubro">
-        <h3>🔺 Prioridades (Primeira metade do mês)</h3>
-        <div class="despesas-list">
-          <div *ngFor="let despesa of despesasProximasVencimento" 
-               class="despesa-item" 
-               [ngClass]="getPrioridadeClass(despesa.prioridade)">
-            <div class="despesa-info">
-              <span class="despesa-desc">{{ despesa.descricao }}</span>
-              <span class="despesa-valor">{{ formatarMoeda(despesa.valor) }}</span>
-              <span class="despesa-vencimento">{{ formatarData(despesa.dataVencimento) }}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Segunda Metade do Mês -->
-      <section class="segunda-metade">
-        <h3>🔒 Segunda Metade do Mês</h3>
-        <div class="despesas-list">
-          <div *ngFor="let categoria of despesasPorCategoria.slice(0, 5)" class="despesa-item">
-            <div class="despesa-info">
-              <span class="despesa-desc">{{ categoria.categoria.nome }}</span>
-              <span class="despesa-valor">{{ formatarMoeda(categoria.valor) }}</span>
-              <span class="despesa-vencimento">A definir</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Gráfico de Despesas -->
       <section class="grafico-section">
-        <h3>Gráfico de Despesas</h3>
-        <div class="chart-container">
-          <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
-        </div>
-        <div class="chart-legend">
-          <div *ngFor="let categoria of despesasPorCategoria" class="legend-item">
-            <div class="legend-color" [style.background-color]="categoria.categoria.cor"></div>
-            <span class="legend-text">{{ categoria.categoria.nome }}: {{ formatarMoeda(categoria.valor) }}</span>
-          </div>
-        </div>
+        <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
       </section>
 
-      <!-- Observações -->
-      <section class="observacoes">
-        <h3>📝 Observações</h3>
-        <ul>
-          <li>ACAD + HBO entram na fatura Inter</li>
-          <li>Mês atual: {{ periodoAtual.descricao }}</li>
-          <li>Total de despesas: {{ formatarMoeda(resumo.totalDespesas) }}</li>
-        </ul>
-        
-        <div class="saldo-info">
-          <p>Sobra/Saldo aproximado dia 05/10 → {{ formatarMoeda(resumo.saldoPrevisto) }}</p>
-          <p>Sobra/Saldo aproximado dia 05/10 → - - -</p>
+      <!-- Listagem de Despesas do Mês -->
+      <section class="despesas-mes-atual">
+        <div class="section-header">
+          <h3>📋 Despesas do Mês Atual</h3>
+          <div class="section-actions">
+            <span class="total-count">{{ despesasDoMes.length }} despesas</span>
+            <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Nova Despesa</button>
+          </div>
         </div>
+        
+        <div class="despesas-grid" *ngIf="despesasDoMes.length > 0; else noDespesas">
+          <div *ngFor="let despesa of despesasDoMes" class="despesa-card" [ngClass]="getDespesaStatusClass(despesa)">
+            <div class="despesa-header">
+              <div class="despesa-categoria">
+                <div class="categoria-icon" [style.background-color]="despesa.categoria.cor">
+                  {{ despesa.categoria.icon || '💳' }}
+                </div>
+                <span class="categoria-nome">{{ despesa.categoria.nome }}</span>
+              </div>
+              
+              <div class="despesa-actions">
+                <button class="action-btn edit-btn" (click)="editarDespesa(despesa)" title="Editar">
+                  ✏️
+                </button>
+                <button class="action-btn delete-btn" (click)="excluirDespesa(despesa)" title="Excluir">
+                  �️
+                </button>
+              </div>
+            </div>
+            
+            <div class="despesa-body">
+              <h4 class="despesa-descricao">{{ despesa.descricao }}</h4>
+              <div class="despesa-info">
+                <div class="info-item">
+                  <span class="info-label">Valor:</span>
+                  <span class="info-value valor">{{ formatarMoeda(despesa.valor) }}</span>
+                </div>
+                
+                <div class="info-item">
+                  <span class="info-label">Vencimento:</span>
+                  <span class="info-value" [ngClass]="getVencimentoClass(despesa)">
+                    {{ formatarData(despesa.dataVencimento) }}
+                  </span>
+                </div>
+                
+                <div class="info-item">
+                  <span class="info-label">Prioridade:</span>
+                  <span class="info-value prioridade" [ngClass]="getPrioridadeClass(despesa.prioridade)">
+                    {{ getPrioridadeTexto(despesa.prioridade) }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="despesa-footer">
+                <div class="status-section">
+                  <span class="status-label">Status:</span>
+                  <button class="status-toggle" 
+                          [ngClass]="despesa.paga ? 'pago' : 'pendente'"
+                          (click)="toggleStatusPagamento(despesa)">
+                    <span class="status-icon">{{ despesa.paga ? '✅' : '⏳' }}</span>
+                    <span class="status-text">{{ despesa.paga ? 'Pago' : 'Pendente' }}</span>
+                  </button>
+                </div>
+                
+                <div class="pagamento-info" *ngIf="despesa.paga && despesa.dataPagamento">
+                  <small class="data-pagamento">
+                    Pago em: {{ formatarData(despesa.dataPagamento) }}
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <ng-template #noDespesas>
+          <div class="no-despesas">
+            <div class="no-despesas-icon">📝</div>
+            <h4>Nenhuma despesa cadastrada</h4>
+            <p>Adicione suas despesas para começar o controle financeiro</p>
+            <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Adicionar Primeira Despesa</button>
+          </div>
+        </ng-template>
       </section>
     </div>
 

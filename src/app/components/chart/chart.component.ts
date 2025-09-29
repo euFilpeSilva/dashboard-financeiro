@@ -130,4 +130,16 @@ export class ChartComponent implements AfterViewInit, OnDestroy {
     const b = Math.min(255, (num & 0x0000FF) + Math.round(255 * amount));
     return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
   }
+
+  formatarMoeda(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
+  }
+
+  formatarMoedaTotal(): string {
+    const total = this.despesasPorCategoria.reduce((sum, categoria) => sum + categoria.valor, 0);
+    return this.formatarMoeda(total);
+  }
 }

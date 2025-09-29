@@ -38,6 +38,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasPorCategoria: DespesaPorCategoria[] = [];
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
+  despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
   periodoAtual: PeriodoFinanceiro = { mes: 0, ano: 0, descricao: '' };
   
   // Novos dados para seção mensal
@@ -103,6 +104,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.periodoAtual = periodo;
       });
 
+    // Carregar todas as despesas para a listagem do mês
+    this.despesaService.despesas$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(despesas => {
+        this.despesasDoMes = despesas;
+      });
+
     // Carregar dados mensais
     this.despesaService.getDadosMensais()
       .pipe(takeUntil(this.destroy$))
@@ -158,5 +166,64 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   alterarVisualizacao(tipo: VisualizacaoTipo): void {
     this.visualizacaoAtiva = tipo;
+  }
+
+  // Métodos para gestão de despesas na listagem
+  editarDespesa(despesa: Despesa): void {
+    // Por enquanto, redireciona para a seção de gestão
+    // Futuramente pode abrir um modal de edição
+    this.mostrarDespesas();
+  }
+
+  excluirDespesa(despesa: Despesa): void {
+    const confirmar = confirm(`Tem certeza que deseja excluir a despesa "${despesa.descricao}"?`);
+    if (confirmar) {
+      this.despesaService.removerDespesa(despesa.id);
+    }
+  }
+
+  toggleStatusPagamento(despesa: Despesa): void {
+    if (despesa.paga) {
+      this.despesaService.marcarComoPendente(despesa.id);
+    } else {
+      this.despesaService.marcarComoPaga(despesa.id);
+    }
+  }
+
+  getDespesaStatusClass(despesa: Despesa): string {
+    if (despesa.paga) return 'despesa-paga';
+    
+    const hoje = new Date();
+    const vencimento = new Date(despesa.dataVencimento);
+    
+    if (vencimento < hoje) return 'despesa-vencida';
+    
+    const diasParaVencimento = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diasParaVencimento <= 7) return 'despesa-proxima-vencimento';
+    
+    return 'despesa-normal';
+  }
+
+  getVencimentoClass(despesa: Despesa): string {
+    if (despesa.paga) return 'vencimento-pago';
+    
+    const hoje = new Date();
+    const vencimento = new Date(despesa.dataVencimento);
+    
+    if (vencimento < hoje) return 'vencimento-atrasado';
+    
+    const diasParaVencimento = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diasParaVencimento <= 7) return 'vencimento-proximo';
+    
+    return 'vencimento-normal';
+  }
+
+  getPrioridadeTexto(prioridade: string): string {
+    const prioridades = {
+      'alta': 'Alta',
+      'media': 'Média', 
+      'baixa': 'Baixa'
+    };
+    return prioridades[prioridade as keyof typeof prioridades] || prioridade;
   }
 }
