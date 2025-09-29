@@ -1,0 +1,101 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="onCancelClick()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditing ? 'Editar Despesa' : 'Nova Despesa' }}</h2>
+      <button type="button" class="close-btn" (click)="onCancelClick()">×</button>
+    </div>
+
+    <form [formGroup]="despesaForm" (ngSubmit)="onSubmit()" class="despesa-form">
+      <div class="form-group">
+        <label for="descricao">Descrição *</label>
+        <input 
+          type="text" 
+          id="descricao"
+          formControlName="descricao"
+          placeholder="Ex: Parcela do carro"
+          [class.error]="descricao?.invalid && descricao?.touched">
+        <div class="error-message" *ngIf="descricao?.invalid && descricao?.touched">
+          <span *ngIf="descricao?.errors?.['required']">Descrição é obrigatória</span>
+          <span *ngIf="descricao?.errors?.['minlength']">Mínimo de 3 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="valor">Valor *</label>
+          <input 
+            type="number" 
+            id="valor"
+            formControlName="valor"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            [class.error]="valor?.invalid && valor?.touched">
+          <div class="error-message" *ngIf="valor?.invalid && valor?.touched">
+            <span *ngIf="valor?.errors?.['required']">Valor é obrigatório</span>
+            <span *ngIf="valor?.errors?.['min']">Valor deve ser maior que zero</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="categoriaId">Categoria *</label>
+          <select 
+            id="categoriaId"
+            formControlName="categoriaId"
+            [class.error]="categoriaId?.invalid && categoriaId?.touched">
+            <option value="">Selecione uma categoria</option>
+            <option *ngFor="let categoria of categorias" [value]="categoria.id">
+              {{ categoria.icon }} {{ categoria.nome }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="categoriaId?.invalid && categoriaId?.touched">
+            <span *ngIf="categoriaId?.errors?.['required']">Categoria é obrigatória</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dataVencimento">Data de Vencimento *</label>
+          <input 
+            type="date" 
+            id="dataVencimento"
+            formControlName="dataVencimento"
+            [class.error]="dataVencimento?.invalid && dataVencimento?.touched">
+          <div class="error-message" *ngIf="dataVencimento?.invalid && dataVencimento?.touched">
+            <span *ngIf="dataVencimento?.errors?.['required']">Data de vencimento é obrigatória</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="prioridade">Prioridade *</label>
+          <select 
+            id="prioridade"
+            formControlName="prioridade"
+            [class.error]="prioridade?.invalid && prioridade?.touched">
+            <option *ngFor="let prio of prioridades" [value]="prio">
+              {{ prio === 'alta' ? '🔴 Alta' : prio === 'media' ? '🟡 Média' : '🟢 Baixa' }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group checkbox-group">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="paga">
+          <span class="checkmark"></span>
+          Marcar como paga
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" (click)="onCancelClick()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="despesaForm.invalid">
+          {{ isEditing ? 'Atualizar' : 'Adicionar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
