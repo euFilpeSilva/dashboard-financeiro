@@ -1,0 +1,113 @@
+<div class="despesa-list-container">
+  <div class="header">
+    <h2>📋 Gestão de Despesas</h2>
+    <button class="btn btn-primary" (click)="onNovaDespesa()">
+      ➕ Nova Despesa
+    </button>
+  </div>
+
+  <div class="despesas-grid">
+    <div *ngFor="let despesa of despesas; trackBy: trackByDespesa" 
+         class="despesa-card"
+         [ngClass]="{
+           'vencida': isVencida(despesa),
+           'proxima-vencimento': isProximaVencimento(despesa),
+           'paga': despesa.paga
+         }">
+      
+      <!-- Status e Categoria -->
+      <div class="card-header">
+        <div class="categoria-info">
+          <span class="categoria-icon">{{ despesa.categoria.icon }}</span>
+          <span class="categoria-nome">{{ despesa.categoria.nome }}</span>
+        </div>
+        <div class="status-badges">
+          <span class="prioridade-badge" [ngClass]="getPrioridadeClass(despesa.prioridade)">
+            {{ despesa.prioridade }}
+          </span>
+          <span *ngIf="despesa.paga" class="status-badge paga">✅ Paga</span>
+          <span *ngIf="isVencida(despesa)" class="status-badge vencida">⚠️ Vencida</span>
+          <span *ngIf="isProximaVencimento(despesa)" class="status-badge proxima">🔔 Próxima</span>
+        </div>
+      </div>
+
+      <!-- Informações principais -->
+      <div class="card-body">
+        <h3 class="despesa-descricao">{{ despesa.descricao }}</h3>
+        <p class="despesa-valor">{{ formatarMoeda(despesa.valor) }}</p>
+        <p class="despesa-vencimento">
+          📅 Vence em: {{ formatarData(despesa.dataVencimento) }}
+        </p>
+        <p *ngIf="despesa.paga && despesa.dataPagamento" class="despesa-pagamento">
+          ✅ Pago em: {{ formatarData(despesa.dataPagamento) }}
+        </p>
+      </div>
+
+      <!-- Ações -->
+      <div class="card-actions">
+        <button 
+          class="btn btn-toggle"
+          [ngClass]="despesa.paga ? 'btn-unpay' : 'btn-pay'"
+          (click)="onTogglePaga(despesa)"
+          [title]="despesa.paga ? 'Marcar como pendente' : 'Marcar como paga'">
+          {{ despesa.paga ? '↩️' : '✅' }}
+        </button>
+        
+        <button 
+          class="btn btn-edit"
+          (click)="onEditarDespesa(despesa)"
+          title="Editar despesa">
+          ✏️
+        </button>
+        
+        <button 
+          class="btn btn-delete"
+          (click)="onRemoverDespesa(despesa.id)"
+          title="Remover despesa">
+          🗑️
+        </button>
+      </div>
+    </div>
+
+    <!-- Card para adicionar nova despesa -->
+    <div class="despesa-card add-card" (click)="onNovaDespesa()">
+      <div class="add-content">
+        <div class="add-icon">➕</div>
+        <p>Adicionar Nova Despesa</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumo -->
+  <div class="resumo-section">
+    <div class="resumo-card">
+      <h3>📊 Resumo</h3>
+      <div class="resumo-stats">
+        <div class="stat">
+          <span class="stat-label">Total de Despesas:</span>
+          <span class="stat-value">{{ despesas.length }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Pagas:</span>
+          <span class="stat-value green">{{ getDespesasPagas() }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Pendentes:</span>
+          <span class="stat-value orange">{{ getDespesasPendentes() }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Valor Total:</span>
+          <span class="stat-value">{{ formatarMoeda(getTotalDespesas()) }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal do formulário -->
+<app-despesa-form
+  [isVisible]="showForm"
+  [despesa]="despesaEditando"
+  (onSave)="onSalvarDespesa($event)"
+  (onCancel)="onCancelarForm()">
+</app-despesa-form>

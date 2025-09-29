@@ -1,0 +1,359 @@
+.despesa-list-container {
+  padding: 20px;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  min-height: 100vh;
+  color: white;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+
+    h2 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 600;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+      }
+    }
+  }
+
+  .despesas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .despesa-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+
+    &:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &.paga {
+      background: rgba(76, 175, 80, 0.2);
+      border-left: 4px solid #4CAF50;
+    }
+
+    &.vencida {
+      background: rgba(244, 67, 54, 0.2);
+      border-left: 4px solid #F44336;
+    }
+
+    &.proxima-vencimento {
+      background: rgba(255, 152, 0, 0.2);
+      border-left: 4px solid #FF9800;
+    }
+
+    &.add-card {
+      border: 2px dashed rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+
+      &:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .add-content {
+        text-align: center;
+
+        .add-icon {
+          font-size: 3rem;
+          margin-bottom: 10px;
+          opacity: 0.7;
+        }
+
+        p {
+          margin: 0;
+          font-size: 1.1rem;
+          opacity: 0.8;
+        }
+      }
+    }
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .categoria-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .categoria-icon {
+        font-size: 1.5rem;
+      }
+
+      .categoria-nome {
+        font-weight: 600;
+        font-size: 1.1rem;
+      }
+    }
+
+    .status-badges {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      align-items: flex-end;
+    }
+  }
+
+  .prioridade-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+
+    &.prioridade-alta {
+      background: #F44336;
+      color: white;
+    }
+
+    &.prioridade-media {
+      background: #FF9800;
+      color: white;
+    }
+
+    &.prioridade-baixa {
+      background: #4CAF50;
+      color: white;
+    }
+  }
+
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+
+    &.paga {
+      background: rgba(76, 175, 80, 0.8);
+      color: white;
+    }
+
+    &.vencida {
+      background: rgba(244, 67, 54, 0.8);
+      color: white;
+    }
+
+    &.proxima {
+      background: rgba(255, 152, 0, 0.8);
+      color: white;
+    }
+  }
+
+  .card-body {
+    margin-bottom: 20px;
+
+    .despesa-descricao {
+      margin: 0 0 10px 0;
+      font-size: 1.3rem;
+      font-weight: 600;
+    }
+
+    .despesa-valor {
+      margin: 0 0 10px 0;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #FFE082;
+    }
+
+    .despesa-vencimento,
+    .despesa-pagamento {
+      margin: 5px 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      min-width: 40px;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+
+      &.btn-toggle {
+        &.btn-pay {
+          background: #4CAF50;
+          color: white;
+        }
+
+        &.btn-unpay {
+          background: #FF9800;
+          color: white;
+        }
+      }
+
+      &.btn-edit {
+        background: #2196F3;
+        color: white;
+      }
+
+      &.btn-delete {
+        background: #F44336;
+        color: white;
+
+        &:hover {
+          background: #D32F2F;
+        }
+      }
+    }
+  }
+
+  .resumo-section {
+    .resumo-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+
+      h3 {
+        margin: 0 0 20px 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+      }
+
+      .resumo-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+
+        .stat {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 15px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
+
+          .stat-label {
+            font-weight: 500;
+            opacity: 0.9;
+          }
+
+          .stat-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+
+            &.green {
+              color: #4CAF50;
+            }
+
+            &.orange {
+              color: #FF9800;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Responsividade
+  @media (max-width: 768px) {
+    padding: 15px;
+
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+
+      .btn-primary {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
+    .despesas-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .card-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .status-badges {
+        align-items: flex-start;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+    }
+
+    .card-actions {
+      justify-content: center;
+    }
+
+    .resumo-stats {
+      grid-template-columns: 1fr;
+
+      .stat {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    .header h2 {
+      font-size: 1.5rem;
+    }
+
+    .despesa-card {
+      padding: 15px;
+    }
+
+    .card-body .despesa-valor {
+      font-size: 1.3rem;
+    }
+  }
+}
