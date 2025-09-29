@@ -1,0 +1,129 @@
+<div class="dashboard">
+  <header class="dashboard-header">
+    <h1>PLANEJAMENTO FINANCEIRO</h1>
+    <h2>DASHBOARD FINANCEIRO</h2>
+    <div class="navigation">
+      <button class="nav-btn" [class.active]="!showDespesaList" (click)="showDespesaList = false">📊 Dashboard</button>
+      <button class="nav-btn" [class.active]="showDespesaList" (click)="showDespesaList = true">
+        📋 Gerenciar Despesas
+      </button>
+    </div>
+  </header>
+
+  <!-- Conteúdo do Dashboard -->
+  <div *ngIf="!showDespesaList">
+    <!-- Cards de Resumo -->
+    <section class="summary-cards">
+      <div class="card card-entradas">
+        <div class="card-icon">💰</div>
+        <div class="card-content">
+          <h3>Entradas</h3>
+          <p class="card-value">{{ formatarMoeda(resumo.totalEntradas) }}</p>
+        </div>
+      </div>
+
+      <div class="card card-saldo">
+        <div class="card-icon">📊</div>
+        <div class="card-content">
+          <h3>Saldo Previsto</h3>
+          <p class="card-value" [ngClass]="getSaldoClass()">{{ formatarMoeda(resumo.saldoPrevisto) }}</p>
+        </div>
+      </div>
+
+      <div class="card card-despesas">
+        <div class="card-icon">💳</div>
+        <div class="card-content">
+          <h3>Total Despesas</h3>
+          <p class="card-value">{{ formatarMoeda(resumo.totalDespesas) }}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Período Atual -->
+    <section class="periodo-atual">
+      <h3>{{ periodoAtual.descricao }}</h3>
+    </section>
+
+    <!-- Conteúdo Principal -->
+    <div class="main-content">
+      <!-- Despesas Outubro/2025 -->
+      <section class="despesas-outubro">
+        <h3>🔺 Prioridades (Primeira metade do mês)</h3>
+        <div class="despesas-list">
+          <div *ngFor="let despesa of despesasProximasVencimento" 
+               class="despesa-item" 
+               [ngClass]="getPrioridadeClass(despesa.prioridade)">
+            <div class="despesa-info">
+              <span class="despesa-desc">{{ despesa.descricao }}</span>
+              <span class="despesa-valor">{{ formatarMoeda(despesa.valor) }}</span>
+              <span class="despesa-vencimento">{{ formatarData(despesa.dataVencimento) }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Segunda Metade do Mês -->
+      <section class="segunda-metade">
+        <h3>🔒 Segunda Metade do Mês</h3>
+        <div class="despesas-list">
+          <div *ngFor="let categoria of despesasPorCategoria.slice(0, 5)" class="despesa-item">
+            <div class="despesa-info">
+              <span class="despesa-desc">{{ categoria.categoria.nome }}</span>
+              <span class="despesa-valor">{{ formatarMoeda(categoria.valor) }}</span>
+              <span class="despesa-vencimento">A definir</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gráfico de Despesas -->
+      <section class="grafico-section">
+        <h3>Gráfico de Despesas</h3>
+        <div class="chart-container">
+          <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
+        </div>
+        <div class="chart-legend">
+          <div *ngFor="let categoria of despesasPorCategoria" class="legend-item">
+            <div class="legend-color" [style.background-color]="categoria.categoria.cor"></div>
+            <span class="legend-text">{{ categoria.categoria.nome }}: {{ formatarMoeda(categoria.valor) }}</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Observações -->
+      <section class="observacoes">
+        <h3>📝 Observações</h3>
+        <ul>
+          <li>ACAD + HBO entram na fatura Inter</li>
+          <li>Mês atual: {{ periodoAtual.descricao }}</li>
+          <li>Total de despesas: {{ formatarMoeda(resumo.totalDespesas) }}</li>
+        </ul>
+        
+        <div class="saldo-info">
+          <p>Sobra/Saldo aproximado dia 05/10 → {{ formatarMoeda(resumo.saldoPrevisto) }}</p>
+          <p>Sobra/Saldo aproximado dia 05/10 → - - -</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- Alertas de Vencimento -->
+    <div *ngIf="despesasVencidas.length > 0" class="alertas vencidas">
+      <h4>⚠️ Despesas Vencidas</h4>
+      <div *ngFor="let despesa of despesasVencidas" class="alerta-item vencida">
+        {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }}
+      </div>
+    </div>
+
+    <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
+      <h4>🔔 Próximas ao Vencimento</h4>
+      <div *ngFor="let despesa of despesasProximasVencimento" class="alerta-item proxima">
+        {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }} - Vence: {{ formatarData(despesa.dataVencimento) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo da Gestão de Despesas -->
+  <div *ngIf="showDespesaList" class="despesa-management">
+    <app-despesa-list></app-despesa-list>
+  </div>
+</div>
