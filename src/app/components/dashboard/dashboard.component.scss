@@ -29,15 +29,19 @@
     color: #f1f5f9;
     
     .compact-status-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 8px 16px;
-      background: rgba(15, 23, 42, 0.8);
-      backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(15px);
       border-bottom: 1px solid rgba(148, 163, 184, 0.2);
       height: 60px;
       flex-shrink: 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
       
       .status-metrics {
         display: flex;
