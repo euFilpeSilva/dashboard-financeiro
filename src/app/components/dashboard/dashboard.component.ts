@@ -15,7 +15,6 @@ import {
 } from '../../models/despesa.model';
 import { ChartComponent } from '../chart/chart.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
-import { DespesaListComponent } from '../despesa-list/despesa-list.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
 
 // Interface para as anotações
@@ -29,7 +28,7 @@ interface Anotacao {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartComponent, DespesaListComponent, ChartBarComponent, DataDebugComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, DataDebugComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -57,7 +56,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   destaquesMensais: DestaqueMensal[] = [];
   
   // Estados de navegação
-  showDespesaList = false;
   showDadosMensais = false;
   
   // Modo de visualização das despesas do mês
@@ -189,22 +187,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // Métodos de navegação
-  mostrarDespesas(): void {
-    this.showDespesaList = true;
-    this.showDadosMensais = false;
-  }
-
   mostrarDadosMensais(): void {
     console.log('Clicou em Dados por Mês');
     console.log('dadosMensais:', this.dadosMensais);
     console.log('destaquesMensais:', this.destaquesMensais);
     this.showDadosMensais = true;
-    this.showDespesaList = false;
     console.log('showDadosMensais agora é:', this.showDadosMensais);
   }
 
   voltarDashboard(): void {
-    this.showDespesaList = false;
     this.showDadosMensais = false;
   }
 
@@ -218,9 +209,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Métodos para gestão de despesas na listagem
   editarDespesa(despesa: Despesa): void {
-    // Por enquanto, redireciona para a seção de gestão
-    // Futuramente pode abrir um modal de edição
-    this.mostrarDespesas();
+    // Redireciona para a página de gestão completa
+    this.router.navigate(['/gestao']);
   }
 
   excluirDespesa(despesa: Despesa): void {

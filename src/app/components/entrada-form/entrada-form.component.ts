@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Entrada } from '../../models/despesa.model';
@@ -22,7 +22,7 @@ const FONTES_PADRAO = [
   templateUrl: './entrada-form.component.html',
   styleUrl: './entrada-form.component.scss'
 })
-export class EntradaFormComponent implements OnInit {
+export class EntradaFormComponent implements OnInit, OnChanges {
   @Input() entrada: Entrada | null = null;
   @Input() isVisible: boolean = false;
   @Output() onSave = new EventEmitter<Omit<Entrada, 'id'>>();
@@ -36,12 +36,29 @@ export class EntradaFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.populateForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['entrada'] && !changes['entrada'].firstChange) {
+      this.populateForm();
+    }
+  }
+
+  private populateForm(): void {
     if (this.entrada) {
       this.entradaForm.patchValue({
         descricao: this.entrada.descricao,
         valor: this.entrada.valor,
         fonte: this.entrada.fonte,
         data: this.formatDateForInput(this.entrada.data)
+      });
+    } else {
+      this.entradaForm.reset({
+        descricao: '',
+        valor: 0,
+        fonte: '',
+        data: ''
       });
     }
   }

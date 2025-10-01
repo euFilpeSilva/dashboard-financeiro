@@ -19,25 +19,17 @@
     </div>
     
     <div class="navigation">
-      <button class="nav-btn" [class.active]="!showDespesaList && !showDadosMensais" (click)="voltarDashboard()">
+      <button class="nav-btn" [class.active]="!showDadosMensais" (click)="voltarDashboard()">
         📊 Dashboard
       </button>
       <button class="nav-btn" [class.active]="showDadosMensais" (click)="mostrarDadosMensais()">
         📅 Dados por Mês
       </button>
-      <button class="nav-btn" [class.active]="showDespesaList" (click)="mostrarDespesas()">
-        📋 Gerenciar Despesas
-      </button>
       <button class="nav-btn nav-btn-gestao" (click)="irParaGestao()">
-        💼 Gestão Completa
+        💼 Gestão Financeira
       </button>
     </div>
   </header>
-
-  <!-- Conteúdo da Gestão de Despesas -->
-  <div *ngIf="showDespesaList" class="despesa-management">
-    <app-despesa-list></app-despesa-list>
-  </div>
 
   <!-- Seção Dados por Mês -->
   <div *ngIf="showDadosMensais" class="dados-mensais">
@@ -110,7 +102,7 @@
   </div>
 
   <!-- Conteúdo do Dashboard -->
-  <div *ngIf="!showDespesaList && !showDadosMensais">
+  <div *ngIf="!showDadosMensais">
     <!-- Cards de Resumo -->
     <section class="summary-cards">
       <div class="card card-entradas">
@@ -183,7 +175,7 @@
                 </button>
               </div>
               <span class="total-count">{{ despesasDoMes.length }} despesas</span>
-              <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Nova Despesa</button>
+              <button class="btn btn-primary" (click)="irParaGestao()">➕ Nova Despesa</button>
             </div>
           </div>
           
@@ -322,7 +314,7 @@
                 <div class="no-despesas-icon">📝</div>
                 <h4>Nenhuma despesa cadastrada</h4>
                 <p>Adicione suas despesas para começar o controle financeiro</p>
-                <button class="btn btn-primary" (click)="mostrarDespesas()">➕ Adicionar Primeira Despesa</button>
+                <button class="btn btn-primary" (click)="irParaGestao()">➕ Adicionar Primeira Despesa</button>
               </div>
             </ng-template>
           </div>

@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Despesa, Categoria, Prioridade } from '../../models/despesa.model';
@@ -11,7 +11,7 @@ import { CATEGORIAS_PADRAO } from '../../models/categorias.data';
   templateUrl: './despesa-form.component.html',
   styleUrl: './despesa-form.component.scss'
 })
-export class DespesaFormComponent implements OnInit {
+export class DespesaFormComponent implements OnInit, OnChanges {
   @Input() despesa: Despesa | null = null;
   @Input() isVisible: boolean = false;
   @Output() onSave = new EventEmitter<Omit<Despesa, 'id'>>();
@@ -26,6 +26,16 @@ export class DespesaFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.populateForm();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['despesa'] && !changes['despesa'].firstChange) {
+      this.populateForm();
+    }
+  }
+
+  private populateForm(): void {
     if (this.despesa) {
       this.despesaForm.patchValue({
         descricao: this.despesa.descricao,
@@ -34,6 +44,15 @@ export class DespesaFormComponent implements OnInit {
         dataVencimento: this.formatDateForInput(this.despesa.dataVencimento),
         prioridade: this.despesa.prioridade,
         paga: this.despesa.paga
+      });
+    } else {
+      this.despesaForm.reset({
+        descricao: '',
+        valor: 0,
+        categoriaId: '',
+        dataVencimento: '',
+        prioridade: Prioridade.MEDIA,
+        paga: false
       });
     }
   }

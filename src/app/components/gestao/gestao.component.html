@@ -6,7 +6,7 @@
         ← Voltar ao Dashboard
       </button>
       <h1>💼 Gestão Financeira</h1>
-      <p>Gerencie suas entradas e despesas</p>
+      <p>Gerencie suas entradas e despesas de forma completa</p>
     </div>
   </div>
 
@@ -35,9 +35,111 @@
     <div *ngIf="abaAtiva === 'despesas'" class="content-section">
       <div class="section-header">
         <h2>📋 Lista de Despesas</h2>
-        <button class="btn btn-primary" (click)="abrirFormularioDespesa()">
-          ➕ Nova Despesa
-        </button>
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'grade'"
+              (click)="alterarModoVisualizacao('grade')"
+              title="Visualização em Grade">
+              ⊞ Grade
+            </button>
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'lista'"
+              (click)="alterarModoVisualizacao('lista')"
+              title="Visualização em Lista">
+              ☰ Lista
+            </button>
+          </div>
+          <button class="btn btn-primary" (click)="abrirFormularioDespesa()">
+            ➕ Nova Despesa
+          </button>
+        </div>
+      </div>
+
+      <!-- Controles de Filtro -->
+      <div class="filtros-container">
+        <div class="filtros-row">
+          <!-- Busca -->
+          <div class="filtro-group">
+            <label>🔍 Buscar:</label>
+            <input 
+              type="text" 
+              [(ngModel)]="termoBusca" 
+              (input)="buscar()"
+              placeholder="Descrição ou categoria..."
+              class="input-busca">
+          </div>
+
+          <!-- Status -->
+          <div class="filtro-group">
+            <label>Status:</label>
+            <select [(ngModel)]="filtroStatusDespesa" (change)="aplicarFiltros()" class="select-filtro">
+              <option *ngFor="let opcao of opcoesStatus" [value]="opcao.value">
+                {{ opcao.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Prioridade -->
+          <div class="filtro-group">
+            <label>Prioridade:</label>
+            <select [(ngModel)]="filtroPrioridade" (change)="aplicarFiltros()" class="select-filtro">
+              <option *ngFor="let opcao of opcoesPrioridade" [value]="opcao.value">
+                {{ opcao.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Categoria -->
+          <div class="filtro-group">
+            <label>Categoria:</label>
+            <select [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()" class="select-filtro">
+              <option value="todas">🏷️ Todas</option>
+              <option *ngFor="let categoria of categorias" [value]="categoria.id">
+                {{ categoria.icon }} {{ categoria.nome }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filtros-row">
+          <!-- Ordenação -->
+          <div class="filtro-group">
+            <label>Ordenar por:</label>
+            <select [(ngModel)]="ordenacaoAtual" (change)="alterarOrdenacao(ordenacaoAtual)" class="select-filtro">
+              <option *ngFor="let opcao of opcoesOrdenacao" [value]="opcao.value">
+                {{ opcao.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Direção -->
+          <div class="filtro-group">
+            <label>Direção:</label>
+            <button 
+              class="btn-direcao" 
+              (click)="alterarOrdenacao(ordenacaoAtual)"
+              title="Alterar direção da ordenação">
+              {{ direcaoOrdenacao === 'desc' ? '↓ Desc' : '↑ Asc' }}
+            </button>
+          </div>
+
+          <!-- Total -->
+          <div class="filtro-group">
+            <span class="total-itens">
+              {{ despesas.length }} de {{ despesasOriginais.length }} despesas
+            </span>
+          </div>
+
+          <!-- Limpar filtros -->
+          <div class="filtro-group">
+            <button class="btn-limpar" (click)="limparFiltros()" title="Limpar todos os filtros">
+              🗑️ Limpar
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -47,56 +149,124 @@
       </div>
 
       <!-- Lista de Despesas -->
-      <div *ngIf="!carregandoDespesas" class="items-grid">
+      <div *ngIf="!carregandoDespesas" class="items-container">
         <div *ngIf="despesas.length === 0" class="empty-state">
           <div class="empty-icon">📝</div>
-          <h3>Nenhuma despesa cadastrada</h3>
-          <p>Comece adicionando sua primeira despesa</p>
+          <h3>Nenhuma despesa encontrada</h3>
+          <p *ngIf="termoBusca || filtroStatusDespesa !== 'todas' || filtroPrioridade !== 'todas' || filtroCategoria !== 'todas'">
+            Tente ajustar os filtros ou adicionar uma nova despesa
+          </p>
+          <p *ngIf="!termoBusca && filtroStatusDespesa === 'todas' && filtroPrioridade === 'todas' && filtroCategoria === 'todas'">
+            Comece adicionando sua primeira despesa
+          </p>
           <button class="btn btn-primary" (click)="abrirFormularioDespesa()">
             ➕ Adicionar Despesa
           </button>
         </div>
 
-        <div *ngFor="let despesa of despesas" class="item-card" [class]="getStatusClass(despesa)">
-          <div class="item-header">
-            <div class="item-info">
-              <h3>{{ despesa.descricao }}</h3>
-              <div class="item-meta">
-                <span class="categoria">
-                  {{ despesa.categoria.icon }} {{ despesa.categoria.nome }}
-                </span>
-                <span class="prioridade" [class]="getPrioridadeClass(despesa.prioridade)">
-                  {{ getPrioridadeTexto(despesa.prioridade) }}
-                </span>
+        <!-- Visualização em Grade -->
+        <div *ngIf="despesas.length > 0 && modoVisualizacao === 'grade'" class="items-grid">
+          <div *ngFor="let despesa of despesas" class="item-card" [class]="getStatusClass(despesa)">
+            <div class="item-header">
+              <div class="item-info">
+                <h3>{{ despesa.descricao }}</h3>
+                <div class="item-meta">
+                  <span class="categoria">
+                    {{ despesa.categoria.icon }} {{ despesa.categoria.nome }}
+                  </span>
+                  <span class="prioridade" [class]="getPrioridadeClass(despesa.prioridade)">
+                    {{ getPrioridadeTexto(despesa.prioridade) }}
+                  </span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button class="btn-action btn-edit" (click)="abrirFormularioDespesa(despesa)" title="Editar">
+                  ✏️
+                </button>
+                <button class="btn-action btn-delete" (click)="excluirDespesa(despesa)" title="Excluir">
+                  🗑️
+                </button>
               </div>
             </div>
-            <div class="item-actions">
-              <button class="btn-action btn-edit" (click)="abrirFormularioDespesa(despesa)" title="Editar">
-                ✏️
-              </button>
-              <button class="btn-action btn-delete" (click)="excluirDespesa(despesa)" title="Excluir">
-                🗑️
-              </button>
+
+            <div class="item-details">
+              <div class="detail-row">
+                <span class="label">Valor:</span>
+                <span class="value valor">{{ formatarMoeda(despesa.valor) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Vencimento:</span>
+                <span class="value">{{ formatarData(despesa.dataVencimento) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Status:</span>
+                <button 
+                  class="btn-status" 
+                  [class.pago]="despesa.paga"
+                  (click)="toggleStatusDespesa(despesa)">
+                  {{ despesa.paga ? '✅ Pago' : '⏳ Pendente' }}
+                </button>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="item-details">
-            <div class="detail-row">
-              <span class="label">Valor:</span>
-              <span class="value valor">{{ formatarMoeda(despesa.valor) }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Vencimento:</span>
-              <span class="value">{{ formatarData(despesa.dataVencimento) }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Status:</span>
-              <button 
-                class="btn-status" 
-                [class.pago]="despesa.paga"
-                (click)="toggleStatusDespesa(despesa)">
-                {{ despesa.paga ? '✅ Pago' : '⏳ Pendente' }}
-              </button>
+        <!-- Visualização em Lista -->
+        <div *ngIf="despesas.length > 0 && modoVisualizacao === 'lista'" class="items-lista">
+          <!-- Cabeçalho da Lista -->
+          <div class="lista-header">
+            <div class="header-col">Descrição</div>
+            <div class="header-col">Categoria</div>
+            <div class="header-col">Valor</div>
+            <div class="header-col">Vencimento</div>
+            <div class="header-col">Status</div>
+            <div class="header-col">Ações</div>
+          </div>
+          
+          <!-- Corpo da Lista -->
+          <div class="lista-body">
+            <div *ngFor="let despesa of despesas" class="lista-item" [class]="getStatusClass(despesa)">
+              <div class="item-field">
+                <div class="field-label">Descrição</div>
+                <div class="field-value">
+                  <strong>{{ despesa.descricao }}</strong>
+                  <span class="prioridade-badge" [class]="getPrioridadeClass(despesa.prioridade)">
+                    {{ getPrioridadeTexto(despesa.prioridade) }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Categoria</div>
+                <div class="field-value">{{ despesa.categoria.icon }} {{ despesa.categoria.nome }}</div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Valor</div>
+                <div class="field-value valor negativo">{{ formatarMoeda(despesa.valor) }}</div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Vencimento</div>
+                <div class="field-value">{{ formatarData(despesa.dataVencimento) }}</div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Status</div>
+                <div class="field-value">
+                  <button 
+                    class="status-badge" 
+                    [class.pago]="despesa.paga"
+                    (click)="toggleStatusDespesa(despesa)">
+                    {{ despesa.paga ? '✅' : '⏳' }}
+                  </button>
+                </div>
+              </div>
+              
+              <div class="item-actions">
+                <button class="btn-action editar" (click)="abrirFormularioDespesa(despesa)" title="Editar">✏️</button>
+                <button class="btn-action excluir" (click)="excluirDespesa(despesa)" title="Excluir">🗑️</button>
+              </div>
             </div>
           </div>
         </div>
@@ -107,9 +277,89 @@
     <div *ngIf="abaAtiva === 'entradas'" class="content-section">
       <div class="section-header">
         <h2>📈 Lista de Entradas</h2>
-        <button class="btn btn-primary" (click)="abrirFormularioEntrada()">
-          ➕ Nova Entrada
-        </button>
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'grade'"
+              (click)="alterarModoVisualizacao('grade')"
+              title="Visualização em Grade">
+              ⊞ Grade
+            </button>
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'lista'"
+              (click)="alterarModoVisualizacao('lista')"
+              title="Visualização em Lista">
+              ☰ Lista
+            </button>
+          </div>
+          <button class="btn btn-primary" (click)="abrirFormularioEntrada()">
+            ➕ Nova Entrada
+          </button>
+        </div>
+      </div>
+
+      <!-- Controles de Filtro para Entradas -->
+      <div class="filtros-container">
+        <div class="filtros-row">
+          <!-- Busca -->
+          <div class="filtro-group">
+            <label>🔍 Buscar:</label>
+            <input 
+              type="text" 
+              [(ngModel)]="termoBusca" 
+              (input)="buscar()"
+              placeholder="Descrição ou fonte..."
+              class="input-busca">
+          </div>
+
+          <!-- Fonte -->
+          <div class="filtro-group">
+            <label>Fonte:</label>
+            <select [(ngModel)]="filtroFonte" (change)="aplicarFiltrosEntradas()" class="select-filtro">
+              <option value="todas">💰 Todas</option>
+              <option *ngFor="let fonte of fontes" [value]="fonte">
+                {{ fonte }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Ordenação -->
+          <div class="filtro-group">
+            <label>Ordenar por:</label>
+            <select [(ngModel)]="ordenacaoAtual" (change)="alterarOrdenacao(ordenacaoAtual)" class="select-filtro">
+              <option *ngFor="let opcao of opcoesOrdenacao" [value]="opcao.value">
+                {{ opcao.label }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Direção -->
+          <div class="filtro-group">
+            <label>Direção:</label>
+            <button 
+              class="btn-direcao" 
+              (click)="alterarOrdenacao(ordenacaoAtual)"
+              title="Alterar direção da ordenação">
+              {{ direcaoOrdenacao === 'desc' ? '↓ Desc' : '↑ Asc' }}
+            </button>
+          </div>
+
+          <!-- Total -->
+          <div class="filtro-group">
+            <span class="total-itens">
+              {{ entradas.length }} de {{ entradasOriginais.length }} entradas
+            </span>
+          </div>
+
+          <!-- Limpar filtros -->
+          <div class="filtro-group">
+            <button class="btn-limpar" (click)="limparFiltros()" title="Limpar todos os filtros">
+              🗑️ Limpar
+            </button>
+          </div>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -119,42 +369,94 @@
       </div>
 
       <!-- Lista de Entradas -->
-      <div *ngIf="!carregandoEntradas" class="items-grid">
+      <div *ngIf="!carregandoEntradas" class="items-container">
         <div *ngIf="entradas.length === 0" class="empty-state">
           <div class="empty-icon">💰</div>
-          <h3>Nenhuma entrada cadastrada</h3>
-          <p>Comece adicionando sua primeira entrada</p>
+          <h3>Nenhuma entrada encontrada</h3>
+          <p *ngIf="termoBusca || filtroFonte !== 'todas'">
+            Tente ajustar os filtros ou adicionar uma nova entrada
+          </p>
+          <p *ngIf="!termoBusca && filtroFonte === 'todas'">
+            Comece adicionando sua primeira entrada
+          </p>
           <button class="btn btn-primary" (click)="abrirFormularioEntrada()">
             ➕ Adicionar Entrada
           </button>
         </div>
 
-        <div *ngFor="let entrada of entradas" class="item-card entrada-card">
-          <div class="item-header">
-            <div class="item-info">
-              <h3>{{ entrada.descricao }}</h3>
-              <div class="item-meta">
-                <span class="fonte">{{ entrada.fonte }}</span>
+        <!-- Visualização em Grade -->
+        <div *ngIf="entradas.length > 0 && modoVisualizacao === 'grade'" class="items-grid">
+          <div *ngFor="let entrada of entradas" class="item-card entrada-card">
+            <div class="item-header">
+              <div class="item-info">
+                <h3>{{ entrada.descricao }}</h3>
+                <div class="item-meta">
+                  <span class="fonte">{{ entrada.fonte }}</span>
+                </div>
+              </div>
+              <div class="item-actions">
+                <button class="btn-action btn-edit" (click)="abrirFormularioEntrada(entrada)" title="Editar">
+                  ✏️
+                </button>
+                <button class="btn-action btn-delete" (click)="excluirEntrada(entrada)" title="Excluir">
+                  🗑️
+                </button>
               </div>
             </div>
-            <div class="item-actions">
-              <button class="btn-action btn-edit" (click)="abrirFormularioEntrada(entrada)" title="Editar">
-                ✏️
-              </button>
-              <button class="btn-action btn-delete" (click)="excluirEntrada(entrada)" title="Excluir">
-                🗑️
-              </button>
+
+            <div class="item-details">
+              <div class="detail-row">
+                <span class="label">Valor:</span>
+                <span class="value valor entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Data:</span>
+                <span class="value">{{ formatarData(entrada.data) }}</span>
+              </div>
             </div>
           </div>
+        </div>
 
-          <div class="item-details">
-            <div class="detail-row">
-              <span class="label">Valor:</span>
-              <span class="value valor entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Data:</span>
-              <span class="value">{{ formatarData(entrada.data) }}</span>
+        <!-- Visualização em Lista -->
+        <div *ngIf="entradas.length > 0 && modoVisualizacao === 'lista'" class="items-lista entradas-lista">
+          <!-- Cabeçalho da Lista -->
+          <div class="lista-header">
+            <div class="header-col">Descrição</div>
+            <div class="header-col">Fonte</div>
+            <div class="header-col">Valor</div>
+            <div class="header-col">Data</div>
+            <div class="header-col">Ações</div>
+          </div>
+          
+          <!-- Corpo da Lista -->
+          <div class="lista-body">
+            <div *ngFor="let entrada of entradas" class="lista-item entrada-card">
+              <div class="item-field">
+                <div class="field-label">Descrição</div>
+                <div class="field-value">
+                  <strong>{{ entrada.descricao }}</strong>
+                </div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Fonte</div>
+                <div class="field-value">{{ entrada.fonte }}</div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Valor</div>
+                <div class="field-value valor positivo">{{ formatarMoeda(entrada.valor) }}</div>
+              </div>
+              
+              <div class="item-field">
+                <div class="field-label">Data</div>
+                <div class="field-value">{{ formatarData(entrada.data) }}</div>
+              </div>
+              
+              <div class="item-actions">
+                <button class="btn-action editar" (click)="abrirFormularioEntrada(entrada)" title="Editar">✏️</button>
+                <button class="btn-action excluir" (click)="excluirEntrada(entrada)" title="Excluir">🗑️</button>
+              </div>
             </div>
           </div>
         </div>
@@ -177,3 +479,14 @@
   (onSave)="salvarEntrada($event)"
   (onCancel)="fecharFormularioEntrada()">
 </app-entrada-form>
+
+<!-- Modal de Confirmação -->
+<app-confirmation-modal
+  [isVisible]="showConfirmationModal"
+  [title]="confirmationData.title"
+  [message]="confirmationData.message"
+  [confirmText]="confirmationData.confirmText"
+  [cancelText]="confirmationData.cancelText"
+  (confirmed)="onConfirmationConfirmed()"
+  (cancelled)="onConfirmationCancelled()">
+</app-confirmation-modal>

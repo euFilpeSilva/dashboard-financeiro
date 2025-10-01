@@ -1,32 +1,52 @@
+// Variáveis CSS para manter consistência com o tema dark
+:host {
+  --bg-primary: #1a1e2e;
+  --bg-secondary: #16213e;
+  --bg-card: #2a2f42;
+  --bg-card-hover: #323756;
+  --border-color: #3a405a;
+  --border-hover: #4a506a;
+  --text-primary: #ffffff;
+  --text-secondary: #b8bcc8;
+  --color-blue: #4fc3f7;
+  --color-blue-light: #81d4fa;
+  --color-blue-dark: #29b6f6;
+  --color-red: #ef5350;
+  --color-green: #66bb6a;
+  --color-yellow: #ffca28;
+  --color-orange: #ff7043;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
 .modal-content {
-  background: white;
-  border-radius: 15px;
+  background: var(--bg-card);
+  border-radius: 16px;
   width: 90%;
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color);
   animation: modalSlideIn 0.3s ease-out;
 }
 
 @keyframes modalSlideIn {
   from {
     opacity: 0;
-    transform: translateY(-50px) scale(0.9);
+    transform: translateY(-30px) scale(0.95);
   }
   to {
     opacity: 1;
@@ -38,81 +58,94 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25px 30px;
-  border-bottom: 1px solid #e0e6ed;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 15px 15px 0 0;
+  padding: 24px 30px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-light) 100%);
+  border-radius: 16px 16px 0 0;
 
   h2 {
     margin: 0;
     color: white;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 
   .close-btn {
     background: none;
     border: none;
-    font-size: 2rem;
+    font-size: 1.5rem;
     color: white;
     cursor: pointer;
-    padding: 0;
-    width: 35px;
-    height: 35px;
+    padding: 8px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    transition: background-color 0.3s ease;
+    transition: all 0.2s ease;
 
     &:hover {
       background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
     }
   }
 }
 
 .despesa-form {
   padding: 30px;
+  background: var(--bg-card);
+  color: var(--text-primary);
 
   .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 
     label {
       display: block;
       margin-bottom: 8px;
       font-weight: 600;
-      color: #374151;
-      font-size: 0.95rem;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
     input, select {
       width: 100%;
       padding: 12px 16px;
-      border: 2px solid #e5e7eb;
+      border: 1px solid var(--border-color);
       border-radius: 8px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      background: #fafafa;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
 
       &:focus {
         outline: none;
-        border-color: #667eea;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: var(--color-blue);
+        background: var(--bg-card-hover);
+        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
       }
 
       &.error {
-        border-color: #ef4444;
-        background: #fef2f2;
+        border-color: var(--color-red);
+        background: rgba(239, 83, 80, 0.1);
       }
 
       &::placeholder {
-        color: #9ca3af;
+        color: var(--text-secondary);
       }
     }
 
     select {
       cursor: pointer;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23b8bcc8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+      background-position: right 12px center;
+      background-repeat: no-repeat;
+      background-size: 16px;
+      padding-right: 40px;
+      appearance: none;
     }
   }
 
@@ -132,7 +165,7 @@
       align-items: center;
       cursor: pointer;
       font-weight: 500;
-      color: #374151;
+      color: var(--text-primary);
 
       input[type="checkbox"] {
         opacity: 0;
@@ -141,8 +174,8 @@
         height: 0;
 
         &:checked + .checkmark {
-          background: #667eea;
-          border-color: #667eea;
+          background: var(--color-blue);
+          border-color: var(--color-blue);
 
           &::after {
             display: block;
@@ -153,18 +186,18 @@
       .checkmark {
         width: 20px;
         height: 20px;
-        border: 2px solid #d1d5db;
+        border: 2px solid var(--border-color);
         border-radius: 4px;
         margin-right: 12px;
         position: relative;
-        background: white;
+        background: var(--bg-secondary);
         transition: all 0.3s ease;
 
         &::after {
           content: '';
           position: absolute;
-          left: 6px;
-          top: 2px;
+          left: 4px;
+          top: 1px;
           width: 6px;
           height: 10px;
           border: solid white;
@@ -178,28 +211,30 @@
 
   .error-message {
     margin-top: 6px;
-    color: #ef4444;
-    font-size: 0.875rem;
+    color: var(--color-red);
+    font-size: 0.8rem;
     font-weight: 500;
   }
 
   .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 15px;
+    gap: 12px;
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid #e5e7eb;
+    border-top: 1px solid var(--border-color);
 
     .btn {
       padding: 12px 24px;
       border: none;
       border-radius: 8px;
-      font-size: 1rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s ease;
-      min-width: 120px;
+      transition: all 0.2s ease;
+      min-width: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
 
       &:disabled {
         opacity: 0.6;
@@ -207,21 +242,26 @@
       }
 
       &.btn-cancel {
-        background: #f3f4f6;
-        color: #6b7280;
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
 
         &:hover:not(:disabled) {
-          background: #e5e7eb;
+          background: var(--bg-card-hover);
+          color: var(--text-primary);
+          border-color: var(--border-hover);
         }
       }
 
       &.btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: var(--color-blue);
         color: white;
+        border: 1px solid var(--color-blue);
 
         &:hover:not(:disabled) {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+          background: var(--color-blue-dark);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(79, 195, 247, 0.3);
         }
       }
     }
