@@ -117,10 +117,11 @@
       flex: 1;
       display: grid;
       grid-template-columns: 2fr 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      grid-template-rows: 1fr;
       gap: 8px;
       padding: 8px;
       overflow: hidden;
+      max-height: calc(100vh - 120px); /* Altura máxima para evitar scroll */
       
       .compact-card {
         background: rgba(30, 41, 59, 0.6);
@@ -141,8 +142,48 @@
         }
         
         &.despesas-compact {
-          grid-row: span 2;
-          min-height: 300px; /* Garantir altura suficiente */
+          grid-row: span 1;
+          min-height: 220px;
+          max-height: 250px;
+          display: flex;
+          flex-direction: column;
+          
+          .compact-content {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 180px;
+          }
+        }
+        
+        &.chart-compact {
+          min-height: 220px;
+          max-height: 250px;
+          display: flex;
+          flex-direction: column;
+          
+          .compact-header {
+            margin-bottom: 6px;
+          }
+          
+          .compact-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            min-height: 180px;
+            
+            app-chart {
+              width: 100%;
+              height: 100%;
+              min-height: 160px;
+              display: block;
+            }
+          }
+        }
+        
+        &.stats-compact {
+          min-height: 200px;
         }
         
         .compact-header {
@@ -178,7 +219,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-            max-height: 150px; /* Altura máxima em vez de 100% */
+            max-height: 90px; /* Altura reduzida */
             overflow-y: auto;
             flex-shrink: 0;
             
@@ -309,36 +350,198 @@
         
         // Estilos para a seção de alertas (agora fora do compact-content)
         .alerts-section {
-          margin-top: 8px;
-          padding: 8px;
+          margin-top: 6px;
+          padding: 6px;
           border-top: 1px solid rgba(148, 163, 184, 0.2);
-          background: rgba(245, 158, 11, 0.1); // Fundo temporário para debug
           border-radius: 4px;
-          flex-shrink: 0; // Não permitir que seja comprimida
+          flex-shrink: 0;
+          
+          &.compact {
+            margin-top: 4px;
+            padding: 4px;
+          }
           
           .alerts-header {
-            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
             
             .alerts-title {
-              font-size: 10px;
+              font-size: 9px;
               font-weight: 600;
               color: #f59e0b;
               text-transform: uppercase;
             }
+            
+            .alerts-count {
+              background: rgba(245, 158, 11, 0.2);
+              color: #f59e0b;
+              padding: 1px 4px;
+              border-radius: 8px;
+              font-size: 8px;
+              font-weight: 600;
+            }
           }
           
-          .simple-alert {
-            font-size: 10px;
-            color: #f1f5f9;
-            padding: 4px 6px;
-            margin: 2px 0;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 4px;
-            border-left: 3px solid #f59e0b;
-            font-weight: 500;
+          .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            
+            .alert-item {
+              display: flex;
+              align-items: center;
+              gap: 6px;
+              padding: 3px 4px;
+              background: rgba(15, 23, 42, 0.4);
+              border-radius: 4px;
+              font-size: 8px;
+              border: 1px solid transparent;
+              transition: all 0.2s ease;
+              
+              &:hover {
+                background: rgba(51, 65, 85, 0.6);
+                border-color: rgba(148, 163, 184, 0.3);
+              }
+              
+              .alert-icon {
+                font-size: 10px;
+                flex-shrink: 0;
+              }
+              
+              .alert-content {
+                flex: 1;
+                min-width: 0;
+                
+                .alert-title {
+                  color: #f1f5f9;
+                  font-weight: 600;
+                  font-size: 8px;
+                  line-height: 1.2;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                  overflow: hidden;
+                }
+                
+                .alert-detail {
+                  color: #94a3b8;
+                  font-size: 7px;
+                  line-height: 1.1;
+                }
+              }
+              
+              .alert-value {
+                font-weight: 600;
+                font-size: 8px;
+                color: #f1f5f9;
+                flex-shrink: 0;
+              }
+              
+              &.vencida {
+                border-left: 2px solid #ef4444;
+                
+                .alert-value {
+                  color: #ef4444;
+                }
+              }
+              
+              &.proxima {
+                border-left: 2px solid #f59e0b;
+                
+                .alert-value {
+                  color: #f59e0b;
+                }
+              }
+              
+              &.no-alerts {
+                border-left: 2px solid #10b981;
+                justify-content: center;
+                
+                .alert-content .alert-title {
+                  color: #10b981;
+                }
+              }
+            }
           }
         }
-
+        
+        // Estilos para a seção de entradas integrada no card de resumo
+        .entradas-section {
+          margin-top: 8px;
+          padding-top: 6px;
+          border-top: 1px solid rgba(148, 163, 184, 0.2);
+          
+          .entradas-header {
+            margin-bottom: 4px;
+            
+            .entradas-title {
+              font-size: 9px;
+              font-weight: 600;
+              color: #10b981;
+              text-transform: uppercase;
+            }
+          }
+          
+          .entradas-mini-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            max-height: 80px;
+            overflow-y: auto;
+            
+            .entradas-mini-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              font-size: 8px;
+              color: #f1f5f9;
+              padding: 2px 4px;
+              background: rgba(15, 23, 42, 0.4);
+              border-radius: 3px;
+              border-left: 2px solid #10b981;
+              
+              .entrada-description {
+                font-weight: 500;
+                flex: 1;
+                margin-right: 4px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+              }
+              
+              .entrada-value {
+                font-weight: 600;
+                color: #10b981;
+              }
+            }
+            
+            .mini-entrada-compact {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 2px 4px;
+              background: rgba(16, 185, 129, 0.1);
+              border-radius: 3px;
+              font-size: 8px;
+              
+              .entrada-fonte-compact {
+                color: #cbd5e1;
+                font-weight: 500;
+                flex: 1;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                overflow: hidden;
+              }
+              
+              .entrada-valor-compact {
+                color: #10b981;
+                font-weight: 600;
+                font-size: 8px;
+              }
+            }
+          }
+        }
       }
     }
   }

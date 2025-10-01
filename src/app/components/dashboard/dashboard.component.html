@@ -46,9 +46,9 @@
           <span class="count-badge">{{ despesasDoMes.length }}</span>
         </div>
         <div class="compact-content">
-          <!-- Lista de despesas -->
+          <!-- Lista de despesas (reduzida) -->
           <div class="despesas-mini-list">
-            <div *ngFor="let despesa of despesasDoMes.slice(0, 4)" 
+            <div *ngFor="let despesa of despesasDoMes.slice(0, 3)" 
                  class="mini-despesa" 
                  [ngClass]="getDespesaStatusClass(despesa)">
               <span class="mini-icon">{{ despesa.categoria.icon }}</span>
@@ -59,40 +59,43 @@
           </div>
         </div>
         
-        <!-- Seção de alertas FORA do compact-content -->
-        <div class="alerts-section">
+        <!-- Seção de alertas (movida para cima e compactada) -->
+        <div class="alerts-section compact">
           <div class="alerts-header">
-            <span class="alerts-title">⚠️ Alertas ({{ getTotalAlertas() }})</span>
+            <span class="alerts-title">⚠️ Alertas</span>
+            <span class="alerts-count">{{ getTotalAlertas() }}</span>
           </div>
           
-          <!-- Debug info -->
-          <div class="simple-alert" style="color: #f59e0b; font-weight: bold;">
-            Total: {{ getTotalAlertas() }} | Vencidas: {{ despesasVencidas.length }} | Próximas: {{ despesasProximasVencimento.length }} | Meta: {{ getPercentualGastoMes() }}%
-          </div>
-          
-          <!-- Alertas sempre visíveis para debug -->
-          <div class="simple-alert" style="background: rgba(239, 68, 68, 0.2);">
-            🔴 Despesas vencidas: {{ despesasVencidas.length }}
-          </div>
-          <div class="simple-alert" style="background: rgba(245, 158, 11, 0.2);">
-            🟡 Próximas ao vencimento: {{ despesasProximasVencimento.length }}
-          </div>
-          <div class="simple-alert" style="background: rgba(139, 69, 19, 0.2);">
-            📊 Meta de gastos: {{ getPercentualGastoMes() }}% do orçamento
-          </div>
-          
-          <!-- Condicionais originais -->
-          <div class="simple-alert" *ngIf="despesasVencidas.length > 0" style="border-left-color: #ef4444;">
-            ⚠️ {{ despesasVencidas.length }} despesas vencidas
-          </div>
-          <div class="simple-alert" *ngIf="despesasProximasVencimento.length > 0" style="border-left-color: #f59e0b;">
-            ⚠️ {{ despesasProximasVencimento.length }} próximas ao vencimento  
-          </div>
-          <div class="simple-alert" *ngIf="getPercentualGastoMes() > 80" style="border-left-color: #d97706;">
-            ⚠️ Meta de gastos: {{ getPercentualGastoMes() }}% do orçamento
-          </div>
-          <div class="simple-alert" *ngIf="getTotalAlertas() === 0" style="border-left-color: #10b981;">
-            ✅ Todas as despesas em dia!
+          <!-- Alertas detalhados -->
+          <div class="alerts-list">
+            <!-- Despesas vencidas -->
+            <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="alert-item vencida">
+              <div class="alert-icon">🔴</div>
+              <div class="alert-content">
+                <div class="alert-title">{{ despesa.descricao }}</div>
+                <div class="alert-detail">Venceu em {{ formatarData(despesa.dataVencimento) }}</div>
+              </div>
+              <div class="alert-value">{{ formatarMoeda(despesa.valor) }}</div>
+            </div>
+            
+            <!-- Despesas próximas ao vencimento -->
+            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="alert-item proxima">
+              <div class="alert-icon">🟡</div>
+              <div class="alert-content">
+                <div class="alert-title">{{ despesa.descricao }}</div>
+                <div class="alert-detail">Vence em {{ formatarData(despesa.dataVencimento) }}</div>
+              </div>
+              <div class="alert-value">{{ formatarMoeda(despesa.valor) }}</div>
+            </div>
+            
+            <!-- Quando não há alertas -->
+            <div *ngIf="getTotalAlertas() === 0" class="alert-item no-alerts">
+              <div class="alert-icon">✅</div>
+              <div class="alert-content">
+                <div class="alert-title">Tudo em dia!</div>
+                <div class="alert-detail">Nenhuma despesa pendente</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -107,12 +110,13 @@
         </div>
       </div>
 
-      <!-- Card de estatísticas -->
+      <!-- Card de resumo com entradas integradas -->
       <div class="compact-card stats-compact">
         <div class="compact-header">
           <h4>📈 Resumo</h4>
         </div>
         <div class="compact-content">
+          <!-- Estatísticas principais -->
           <div class="stats-grid">
             <div class="stat-item">
               <span class="stat-number">{{ contarDespesasPagas() }}</span>
@@ -127,31 +131,18 @@
               <span class="stat-label">Vencidas</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Card de entradas -->
-      <div class="compact-card entradas-compact">
-        <div class="compact-header">
-          <h4>💰 Entradas</h4>
-          <span class="count-badge">{{ entradasDoMes.length }}</span>
-        </div>
-        <div class="compact-content">
-          <!-- Debug temporário -->
-          <div *ngIf="entradasDoMes.length === 0" style="color: #f59e0b; font-size: 10px; padding: 8px;">
-            Nenhuma entrada encontrada. Total: {{ entradasDoMes.length }}
-          </div>
           
-          <div class="entradas-mini-list">
-            <div *ngFor="let entrada of entradasDoMes.slice(0, 6)" class="mini-entrada" style="border: 1px solid #f59e0b; margin: 2px;">
-              <span class="entrada-fonte" style="color: #10b981;">{{ entrada.fonte }}</span>
-              <span class="entrada-valor" style="color: #3b82f6;">{{ formatarMoeda(entrada.valor) }}</span>
+          <!-- Seção de entradas integrada -->
+          <div class="entradas-section">
+            <div class="entradas-header">
+              <span class="entradas-title">💰 Entradas ({{ entradasDoMes.length }})</span>
             </div>
-          </div>
-          
-          <!-- Dados de debug -->
-          <div style="color: #94a3b8; font-size: 8px; margin-top: 4px;">
-            Debug: {{ entradasDoMes.length }} entradas
+            <div class="entradas-mini-list">
+              <div *ngFor="let entrada of entradasDoMes.slice(0, 3)" class="mini-entrada-compact">
+                <span class="entrada-fonte-compact">{{ entrada.fonte }}</span>
+                <span class="entrada-valor-compact">{{ formatarMoeda(entrada.valor) }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
