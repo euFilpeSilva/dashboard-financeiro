@@ -1,0 +1,179 @@
+<div class="gestao-container">
+  <!-- Header -->
+  <div class="gestao-header">
+    <div class="header-content">
+      <button class="btn-back" (click)="voltarDashboard()">
+        ← Voltar ao Dashboard
+      </button>
+      <h1>💼 Gestão Financeira</h1>
+      <p>Gerencie suas entradas e despesas</p>
+    </div>
+  </div>
+
+  <!-- Navegação por Abas -->
+  <div class="tabs-container">
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="abaAtiva === 'despesas'"
+        (click)="alterarAba('despesas')">
+        💸 Despesas ({{ despesas.length }})
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="abaAtiva === 'entradas'"
+        (click)="alterarAba('entradas')">
+        💰 Entradas ({{ entradas.length }})
+      </button>
+    </div>
+  </div>
+
+  <!-- Conteúdo das Abas -->
+  <div class="tab-content">
+    
+    <!-- ABA DESPESAS -->
+    <div *ngIf="abaAtiva === 'despesas'" class="content-section">
+      <div class="section-header">
+        <h2>📋 Lista de Despesas</h2>
+        <button class="btn btn-primary" (click)="abrirFormularioDespesa()">
+          ➕ Nova Despesa
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="carregandoDespesas" class="loading-state">
+        <div class="spinner"></div>
+        <p>Carregando despesas...</p>
+      </div>
+
+      <!-- Lista de Despesas -->
+      <div *ngIf="!carregandoDespesas" class="items-grid">
+        <div *ngIf="despesas.length === 0" class="empty-state">
+          <div class="empty-icon">📝</div>
+          <h3>Nenhuma despesa cadastrada</h3>
+          <p>Comece adicionando sua primeira despesa</p>
+          <button class="btn btn-primary" (click)="abrirFormularioDespesa()">
+            ➕ Adicionar Despesa
+          </button>
+        </div>
+
+        <div *ngFor="let despesa of despesas" class="item-card" [class]="getStatusClass(despesa)">
+          <div class="item-header">
+            <div class="item-info">
+              <h3>{{ despesa.descricao }}</h3>
+              <div class="item-meta">
+                <span class="categoria">
+                  {{ despesa.categoria.icon }} {{ despesa.categoria.nome }}
+                </span>
+                <span class="prioridade" [class]="getPrioridadeClass(despesa.prioridade)">
+                  {{ getPrioridadeTexto(despesa.prioridade) }}
+                </span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <button class="btn-action btn-edit" (click)="abrirFormularioDespesa(despesa)" title="Editar">
+                ✏️
+              </button>
+              <button class="btn-action btn-delete" (click)="excluirDespesa(despesa)" title="Excluir">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div class="item-details">
+            <div class="detail-row">
+              <span class="label">Valor:</span>
+              <span class="value valor">{{ formatarMoeda(despesa.valor) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Vencimento:</span>
+              <span class="value">{{ formatarData(despesa.dataVencimento) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Status:</span>
+              <button 
+                class="btn-status" 
+                [class.pago]="despesa.paga"
+                (click)="toggleStatusDespesa(despesa)">
+                {{ despesa.paga ? '✅ Pago' : '⏳ Pendente' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA ENTRADAS -->
+    <div *ngIf="abaAtiva === 'entradas'" class="content-section">
+      <div class="section-header">
+        <h2>📈 Lista de Entradas</h2>
+        <button class="btn btn-primary" (click)="abrirFormularioEntrada()">
+          ➕ Nova Entrada
+        </button>
+      </div>
+
+      <!-- Loading State -->
+      <div *ngIf="carregandoEntradas" class="loading-state">
+        <div class="spinner"></div>
+        <p>Carregando entradas...</p>
+      </div>
+
+      <!-- Lista de Entradas -->
+      <div *ngIf="!carregandoEntradas" class="items-grid">
+        <div *ngIf="entradas.length === 0" class="empty-state">
+          <div class="empty-icon">💰</div>
+          <h3>Nenhuma entrada cadastrada</h3>
+          <p>Comece adicionando sua primeira entrada</p>
+          <button class="btn btn-primary" (click)="abrirFormularioEntrada()">
+            ➕ Adicionar Entrada
+          </button>
+        </div>
+
+        <div *ngFor="let entrada of entradas" class="item-card entrada-card">
+          <div class="item-header">
+            <div class="item-info">
+              <h3>{{ entrada.descricao }}</h3>
+              <div class="item-meta">
+                <span class="fonte">{{ entrada.fonte }}</span>
+              </div>
+            </div>
+            <div class="item-actions">
+              <button class="btn-action btn-edit" (click)="abrirFormularioEntrada(entrada)" title="Editar">
+                ✏️
+              </button>
+              <button class="btn-action btn-delete" (click)="excluirEntrada(entrada)" title="Excluir">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          <div class="item-details">
+            <div class="detail-row">
+              <span class="label">Valor:</span>
+              <span class="value valor entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Data:</span>
+              <span class="value">{{ formatarData(entrada.data) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Formulários Modais -->
+<app-despesa-form
+  [isVisible]="showDespesaForm"
+  [despesa]="despesaEditando"
+  (onSave)="salvarDespesa($event)"
+  (onCancel)="fecharFormularioDespesa()">
+</app-despesa-form>
+
+<app-entrada-form
+  [isVisible]="showEntradaForm"
+  [entrada]="entradaEditando"
+  (onSave)="salvarEntrada($event)"
+  (onCancel)="fecharFormularioEntrada()">
+</app-entrada-form>

@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
 import { 
@@ -85,7 +86,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   visualizacaoAtiva: VisualizacaoTipo = this.tiposVisualizacao[0];
 
-  constructor(private despesaService: DespesaService) {}
+  constructor(private despesaService: DespesaService, private router: Router) {}
 
   ngOnInit(): void {
     this.carregarDados();
@@ -205,6 +206,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   voltarDashboard(): void {
     this.showDespesaList = false;
     this.showDadosMensais = false;
+  }
+
+  irParaGestao(): void {
+    this.router.navigate(['/gestao']);
   }
 
   alterarVisualizacao(tipo: VisualizacaoTipo): void {

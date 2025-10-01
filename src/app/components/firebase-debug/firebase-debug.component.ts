@@ -109,4 +109,9 @@ export class FirebaseDebugComponent implements OnInit {
     const url = `https://console.firebase.google.com/project/${this.config.projectId}/firestore/rules`;
     window.open(url, '_blank');
   }
+
+  openFirestoreIndexes() {
+    const url = `https://console.firebase.google.com/project/${this.config.projectId}/firestore/indexes`;
+    window.open(url, '_blank');
+  }
 }

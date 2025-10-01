@@ -1,0 +1,100 @@
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Entrada } from '../../models/despesa.model';
+
+// Fontes de entrada predefinidas
+const FONTES_PADRAO = [
+  { id: 'salario', nome: '💼 Salário', icone: '💼' },
+  { id: 'freelance', nome: '💻 Freelance', icone: '💻' },
+  { id: 'investimento', nome: '📈 Investimentos', icone: '📈' },
+  { id: 'aluguel', nome: '🏠 Aluguel Recebido', icone: '🏠' },
+  { id: 'vendas', nome: '🛒 Vendas', icone: '🛒' },
+  { id: 'bonus', nome: '🎁 Bônus', icone: '🎁' },
+  { id: 'pensao', nome: '👨‍👩‍👧‍👦 Pensão', icone: '👨‍👩‍👧‍👦' },
+  { id: 'outros', nome: '💰 Outros', icone: '💰' }
+];
+
+@Component({
+  selector: 'app-entrada-form',
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './entrada-form.component.html',
+  styleUrl: './entrada-form.component.scss'
+})
+export class EntradaFormComponent implements OnInit {
+  @Input() entrada: Entrada | null = null;
+  @Input() isVisible: boolean = false;
+  @Output() onSave = new EventEmitter<Omit<Entrada, 'id'>>();
+  @Output() onCancel = new EventEmitter<void>();
+
+  entradaForm: FormGroup;
+  fontes = FONTES_PADRAO;
+
+  constructor(private fb: FormBuilder) {
+    this.entradaForm = this.createForm();
+  }
+
+  ngOnInit(): void {
+    if (this.entrada) {
+      this.entradaForm.patchValue({
+        descricao: this.entrada.descricao,
+        valor: this.entrada.valor,
+        fonte: this.entrada.fonte,
+        data: this.formatDateForInput(this.entrada.data)
+      });
+    }
+  }
+
+  private createForm(): FormGroup {
+    return this.fb.group({
+      descricao: ['', [Validators.required, Validators.minLength(3)]],
+      valor: [0, [Validators.required, Validators.min(0.01)]],
+      fonte: ['', Validators.required],
+      data: ['', Validators.required]
+    });
+  }
+
+  private formatDateForInput(date: Date): string {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  onSubmit(): void {
+    if (this.entradaForm.valid) {
+      const formValue = this.entradaForm.value;
+      
+      const entradaData: Omit<Entrada, 'id'> = {
+        descricao: formValue.descricao,
+        valor: formValue.valor,
+        fonte: formValue.fonte,
+        data: new Date(formValue.data)
+      };
+
+      this.onSave.emit(entradaData);
+      this.resetForm();
+    }
+  }
+
+  onCancelClick(): void {
+    this.resetForm();
+    this.onCancel.emit();
+  }
+
+  private resetForm(): void {
+    this.entradaForm.reset();
+  }
+
+  get isEditing(): boolean {
+    return this.entrada !== null;
+  }
+
+  // Getters para validação
+  get descricao() { return this.entradaForm.get('descricao'); }
+  get valor() { return this.entradaForm.get('valor'); }
+  get fonte() { return this.entradaForm.get('fonte'); }
+  get data() { return this.entradaForm.get('data'); }
+}

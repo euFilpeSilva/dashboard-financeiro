@@ -1,0 +1,79 @@
+<div class="modal-overlay" *ngIf="isVisible" (click)="onCancelClick()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditing ? 'Editar Entrada' : 'Nova Entrada' }}</h2>
+      <button type="button" class="close-btn" (click)="onCancelClick()">×</button>
+    </div>
+
+    <form [formGroup]="entradaForm" (ngSubmit)="onSubmit()" class="entrada-form">
+      <div class="form-group">
+        <label for="descricao">Descrição *</label>
+        <input 
+          type="text" 
+          id="descricao"
+          formControlName="descricao"
+          placeholder="Ex: Salário de Janeiro"
+          [class.error]="descricao?.invalid && descricao?.touched">
+        <div class="error-message" *ngIf="descricao?.invalid && descricao?.touched">
+          <span *ngIf="descricao?.errors?.['required']">Descrição é obrigatória</span>
+          <span *ngIf="descricao?.errors?.['minlength']">Mínimo de 3 caracteres</span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="valor">Valor *</label>
+          <input 
+            type="number" 
+            id="valor"
+            formControlName="valor"
+            step="0.01"
+            min="0"
+            placeholder="0,00"
+            [class.error]="valor?.invalid && valor?.touched">
+          <div class="error-message" *ngIf="valor?.invalid && valor?.touched">
+            <span *ngIf="valor?.errors?.['required']">Valor é obrigatório</span>
+            <span *ngIf="valor?.errors?.['min']">Valor deve ser maior que zero</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="fonte">Fonte de Receita *</label>
+          <select 
+            id="fonte"
+            formControlName="fonte"
+            [class.error]="fonte?.invalid && fonte?.touched">
+            <option value="">Selecione a fonte</option>
+            <option *ngFor="let fonteItem of fontes" [value]="fonteItem.nome">
+              {{ fonteItem.nome }}
+            </option>
+          </select>
+          <div class="error-message" *ngIf="fonte?.invalid && fonte?.touched">
+            <span *ngIf="fonte?.errors?.['required']">Fonte é obrigatória</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="data">Data de Recebimento *</label>
+        <input 
+          type="date" 
+          id="data"
+          formControlName="data"
+          [class.error]="data?.invalid && data?.touched">
+        <div class="error-message" *ngIf="data?.invalid && data?.touched">
+          <span *ngIf="data?.errors?.['required']">Data é obrigatória</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-cancel" (click)="onCancelClick()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="entradaForm.invalid">
+          {{ isEditing ? 'Atualizar' : 'Adicionar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
