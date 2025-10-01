@@ -31,6 +31,11 @@
     </div>
   </header>
 
+  <!-- Conteúdo da Gestão de Despesas -->
+  <div *ngIf="showDespesaList" class="despesa-management">
+    <app-despesa-list></app-despesa-list>
+  </div>
+
   <!-- Seção Dados por Mês -->
   <div *ngIf="showDadosMensais" class="dados-mensais">
     
@@ -131,9 +136,16 @@
     </section>
 
     <!-- Período Atual -->
-    <section class="periodo-atual">
+    <!-- <section class="periodo-atual">
       <h3>{{ periodoAtual.descricao }}</h3>
-    </section>
+    </section> -->
+
+        <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
+      <h4>🔔 Próximas ao Vencimento</h4>
+      <div *ngFor="let despesa of despesasProximasVencimento" class="alerta-item proxima">
+        {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }} - Vence: {{ formatarData(despesa.dataVencimento) }}
+      </div>
+    </div>
 
     <!-- Conteúdo Principal -->
     <div class="main-content">
@@ -322,17 +334,117 @@
       </div>
     </div>
 
-    <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
-      <h4>🔔 Próximas ao Vencimento</h4>
-      <div *ngFor="let despesa of despesasProximasVencimento" class="alerta-item proxima">
-        {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }} - Vence: {{ formatarData(despesa.dataVencimento) }}
+    <!-- Mural de Anotações -->
+    <section class="mural-anotacoes" [class.minimizado]="!mostrarMuralAnotacoes">
+      <div class="mural-header">
+        <div class="mural-title">
+          <h3>📝 Mural de Anotações</h3>
+          <span class="contador-anotacoes">{{ anotacoes.length }} anotações</span>
+        </div>
+        <div class="mural-controls">
+          <button 
+            class="btn-toggle-mural" 
+            (click)="toggleMuralAnotacoes()"
+            [title]="mostrarMuralAnotacoes ? 'Minimizar mural' : 'Expandir mural'">
+            {{ mostrarMuralAnotacoes ? '▼' : '▶' }}
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
 
+      <div *ngIf="mostrarMuralAnotacoes" class="mural-content">
+        <!-- Formulário para nova anotação -->
+        <div class="nova-anotacao-form">
+          <div class="input-group">
+            <textarea 
+              [(ngModel)]="novaAnotacao"
+              placeholder="Digite sua anotação aqui... (Ctrl+Enter para salvar)"
+              class="nova-anotacao-input"
+              rows="3"
+              maxlength="500"
+              (keydown.control.enter)="adicionarAnotacao()">
+            </textarea>
+            <div class="input-actions">
+              <span class="char-counter">{{ novaAnotacao.length }}/500</span>
+              <button 
+                class="btn btn-primary btn-add-anotacao" 
+                (click)="adicionarAnotacao()"
+                [disabled]="!novaAnotacao.trim()">
+                ➕ Adicionar
+              </button>
+            </div>
+          </div>
+        </div>
 
-  <!-- Conteúdo da Gestão de Despesas -->
-  <div *ngIf="showDespesaList" class="despesa-management">
-    <app-despesa-list></app-despesa-list>
+        <!-- Lista de anotações -->
+        <div class="anotacoes-container" *ngIf="anotacoes.length > 0; else semAnotacoes">
+          <div 
+            *ngFor="let anotacao of anotacoes; trackBy: trackByAnotacao" 
+            class="anotacao-card"
+            [style.border-left-color]="anotacao.cor">
+            
+            <!-- Modo visualização -->
+            <div *ngIf="editandoAnotacao !== anotacao.id" class="anotacao-view">
+              <div class="anotacao-content">
+                <p class="anotacao-texto">{{ anotacao.texto }}</p>
+                <div class="anotacao-meta">
+                  <span class="anotacao-data">{{ formatarDataHora(anotacao.dataHora) }}</span>
+                  <div class="anotacao-actions">
+                    <button 
+                      class="btn-action edit" 
+                      (click)="iniciarEdicao(anotacao)"
+                      title="Editar anotação">
+                      ✏️
+                    </button>
+                    <button 
+                      class="btn-action delete" 
+                      (click)="removerAnotacao(anotacao.id)"
+                      title="Remover anotação">
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Modo edição -->
+            <div *ngIf="editandoAnotacao === anotacao.id" class="anotacao-edit">
+              <textarea 
+                [(ngModel)]="textoEdicao"
+                class="edit-textarea"
+                rows="3"
+                maxlength="500"
+                (keydown.control.enter)="salvarEdicao()"
+                (keydown.escape)="cancelarEdicao()">
+              </textarea>
+              <div class="edit-actions">
+                <span class="char-counter">{{ textoEdicao.length }}/500</span>
+                <div class="edit-buttons">
+                  <button 
+                    class="btn btn-success btn-sm" 
+                    (click)="salvarEdicao()"
+                    [disabled]="!textoEdicao.trim()">
+                    ✅ Salvar
+                  </button>
+                  <button 
+                    class="btn btn-secondary btn-sm" 
+                    (click)="cancelarEdicao()">
+                    ❌ Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado vazio -->
+        <ng-template #semAnotacoes>
+          <div class="sem-anotacoes">
+            <div class="sem-anotacoes-icon">📋</div>
+            <h4>Nenhuma anotação ainda</h4>
+            <p>Adicione suas primeiras anotações para organizar ideias e lembretes</p>
+          </div>
+        </ng-template>
+      </div>
+    </section>
   </div>
 </div>

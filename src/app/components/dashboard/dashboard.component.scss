@@ -959,7 +959,7 @@
 
       // Estilos para visualização em lista
       .despesas-lista {
-        max-height: 520px;
+        max-height: 700px;
         overflow-y: auto;
 
         /* Custom scrollbar */
@@ -1765,6 +1765,15 @@
       }
     }
   }
+
+  .despesa-management {
+    padding: 20px;
+    
+    app-despesa-list {
+      display: block;
+      width: 100%;
+    }
+  }
 }
 
 // Classes utilitárias para cores
@@ -2025,6 +2034,416 @@
           background: var(--tema-cor-primaria, #7c3aed);
           border-color: var(--tema-cor-primaria, #7c3aed);
         }
+      }
+    }
+  }
+}
+
+/* === MURAL DE ANOTAÇÕES === */
+.mural-anotacoes {
+  margin-top: 30px;
+  background: var(--bg-card);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &.minimizado {
+    .mural-content {
+      display: none;
+    }
+  }
+
+  .mural-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+
+    .mural-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      h3 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        font-weight: 600;
+      }
+
+      .contador-anotacoes {
+        background: var(--color-blue);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+    }
+
+    .mural-controls {
+      .btn-toggle-mural {
+        background: none;
+        border: 1px solid var(--border-color);
+        color: var(--text-secondary);
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 14px;
+
+        &:hover {
+          background: var(--bg-card-hover);
+          border-color: var(--color-blue);
+          color: var(--color-blue);
+        }
+      }
+    }
+  }
+
+  .mural-content {
+    padding: 24px;
+  }
+
+  /* Formulário de nova anotação */
+  .nova-anotacao-form {
+    margin-bottom: 24px;
+
+    .input-group {
+      background: var(--bg-primary);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px;
+      transition: border-color 0.2s ease;
+
+      &:focus-within {
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.1);
+      }
+
+      .nova-anotacao-input {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 80px;
+        outline: none;
+        font-family: inherit;
+
+        &::placeholder {
+          color: var(--text-muted);
+        }
+      }
+
+      .input-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+
+        .char-counter {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+
+        .btn-add-anotacao {
+          background: var(--color-blue);
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover:not(:disabled) {
+            background: var(--color-blue-dark);
+            transform: translateY(-1px);
+          }
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+        }
+      }
+    }
+  }
+
+  /* Container das anotações */
+  .anotacoes-container {
+    display: grid;
+    gap: 16px;
+  }
+
+  /* Card de anotação */
+  .anotacao-card {
+    background: var(--bg-primary);
+    border-left: 4px solid var(--color-blue);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    position: relative;
+
+    &:hover {
+      background: var(--bg-card-hover);
+      transform: translateX(4px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .anotacao-view {
+      .anotacao-content {
+        .anotacao-texto {
+          color: var(--text-primary);
+          line-height: 1.6;
+          margin: 0 0 12px 0;
+          word-wrap: break-word;
+          white-space: pre-wrap;
+        }
+
+        .anotacao-meta {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+
+          .anotacao-data {
+            color: var(--text-muted);
+            font-size: 12px;
+          }
+
+          .anotacao-actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+
+            .btn-action {
+              background: none;
+              border: 1px solid var(--border-color);
+              color: var(--text-secondary);
+              width: 32px;
+              height: 32px;
+              border-radius: 6px;
+              cursor: pointer;
+              transition: all 0.2s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+
+              &.edit:hover {
+                background: var(--color-blue);
+                border-color: var(--color-blue);
+                color: white;
+              }
+
+              &.delete:hover {
+                background: #ff6b6b;
+                border-color: #ff6b6b;
+                color: white;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    &:hover .anotacao-actions {
+      opacity: 1;
+    }
+
+    /* Modo edição */
+    .anotacao-edit {
+      .edit-textarea {
+        width: 100%;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+        resize: vertical;
+        min-height: 80px;
+        outline: none;
+        font-family: inherit;
+
+        &:focus {
+          border-color: var(--color-blue);
+          box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.1);
+        }
+      }
+
+      .edit-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+
+        .char-counter {
+          font-size: 12px;
+          color: var(--text-muted);
+        }
+
+        .edit-buttons {
+          display: flex;
+          gap: 8px;
+
+          .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: none;
+
+            &.btn-success {
+              background: #10ac84;
+              color: white;
+
+              &:hover:not(:disabled) {
+                background: #0e9474;
+              }
+            }
+
+            &.btn-secondary {
+              background: var(--bg-secondary);
+              color: var(--text-secondary);
+              border: 1px solid var(--border-color);
+
+              &:hover {
+                background: var(--bg-card-hover);
+              }
+            }
+
+            &:disabled {
+              opacity: 0.5;
+              cursor: not-allowed;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /* Estado vazio */
+  .sem-anotacoes {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+
+    .sem-anotacoes-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+
+    h4 {
+      margin: 0 0 8px 0;
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+}
+
+/* Responsividade do mural */
+@media (max-width: 768px) {
+  .mural-anotacoes {
+    margin-top: 20px;
+    border-radius: 12px;
+
+    .mural-header {
+      padding: 16px;
+
+      .mural-title {
+        gap: 8px;
+
+        h3 {
+          font-size: 1.2rem;
+        }
+
+        .contador-anotacoes {
+          padding: 3px 8px;
+          font-size: 11px;
+        }
+      }
+    }
+
+    .mural-content {
+      padding: 16px;
+    }
+
+    .nova-anotacao-form {
+      margin-bottom: 20px;
+
+      .input-group {
+        padding: 12px;
+
+        .nova-anotacao-input {
+          min-height: 60px;
+          font-size: 13px;
+        }
+
+        .input-actions {
+          margin-top: 8px;
+          padding-top: 8px;
+
+          .btn-add-anotacao {
+            padding: 6px 12px;
+            font-size: 13px;
+          }
+        }
+      }
+    }
+
+    .anotacao-card {
+      padding: 12px;
+
+      .anotacao-view .anotacao-content {
+        .anotacao-texto {
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+
+        .anotacao-meta {
+          .anotacao-actions {
+            opacity: 1; // Sempre visível no mobile
+          }
+        }
+      }
+    }
+
+    .sem-anotacoes {
+      padding: 30px 16px;
+
+      .sem-anotacoes-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+      }
+
+      h4 {
+        font-size: 1.1rem;
+      }
+
+      p {
+        font-size: 13px;
       }
     }
   }

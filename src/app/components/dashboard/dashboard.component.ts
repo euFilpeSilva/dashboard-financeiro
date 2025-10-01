@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
 import { 
@@ -15,10 +16,18 @@ import { ChartComponent } from '../chart/chart.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DespesaListComponent } from '../despesa-list/despesa-list.component';
 
+// Interface para as anotações
+interface Anotacao {
+  id: string;
+  texto: string;
+  dataHora: Date;
+  cor?: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ChartComponent, DespesaListComponent, ChartBarComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, DespesaListComponent, ChartBarComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -52,6 +61,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Modo de visualização das despesas do mês
   modoVisualizacaoDespesas: 'grade' | 'lista' = 'grade';
   
+  // Sistema de anotações
+  anotacoes: Anotacao[] = [];
+  novaAnotacao: string = '';
+  editandoAnotacao: string | null = null;
+  textoEdicao: string = '';
+  mostrarMuralAnotacoes: boolean = true;
+  
   // Sistema de temas
   temaAtual = 'classico';
   temasDisponiveis = [
@@ -74,6 +90,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.carregarDados();
     this.carregarTema();
     this.carregarPreferenciaVisualizacao();
+    this.carregarAnotacoes();
+    
+    // Carregar preferência de visibilidade do mural
+    const muralVisivel = localStorage.getItem('dashboard-mural-visivel');
+    if (muralVisivel !== null) {
+      this.mostrarMuralAnotacoes = muralVisivel === 'true';
+    }
   }
 
   ngOnDestroy(): void {
@@ -312,5 +335,124 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (modoSalvo && (modoSalvo === 'grade' || modoSalvo === 'lista')) {
       this.modoVisualizacaoDespesas = modoSalvo;
     }
+  }
+
+  // === MÉTODOS PARA MURAL DE ANOTAÇÕES ===
+  
+  // Carregar anotações do localStorage
+  private carregarAnotacoes(): void {
+    const anotacoesSalvas = localStorage.getItem('dashboard-anotacoes');
+    if (anotacoesSalvas) {
+      try {
+        this.anotacoes = JSON.parse(anotacoesSalvas).map((anotacao: any) => ({
+          ...anotacao,
+          dataHora: new Date(anotacao.dataHora)
+        }));
+      } catch (error) {
+        console.error('Erro ao carregar anotações:', error);
+        this.anotacoes = [];
+      }
+    }
+  }
+
+  // Salvar anotações no localStorage
+  private salvarAnotacoes(): void {
+    localStorage.setItem('dashboard-anotacoes', JSON.stringify(this.anotacoes));
+  }
+
+  // Adicionar nova anotação
+  adicionarAnotacao(): void {
+    if (this.novaAnotacao.trim()) {
+      const novaAnotacao: Anotacao = {
+        id: this.gerarIdUnico(),
+        texto: this.novaAnotacao.trim(),
+        dataHora: new Date(),
+        cor: this.obterCorAleatoria()
+      };
+      
+      this.anotacoes.unshift(novaAnotacao); // Adiciona no início da lista
+      this.novaAnotacao = '';
+      this.salvarAnotacoes();
+    }
+  }
+
+  // Iniciar edição de anotação
+  iniciarEdicao(anotacao: Anotacao): void {
+    this.editandoAnotacao = anotacao.id;
+    this.textoEdicao = anotacao.texto;
+  }
+
+  // Cancelar edição
+  cancelarEdicao(): void {
+    this.editandoAnotacao = null;
+    this.textoEdicao = '';
+  }
+
+  // Salvar edição
+  salvarEdicao(): void {
+    if (this.editandoAnotacao && this.textoEdicao.trim()) {
+      const anotacao = this.anotacoes.find(a => a.id === this.editandoAnotacao);
+      if (anotacao) {
+        anotacao.texto = this.textoEdicao.trim();
+        this.salvarAnotacoes();
+      }
+    }
+    this.cancelarEdicao();
+  }
+
+  // Remover anotação
+  removerAnotacao(id: string): void {
+    if (confirm('Tem certeza que deseja remover esta anotação?')) {
+      this.anotacoes = this.anotacoes.filter(a => a.id !== id);
+      this.salvarAnotacoes();
+    }
+  }
+
+  // Toggle do mural
+  toggleMuralAnotacoes(): void {
+    this.mostrarMuralAnotacoes = !this.mostrarMuralAnotacoes;
+    localStorage.setItem('dashboard-mural-visivel', this.mostrarMuralAnotacoes.toString());
+  }
+
+  // Gerar ID único
+  private gerarIdUnico(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  }
+
+  // Obter cor aleatória para a anotação
+  private obterCorAleatoria(): string {
+    const cores = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FECA57',
+      '#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43',
+      '#10AC84', '#EE5A24', '#0FB9B1', '#3742FA', '#F79F1F'
+    ];
+    return cores[Math.floor(Math.random() * cores.length)];
+  }
+
+  // Formatar data/hora da anotação
+  formatarDataHora(dataHora: Date): string {
+    const agora = new Date();
+    const diferenca = agora.getTime() - dataHora.getTime();
+    const minutos = Math.floor(diferenca / (1000 * 60));
+    const horas = Math.floor(diferenca / (1000 * 60 * 60));
+    const dias = Math.floor(diferenca / (1000 * 60 * 60 * 24));
+
+    if (minutos < 1) return 'Agora';
+    if (minutos < 60) return `${minutos}min atrás`;
+    if (horas < 24) return `${horas}h atrás`;
+    if (dias < 7) return `${dias}d atrás`;
+    
+    return dataHora.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // TrackBy para performance na lista de anotações
+  trackByAnotacao(index: number, anotacao: Anotacao): string {
+    return anotacao.id;
   }
 }

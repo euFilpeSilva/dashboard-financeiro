@@ -6,8 +6,112 @@
     </button>
   </div>
 
-  <div class="despesas-grid">
-    <div *ngFor="let despesa of despesas; trackBy: trackByDespesa" 
+  <!-- Seção de Filtros e Ordenação -->
+  <div class="filtros-container">
+    <div class="filtros-row">
+      <!-- Filtros -->
+      <div class="filtros-grupo">
+        <h3>🔍 Filtros</h3>
+        <div class="filtros-inputs">
+          <div class="filtro-item">
+            <label for="filtro-mes">Mês:</label>
+            <select id="filtro-mes" [(ngModel)]="filtroMes" (change)="onFiltroMesChange()" class="filtro-select">
+              <option *ngFor="let mes of mesesDisponiveis" [value]="mes.valor">{{ mes.nome }}</option>
+            </select>
+          </div>
+
+          <div class="filtro-item">
+            <label for="filtro-ano">Ano:</label>
+            <select id="filtro-ano" [(ngModel)]="filtroAno" (change)="onFiltroAnoChange()" class="filtro-select">
+              <option value="">Todos os anos</option>
+              <option *ngFor="let ano of anosDisponiveis" [value]="ano">{{ ano || 'Todos os anos' }}</option>
+            </select>
+          </div>
+
+          <div class="filtro-item">
+            <label for="filtro-status">Status:</label>
+            <select id="filtro-status" [(ngModel)]="filtroStatus" (change)="onFiltroStatusChange()" class="filtro-select">
+              <option value="todos">Todas</option>
+              <option value="pendentes">Pendentes</option>
+              <option value="pagas">Pagas</option>
+              <option value="vencidas">Vencidas</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ordenação -->
+      <div class="ordenacao-grupo">
+        <h3>📊 Ordenação</h3>
+        <div class="ordenacao-inputs">
+          <div class="filtro-item">
+            <label for="ordenacao">Ordenar por:</label>
+            <select id="ordenacao" [(ngModel)]="ordenacao" (change)="onOrdenacaoChange()" class="filtro-select">
+              <option value="vencimento">Data de Vencimento</option>
+              <option value="valor">Valor</option>
+              <option value="descricao">Descrição</option>
+              <option value="categoria">Categoria</option>
+            </select>
+          </div>
+
+          <div class="filtro-item">
+            <button class="btn btn-ordenacao" (click)="toggleDirecaoOrdenacao()" 
+                    [title]="direcaoOrdenacao === 'asc' ? 'Crescente' : 'Decrescente'">
+              {{ direcaoOrdenacao === 'asc' ? '⬆️' : '⬇️' }}
+              {{ direcaoOrdenacao === 'asc' ? 'Crescente' : 'Decrescente' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Limpar -->
+      <div class="acoes-grupo">
+        <!-- Toggle de Modo de Visualização -->
+        <div class="modo-visualizacao">
+          <h3>👁️ Visualização</h3>
+          <div class="view-toggle">
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'grade'"
+              (click)="alterarModoVisualizacao('grade')"
+              title="Visualização em Grade">
+              🟫 Grade
+            </button>
+            <button 
+              class="toggle-btn" 
+              [class.active]="modoVisualizacao === 'lista'"
+              (click)="alterarModoVisualizacao('lista')"
+              title="Visualização em Lista">
+              📋 Lista
+            </button>
+          </div>
+        </div>
+
+        <button class="btn btn-limpar" (click)="limparFiltros()">
+          🗑️ Limpar Filtros
+        </button>
+        <div class="contador-resultados">
+          <span>{{ getTotalDespesasFiltradas() }} de {{ despesas.length }} despesas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Visualização em Grade -->
+  <div *ngIf="modoVisualizacao === 'grade'" class="despesas-grid">
+    <!-- Mensagem quando não há despesas filtradas -->
+    <div *ngIf="despesasFiltradas.length === 0 && despesas.length > 0" class="no-results">
+      <div class="no-results-content">
+        <span class="no-results-icon">🔍</span>
+        <h3>Nenhuma despesa encontrada</h3>
+        <p>Tente ajustar os filtros para encontrar despesas.</p>
+        <button class="btn btn-primary" (click)="limparFiltros()">
+          Limpar Filtros
+        </button>
+      </div>
+    </div>
+
+    <div *ngFor="let despesa of despesasFiltradas; trackBy: trackByDespesa" 
          class="despesa-card"
          [ngClass]="{
            'vencida': isVencida(despesa),
@@ -78,6 +182,121 @@
     </div>
   </div>
 
+  <!-- Visualização em Lista -->
+  <div *ngIf="modoVisualizacao === 'lista'" class="despesas-lista">
+    <!-- Mensagem quando não há despesas filtradas -->
+    <div *ngIf="despesasFiltradas.length === 0 && despesas.length > 0" class="no-results">
+      <div class="no-results-content">
+        <span class="no-results-icon">🔍</span>
+        <h3>Nenhuma despesa encontrada</h3>
+        <p>Tente ajustar os filtros para encontrar despesas.</p>
+        <button class="btn btn-primary" (click)="limparFiltros()">
+          Limpar Filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- Cabeçalho da Lista -->
+    <div *ngIf="despesasFiltradas.length > 0" class="lista-header">
+      <div class="header-col col-categoria">Categoria</div>
+      <div class="header-col col-descricao">Descrição</div>
+      <div class="header-col col-valor">Valor</div>
+      <div class="header-col col-vencimento">Vencimento</div>
+      <div class="header-col col-prioridade">Prioridade</div>
+      <div class="header-col col-status">Status</div>
+      <div class="header-col col-acoes">Ações</div>
+    </div>
+
+    <!-- Linhas da Lista -->
+    <div class="lista-body">
+      <div *ngFor="let despesa of despesasFiltradas; trackBy: trackByDespesa" 
+           class="despesa-row"
+           [ngClass]="{
+             'vencida': isVencida(despesa),
+             'proxima-vencimento': isProximaVencimento(despesa),
+             'paga': despesa.paga
+           }">
+        
+        <!-- Categoria -->
+        <div class="row-col col-categoria">
+          <div class="categoria-compact">
+            <span class="categoria-icon-small" [style.background]="despesa.categoria.cor">
+              {{ despesa.categoria.icon }}
+            </span>
+            <span class="categoria-nome-small">{{ despesa.categoria.nome }}</span>
+          </div>
+        </div>
+
+        <!-- Descrição -->
+        <div class="row-col col-descricao">
+          <div class="despesa-descricao-compact">{{ despesa.descricao }}</div>
+        </div>
+
+        <!-- Valor -->
+        <div class="row-col col-valor">
+          <div class="valor-compact">{{ formatarMoeda(despesa.valor) }}</div>
+        </div>
+
+        <!-- Vencimento -->
+        <div class="row-col col-vencimento">
+          <div class="vencimento-compact" 
+               [ngClass]="{
+                 'vencimento-normal': !despesa.paga && !isVencida(despesa) && !isProximaVencimento(despesa),
+                 'vencimento-proximo': !despesa.paga && isProximaVencimento(despesa),
+                 'vencimento-atrasado': !despesa.paga && isVencida(despesa),
+                 'vencimento-pago': despesa.paga
+               }">
+            {{ formatarData(despesa.dataVencimento) }}
+          </div>
+        </div>
+
+        <!-- Prioridade -->
+        <div class="row-col col-prioridade">
+          <span class="prioridade-compact" [ngClass]="getPrioridadeClass(despesa.prioridade)">
+            {{ despesa.prioridade }}
+          </span>
+        </div>
+
+        <!-- Status -->
+        <div class="row-col col-status">
+          <button 
+            class="status-toggle-compact"
+            [ngClass]="despesa.paga ? 'pago' : 'pendente'"
+            (click)="onTogglePaga(despesa)"
+            [title]="despesa.paga ? 'Marcar como pendente' : 'Marcar como paga'">
+            <span class="status-icon-compact">{{ despesa.paga ? '✅' : '⏳' }}</span>
+          </button>
+        </div>
+
+        <!-- Ações -->
+        <div class="row-col col-acoes">
+          <div class="acoes-compact">
+            <button 
+              class="action-btn-compact edit-btn"
+              (click)="onEditarDespesa(despesa)"
+              title="Editar despesa">
+              ✏️
+            </button>
+            
+            <button 
+              class="action-btn-compact delete-btn"
+              (click)="onRemoverDespesa(despesa.id)"
+              title="Remover despesa">
+              🗑️
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão adicionar na visualização lista -->
+    <div class="add-despesa-lista">
+      <button class="btn btn-primary btn-add-lista" (click)="onNovaDespesa()">
+        ➕ Adicionar Nova Despesa
+      </button>
+    </div>
+  </div>
+
   <!-- Resumo -->
   <div class="resumo-section">
     <div class="resumo-card">
@@ -85,7 +304,7 @@
       <div class="resumo-stats">
         <div class="stat">
           <span class="stat-label">Total de Despesas:</span>
-          <span class="stat-value">{{ despesas.length }}</span>
+          <span class="stat-value">{{ getTotalDespesasFiltradas() }}</span>
         </div>
         <div class="stat">
           <span class="stat-label">Pagas:</span>
