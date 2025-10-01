@@ -113,15 +113,33 @@
       }
     }
     
-    .compact-grid {
+    .compact-layout {
       flex: 1;
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      grid-template-rows: 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 8px;
       padding: 8px;
       overflow: hidden;
-      max-height: calc(100vh - 120px); /* Altura máxima para evitar scroll */
+      max-height: calc(100vh - 120px);
+      
+      // Primeira linha: Cards de despesas e resumo lado a lado
+      .compact-grid-top {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 8px;
+        height: 35%;
+        min-height: 240px;
+        max-height: 280px;
+      }
+      
+      // Segunda linha: Gráfico ocupando toda a largura
+      .compact-grid-bottom {
+        display: flex;
+        height: 65%;
+        min-height: 400px;
+        flex: 1;
+        margin-top: 12px; // Margem superior para separar do conteúdo acima
+      }
       
       .compact-card {
         background: rgba(30, 41, 59, 0.6);
@@ -131,7 +149,7 @@
         padding: 12px;
         display: flex;
         flex-direction: column;
-        overflow: visible; /* Temporário para debug - era hidden */
+        overflow: hidden;
         transition: all 0.2s ease;
         
         &:hover {
@@ -141,49 +159,243 @@
           box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
         
-        &.despesas-compact {
-          grid-row: span 1;
-          min-height: 220px;
-          max-height: 250px;
+        // Header padrão para todos os cards
+        .compact-header {
+          margin-bottom: 8px;
+          flex-shrink: 0;
           display: flex;
-          flex-direction: column;
+          justify-content: space-between;
+          align-items: center;
           
-          .compact-content {
-            flex: 1;
-            overflow-y: auto;
-            max-height: 180px;
+          h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            color: #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+          }
+          
+          .count-badge {
+            background: rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
           }
         }
         
+        // Card de despesas na primeira linha
+        &.despesas-compact {
+          flex: 2;
+          max-height: 100%;
+        }
+        
+        // Card do gráfico em largura total
         &.chart-compact {
-          min-height: 220px;
-          max-height: 250px;
-          display: flex;
-          flex-direction: column;
+          &.full-width {
+            width: 100%;
+            min-height: 400px;
+            height: 100%;
+          }
           
           .compact-header {
-            margin-bottom: 6px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
+            
+            h4 {
+              font-size: 14px;
+              font-weight: 600;
+              margin: 0;
+              color: #f1f5f9;
+            }
+            
+            .chart-summary {
+              background: rgba(16, 185, 129, 0.2);
+              color: #10b981;
+              padding: 2px 8px;
+              border-radius: 12px;
+              font-size: 11px;
+              font-weight: 600;
+            }
           }
           
           .compact-content {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4px;
-            min-height: 180px;
+            overflow: hidden;
+            height: calc(100% - 50px); // Subtrair altura do header
             
-            app-chart {
-              width: 100%;
-              height: 100%;
-              min-height: 160px;
-              display: block;
+            &.chart-layout {
+              app-chart {
+                width: 100%;
+                height: 100%;
+                display: block;
+                
+                // Garantir que o gráfico seja visível e bem proporcionado
+                :deep(.chart-section) {
+                  height: 100%;
+                  display: flex;
+                  flex-direction: column;
+                  
+                  .chart-header {
+                    display: none; // Ocultar header duplicado
+                  }
+                  
+                  .chart-content {
+                    flex: 1;
+                    display: flex;
+                    gap: 16px;
+                    min-height: 0; // Importante para flex
+                    height: 100%;
+                    
+                    .chart-wrapper {
+                      flex: 2;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
+                      min-width: 0;
+                      min-height: 300px;
+                      
+                      canvas {
+                        max-width: 90% !important;
+                        max-height: 90% !important;
+                        width: auto !important;
+                        height: auto !important;
+                      }
+                    }
+                    
+                    .chart-legend-sidebar {
+                      flex: 1;
+                      min-width: 220px;
+                      display: flex;
+                      flex-direction: column;
+                      overflow: hidden;
+                      
+                      .legend-header {
+                        margin-bottom: 8px;
+                        flex-shrink: 0;
+                        
+                        h4 {
+                          font-size: 12px;
+                          font-weight: 600;
+                          color: #f1f5f9;
+                          margin: 0;
+                        }
+                      }
+                      
+                      .legend-items {
+                        flex: 1;
+                        overflow-y: auto;
+                        
+                        &::-webkit-scrollbar {
+                          width: 4px;
+                        }
+                        
+                        &::-webkit-scrollbar-track {
+                          background: rgba(15, 23, 42, 0.5);
+                          border-radius: 2px;
+                        }
+                        
+                        &::-webkit-scrollbar-thumb {
+                          background: rgba(148, 163, 184, 0.4);
+                          border-radius: 2px;
+                        }
+                        
+                        .legend-item {
+                          margin-bottom: 6px;
+                          padding: 6px 8px;
+                          background: rgba(15, 23, 42, 0.4);
+                          border-radius: 6px;
+                          border-left: 3px solid transparent;
+                          
+                          .legend-indicator {
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            margin-bottom: 4px;
+                            
+                            .legend-color {
+                              width: 12px;
+                              height: 12px;
+                              border-radius: 2px;
+                              flex-shrink: 0;
+                            }
+                            
+                            .legend-label {
+                              font-size: 11px;
+                              color: #e2e8f0;
+                              font-weight: 500;
+                              flex: 1;
+                            }
+                          }
+                          
+                          .legend-values {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            
+                            .legend-amount {
+                              font-size: 11px;
+                              font-weight: 600;
+                              color: #f1f5f9;
+                            }
+                            
+                            .legend-percentage {
+                              font-size: 10px;
+                              color: #94a3b8;
+                            }
+                          }
+                        }
+                      }
+                      
+                      .legend-total {
+                        margin-top: 8px;
+                        padding: 8px;
+                        background: rgba(59, 130, 246, 0.1);
+                        border-radius: 6px;
+                        border: 1px solid rgba(59, 130, 246, 0.2);
+                        flex-shrink: 0;
+                        
+                        .total-line {
+                          display: flex;
+                          justify-content: space-between;
+                          align-items: center;
+                          
+                          .total-label {
+                            font-size: 11px;
+                            font-weight: 600;
+                            color: #60a5fa;
+                          }
+                          
+                          .total-amount {
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #f1f5f9;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
         
+        // Card de resumo na primeira linha
         &.stats-compact {
-          min-height: 200px;
+          flex: 1;
+          max-height: 100%;
+          min-height: 300px;
+          
+          .compact-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+          }
+        }
         }
         
         .compact-header {
@@ -248,7 +460,7 @@
               padding: 4px 6px;
               background: rgba(15, 23, 42, 0.4);
               border-radius: 6px;
-              font-size: 11px;
+              font-size: 13px; // Aumentado de 11px para 13px
               transition: all 0.2s ease;
               border: 1px solid transparent;
               
@@ -260,7 +472,7 @@
               .mini-icon {
                 width: 16px;
                 text-align: center;
-                font-size: 10px;
+                font-size: 12px; // Aumentado de 10px para 12px
                 color: #94a3b8;
               }
               
@@ -274,7 +486,7 @@
               
               .mini-value, .entrada-valor {
                 font-weight: 600;
-                font-size: 10px;
+                font-size: 12px; // Aumentado de 10px para 12px
                 color: #f1f5f9;
               }
               
@@ -333,13 +545,13 @@
               }
               
               .stat-number {
-                font-size: 18px;
+                font-size: 22px; // Aumentado de 18px para 22px
                 font-weight: 700;
                 color: #3b82f6;
               }
               
               .stat-label {
-                font-size: 10px;
+                font-size: 12px; // Aumentado de 10px para 12px
                 opacity: 0.8;
                 text-transform: uppercase;
                 color: #94a3b8;
@@ -348,16 +560,16 @@
           }
         }
         
-        // Estilos para a seção de alertas (agora fora do compact-content)
+        // Estilos para a seção de alertas compacta e descritiva
         .alerts-section {
-          margin-top: 6px;
+          margin-top: 4px;
           padding: 6px;
           border-top: 1px solid rgba(148, 163, 184, 0.2);
           border-radius: 4px;
           flex-shrink: 0;
           
           &.compact {
-            margin-top: 4px;
+            margin-top: 2px;
             padding: 4px;
           }
           
@@ -368,36 +580,97 @@
             margin-bottom: 4px;
             
             .alerts-title {
-              font-size: 9px;
+              font-size: 11px; // Aumentado de 9px para 11px
               font-weight: 600;
               color: #f59e0b;
               text-transform: uppercase;
             }
             
             .alerts-count {
-              background: rgba(245, 158, 11, 0.2);
+              background: rgba(245, 158, 11, 0.3);
               color: #f59e0b;
               padding: 1px 4px;
               border-radius: 8px;
-              font-size: 8px;
-              font-weight: 600;
+              font-size: 10px; // Aumentado de 8px para 10px
+              font-weight: 700;
+              min-width: 14px;
+              text-align: center;
             }
           }
           
           .alerts-list {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 2px;
             
             .alert-item {
               display: flex;
               align-items: center;
-              gap: 6px;
+              gap: 4px;
               padding: 3px 4px;
               background: rgba(15, 23, 42, 0.4);
-              border-radius: 4px;
-              font-size: 8px;
-              border: 1px solid transparent;
+              border-radius: 3px;
+              font-size: 9px; // Aumentado de 7px para 9px
+              border-left: 2px solid transparent;
+              
+              .alert-emoji {
+                font-size: 10px; // Aumentado de 8px para 10px
+                flex-shrink: 0;
+              }
+              
+              .alert-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 1px;
+                min-width: 0;
+                
+                .alert-desc {
+                  font-weight: 600;
+                  color: #e2e8f0;
+                  font-size: 9px; // Aumentado de 7px para 9px
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  line-height: 1;
+                }
+                
+                .alert-date {
+                  font-size: 8px; // Aumentado de 6px para 8px
+                  color: #94a3b8;
+                  line-height: 1;
+                }
+              }
+              
+              .alert-amount {
+                font-weight: 700;
+                font-size: 9px; // Aumentado de 7px para 9px
+                color: #f1f5f9;
+                flex-shrink: 0;
+              }
+              
+              &.vencida {
+                border-left-color: #dc2626;
+                background: rgba(220, 38, 38, 0.1);
+              }
+              
+              &.proxima {
+                border-left-color: #f59e0b;
+                background: rgba(245, 158, 11, 0.1);
+              }
+              
+              &.meta {
+                border-left-color: #3b82f6;
+                background: rgba(59, 130, 246, 0.1);
+              }
+              
+              &.no-alerts {
+                border-left-color: #10b981;
+                background: rgba(16, 185, 129, 0.1);
+              }
+            }
+          }
+        }
               transition: all 0.2s ease;
               
               &:hover {
@@ -476,7 +749,7 @@
             margin-bottom: 4px;
             
             .entradas-title {
-              font-size: 9px;
+              font-size: 12px; // Aumentado de 9px para 12px
               font-weight: 600;
               color: #10b981;
               text-transform: uppercase;
@@ -494,7 +767,7 @@
               display: flex;
               justify-content: space-between;
               align-items: center;
-              font-size: 8px;
+              font-size: 11px; // Aumentado de 8px para 11px
               color: #f1f5f9;
               padding: 2px 4px;
               background: rgba(15, 23, 42, 0.4);
@@ -523,7 +796,7 @@
               padding: 2px 4px;
               background: rgba(16, 185, 129, 0.1);
               border-radius: 3px;
-              font-size: 8px;
+              font-size: 11px; // Aumentado de 8px para 11px
               
               .entrada-fonte-compact {
                 color: #cbd5e1;
@@ -537,15 +810,11 @@
               .entrada-valor-compact {
                 color: #10b981;
                 font-weight: 600;
-                font-size: 8px;
+                font-size: 11px; // Aumentado de 8px para 11px
               }
             }
           }
         }
-      }
-    }
-  }
-}
 
 // ===== LAYOUT CLÁSSICO DARK =====
 .dashboard-container[data-theme="classico"] {

@@ -38,9 +38,11 @@
     </div>
 
     <!-- Grid compacto principal -->
-    <div class="compact-grid">
-      <!-- Card de despesas com alertas integrados -->
-      <div class="compact-card despesas-compact">
+    <div class="compact-layout">
+      <!-- Primeira linha: Cards de despesas e resumo -->
+      <div class="compact-grid-top">
+        <!-- Card de despesas com alertas integrados -->
+        <div class="compact-card despesas-compact">
         <div class="compact-header">
           <h4>📋 Despesas</h4>
           <span class="count-badge">{{ despesasDoMes.length }}</span>
@@ -59,58 +61,58 @@
           </div>
         </div>
         
-        <!-- Seção de alertas (movida para cima e compactada) -->
+        <!-- Seção de alertas compacta e descritiva -->
         <div class="alerts-section compact">
           <div class="alerts-header">
             <span class="alerts-title">⚠️ Alertas</span>
-            <span class="alerts-count">{{ getTotalAlertas() }}</span>
+            <span class="alerts-count" *ngIf="getTotalAlertas() > 0">{{ getTotalAlertas() }}</span>
           </div>
           
-          <!-- Alertas detalhados -->
+          <!-- Alertas mais descritivos e compactos -->
           <div class="alerts-list">
             <!-- Despesas vencidas -->
-            <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="alert-item vencida">
-              <div class="alert-icon">🔴</div>
-              <div class="alert-content">
-                <div class="alert-title">{{ despesa.descricao }}</div>
-                <div class="alert-detail">Venceu em {{ formatarData(despesa.dataVencimento) }}</div>
+            <div *ngFor="let despesa of despesasVencidas.slice(0, 1)" class="alert-item vencida">
+              <span class="alert-emoji">🔴</span>
+              <div class="alert-info">
+                <span class="alert-desc">{{ despesa.descricao }}</span>
+                <span class="alert-date">Venceu {{ getDiasVencimento(despesa) }}</span>
               </div>
-              <div class="alert-value">{{ formatarMoeda(despesa.valor) }}</div>
+              <span class="alert-amount">{{ formatarMoeda(despesa.valor) }}</span>
             </div>
             
             <!-- Despesas próximas ao vencimento -->
-            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="alert-item proxima">
-              <div class="alert-icon">🟡</div>
-              <div class="alert-content">
-                <div class="alert-title">{{ despesa.descricao }}</div>
-                <div class="alert-detail">Vence em {{ formatarData(despesa.dataVencimento) }}</div>
+            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 1)" class="alert-item proxima">
+              <span class="alert-emoji">🟡</span>
+              <div class="alert-info">
+                <span class="alert-desc">{{ despesa.descricao }}</span>
+                <span class="alert-date">Vence {{ getDiasParaVencimento(despesa) }}</span>
               </div>
-              <div class="alert-value">{{ formatarMoeda(despesa.valor) }}</div>
+              <span class="alert-amount">{{ formatarMoeda(despesa.valor) }}</span>
+            </div>
+            
+            <!-- Meta de gastos -->
+            <div *ngIf="getPercentualGastoMes() > 80" class="alert-item meta">
+              <span class="alert-emoji">📊</span>
+              <div class="alert-info">
+                <span class="alert-desc">Meta de gastos</span>
+                <span class="alert-date">{{ getPercentualGastoMes() }}% usado</span>
+              </div>
+              <span class="alert-amount">{{ formatarMoeda(resumo.totalDespesas) }}</span>
             </div>
             
             <!-- Quando não há alertas -->
             <div *ngIf="getTotalAlertas() === 0" class="alert-item no-alerts">
-              <div class="alert-icon">✅</div>
-              <div class="alert-content">
-                <div class="alert-title">Tudo em dia!</div>
-                <div class="alert-detail">Nenhuma despesa pendente</div>
+              <span class="alert-emoji">✅</span>
+              <div class="alert-info">
+                <span class="alert-desc">Tudo em dia!</span>
+                <span class="alert-date">Nenhuma pendência</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Card de gráfico -->
-      <div class="compact-card chart-compact">
-        <div class="compact-header">
-          <h4>📊 Categorias</h4>
-        </div>
-        <div class="compact-content">
-          <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
-        </div>
-      </div>
-
-      <!-- Card de resumo com entradas integradas -->
+        <!-- Card de resumo com entradas integradas -->
       <div class="compact-card stats-compact">
         <div class="compact-header">
           <h4>📈 Resumo</h4>
@@ -143,6 +145,20 @@
                 <span class="entrada-valor-compact">{{ formatarMoeda(entrada.valor) }}</span>
               </div>
             </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      
+      <!-- Segunda linha: Gráfico ocupando toda a largura -->
+      <div class="compact-grid-bottom">
+        <div class="compact-card chart-compact full-width">
+          <div class="compact-header">
+            <h4>📊 Despesas por Categoria</h4>
+            <span class="chart-summary">{{ despesasPorCategoria.length }} categorias</span>
+          </div>
+          <div class="compact-content chart-layout">
+            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
           </div>
         </div>
       </div>
