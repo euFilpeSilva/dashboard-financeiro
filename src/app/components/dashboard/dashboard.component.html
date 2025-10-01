@@ -58,16 +58,25 @@
             </div>
           </div>
           
-          <!-- Seção de alertas integrada - TEMPORARIAMENTE SIMPLIFICADA -->
+          <!-- Seção de alertas integrada - SEMPRE VISÍVEL PARA DEBUG -->
           <div class="alerts-section">
             <div class="alerts-header">
               <span class="alerts-title">⚠️ Alertas ({{ getTotalAlertas() }})</span>
             </div>
+            
+            <!-- Debug info -->
+            <div class="simple-alert" style="color: #f59e0b;">
+              Total: {{ getTotalAlertas() }} | Vencidas: {{ despesasVencidas.length }} | Próximas: {{ despesasProximasVencimento.length }}
+            </div>
+            
             <div class="simple-alert" *ngIf="despesasVencidas.length > 0">
-              {{ despesasVencidas.length }} despesas vencidas
+              🔴 {{ despesasVencidas.length }} despesas vencidas
             </div>
             <div class="simple-alert" *ngIf="despesasProximasVencimento.length > 0">
-              {{ despesasProximasVencimento.length }} próximas ao vencimento  
+              🟡 {{ despesasProximasVencimento.length }} próximas ao vencimento  
+            </div>
+            <div class="simple-alert" *ngIf="getPercentualGastoMes() > 80">
+              📊 Meta de gastos: {{ getPercentualGastoMes() }}% do orçamento
             </div>
             <div class="simple-alert" *ngIf="getTotalAlertas() === 0">
               ✅ Todas as despesas em dia!

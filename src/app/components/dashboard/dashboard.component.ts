@@ -219,6 +219,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(entradas => {
         this.todasEntradas = entradas; // Armazenar para uso na visualização detalhada
+        this.filtrarEntradasDoMesAtual(entradas); // Para o layout compacto
       });
 
     // Carregar dados mensais
@@ -313,6 +314,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Usar os dados já disponíveis nas propriedades locais
     this.filtrarDadosPorMes(this.todasDespesas);
     this.filtrarEntradasPorMes(this.todasEntradas);
+    this.filtrarEntradasDoMesAtual(this.todasEntradas); // Para o layout compacto
   }
 
   private filtrarDadosPorMes(despesas: Despesa[]): void {
@@ -373,6 +375,42 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Recalcular resumo após carregar entradas
     this.calcularResumoMesDetalhado();
+  }
+
+  // Nova função para filtrar entradas do mês atual (layout compacto)
+  private filtrarEntradasDoMesAtual(entradas: any[]): void {
+    const agora = new Date();
+    const mesAtual = agora.getMonth() + 1;
+    const anoAtual = agora.getFullYear();
+    
+    this.entradasDoMes = entradas.filter(entrada => {
+      let dataEntrada: Date;
+      
+      // Lidar com diferentes formatos de data
+      if (entrada.data instanceof Date) {
+        dataEntrada = entrada.data;
+      } else if (typeof entrada.data === 'string') {
+        dataEntrada = new Date(entrada.data);
+      } else if (entrada.data && (entrada.data as any).toDate) {
+        // Firestore Timestamp
+        dataEntrada = (entrada.data as any).toDate();
+      } else {
+        return false;
+      }
+      
+      const mesData = dataEntrada.getMonth() + 1;
+      const anoData = dataEntrada.getFullYear();
+      
+      return mesData === mesAtual && anoData === anoAtual;
+    });
+    
+    console.log('Debug Entradas do Mês Atual:', {
+      totalEntradas: entradas.length,
+      entradasDoMesAtual: this.entradasDoMes.length,
+      mesAtual,
+      anoAtual,
+      entradas: this.entradasDoMes
+    });
   }
 
   private calcularResumoMesDetalhado(): void {
