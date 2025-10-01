@@ -645,4 +645,41 @@ export class DashboardComponent implements OnInit, OnDestroy {
   voltarAoDashboard(): void {
     this.showDadosMensais = false;
   }
+
+  // Funções para o card de alertas
+  getTotalAlertas(): number {
+    const vencidas = this.despesasVencidas.length;
+    const proximas = this.despesasProximasVencimento.length;
+    const metaExcedida = this.getPercentualGastoMes() > 80 ? 1 : 0;
+    return vencidas + proximas + metaExcedida;
+  }
+
+  getDiasVencimento(despesa: Despesa): string {
+    const hoje = new Date();
+    const vencimento = new Date(despesa.dataVencimento);
+    const diferenca = Math.floor((hoje.getTime() - vencimento.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diferenca === 0) return 'hoje';
+    if (diferenca === 1) return 'há 1 dia';
+    return `há ${diferenca} dias`;
+  }
+
+  getDiasParaVencimento(despesa: Despesa): string {
+    const hoje = new Date();
+    const vencimento = new Date(despesa.dataVencimento);
+    const diferenca = Math.floor((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diferenca === 0) return 'hoje';
+    if (diferenca === 1) return '1 dia';
+    return `${diferenca} dias`;
+  }
+
+  getPercentualGastoMes(): number {
+    // Calcular um orçamento estimado baseado nas entradas ou um valor fixo
+    const orcamentoEstimado = this.resumo.totalEntradas > 0 
+      ? this.resumo.totalEntradas * 0.8 // 80% das entradas como orçamento
+      : 5000; // Valor padrão se não houver entradas
+    
+    return Math.round((this.resumo.totalDespesas / orcamentoEstimado) * 100);
+  }
 }
