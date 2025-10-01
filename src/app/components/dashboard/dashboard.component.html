@@ -18,6 +18,142 @@
       </div>
     </div>
 
+    <!-- Visualização Detalhada (Mês Específico) -->
+    <div *ngIf="visualizacaoAtiva.id === 'detalhada'" class="visualizacao-detalhada">
+      
+      <!-- Seletores de Mês e Ano -->
+      <div class="seletores-periodo">
+        <div class="seletor-grupo">
+          <label>Mês:</label>
+          <select [(ngModel)]="mesSelecionado" (change)="alterarMesSelecionado()" class="select-periodo">
+            <option *ngFor="let mes of meses" [value]="mes.valor">{{ mes.nome }}</option>
+          </select>
+        </div>
+        
+        <div class="seletor-grupo">
+          <label>Ano:</label>
+          <select [(ngModel)]="anoSelecionado" (change)="alterarAnoSelecionado()" class="select-periodo">
+            <option *ngFor="let ano of anos" [value]="ano">{{ ano }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Resumo do Mês -->
+      <div class="resumo-mes-detalhado">
+        <h3>📊 {{ getNomeMesSelecionado() }} de {{ anoSelecionado }}</h3>
+        
+        <div class="cards-resumo-mes">
+          <div class="card-resumo entradas">
+            <div class="icone">💰</div>
+            <div class="conteudo">
+              <span class="label">Entradas</span>
+              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.totalEntradas) }}</span>
+            </div>
+          </div>
+          
+          <div class="card-resumo despesas">
+            <div class="icone">💸</div>
+            <div class="conteudo">
+              <span class="label">Despesas</span>
+              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.totalDespesas) }}</span>
+            </div>
+          </div>
+          
+          <div class="card-resumo saldo" [ngClass]="resumoMesDetalhado.saldo >= 0 ? 'positivo' : 'negativo'">
+            <div class="icone">{{ resumoMesDetalhado.saldo >= 0 ? '📈' : '📉' }}</div>
+            <div class="conteudo">
+              <span class="label">Saldo</span>
+              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.saldo) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status das Despesas -->
+        <div class="status-despesas">
+          <div class="status-item pagas">
+            <span class="numero">{{ resumoMesDetalhado.despesasPagas }}</span>
+            <span class="label">Pagas</span>
+          </div>
+          <div class="status-item pendentes">
+            <span class="numero">{{ resumoMesDetalhado.despesasPendentes }}</span>
+            <span class="label">Pendentes</span>
+          </div>
+          <div class="status-item vencidas">
+            <span class="numero">{{ resumoMesDetalhado.despesasVencidas }}</span>
+            <span class="label">Vencidas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categorias do Mês -->
+      <div class="categorias-mes-detalhado" *ngIf="categoriasMesDetalhado.length > 0">
+        <h4>💳 Despesas por Categoria</h4>
+        <div class="categorias-lista">
+          <div *ngFor="let categoria of categoriasMesDetalhado" class="categoria-item">
+            <div class="categoria-info">
+              <span class="categoria-nome">{{ categoria.categoria.icon }} {{ categoria.categoria.nome }}</span>
+              <span class="categoria-quantidade">({{ categoria.quantidade }} itens)</span>
+            </div>
+            <div class="categoria-valores">
+              <span class="categoria-valor">{{ formatarMoeda(categoria.valor) }}</span>
+              <span class="categoria-percentual">{{ categoria.percentual.toFixed(1) }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Listas Detalhadas -->
+      <div class="listas-detalhadas">
+        
+        <!-- Lista de Entradas do Mês -->
+        <div class="lista-entradas" *ngIf="entradasDoMesDetalhado.length > 0">
+          <h4>💰 Entradas de {{ getNomeMesSelecionado() }}</h4>
+          <div class="itens-lista">
+            <div *ngFor="let entrada of entradasDoMesDetalhado" class="item-entrada">
+              <div class="item-info">
+                <span class="item-descricao">{{ entrada.descricao }}</span>
+                <span class="item-fonte">{{ entrada.fonte }}</span>
+              </div>
+              <div class="item-valores">
+                <span class="item-data">{{ entrada.data | date:'dd/MM' }}</span>
+                <span class="item-valor entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lista de Despesas do Mês -->
+        <div class="lista-despesas" *ngIf="despesasDoMesDetalhado.length > 0">
+          <h4>💸 Despesas de {{ getNomeMesSelecionado() }}</h4>
+          <div class="itens-lista">
+            <div *ngFor="let despesa of despesasDoMesDetalhado" class="item-despesa">
+              <div class="item-info">
+                <span class="item-descricao">{{ despesa.descricao }}</span>
+                <span class="item-categoria">{{ despesa.categoria.icon }} {{ despesa.categoria.nome }}</span>
+              </div>
+              <div class="item-valores">
+                <span class="item-data">{{ despesa.dataVencimento | date:'dd/MM' }}</span>
+                <span class="item-status" [ngClass]="despesa.paga ? 'pago' : 'pendente'">
+                  {{ despesa.paga ? '✅' : '⏳' }}
+                </span>
+                <span class="item-valor despesa-valor">{{ formatarMoeda(despesa.valor) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensagem quando não há dados -->
+        <div *ngIf="entradasDoMesDetalhado.length === 0 && despesasDoMesDetalhado.length === 0" class="sem-dados">
+          <div class="sem-dados-icone">📭</div>
+          <h4>Nenhum dado encontrado</h4>
+          <p>Não há entradas ou despesas registradas para {{ getNomeMesSelecionado() }} de {{ anoSelecionado }}.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Visualização Resumida (mantém o conteúdo existente) -->
+    <div *ngIf="visualizacaoAtiva.id === 'resumida'">
+
     <!-- Gráfico Comparativo -->
     <section class="grafico-comparativo">
       <h3>Comparativo Mensal - Entradas vs Despesas</h3>
@@ -67,6 +203,8 @@
         </div>
       </div>
     </section>
+
+    </div> <!-- Fim da visualização resumida -->
   </div>
 
   <!-- Conteúdo do Dashboard -->

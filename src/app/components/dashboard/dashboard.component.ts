@@ -50,6 +50,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
   despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
+  
+  // Propriedades para armazenar todos os dados
+  todasDespesas: Despesa[] = [];
+  todasEntradas: any[] = [];
   periodoAtual: PeriodoFinanceiro = { mes: 0, ano: 0, descricao: '' };
   
   // Novos dados para seção mensal
@@ -77,7 +81,46 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   visualizacaoAtiva: VisualizacaoTipo = this.tiposVisualizacao[0];
 
-  constructor(private despesaService: DespesaService, private router: Router, private themeService: ThemeService) {}
+  // Propriedades para visualização detalhada
+  mesSelecionado: number = new Date().getMonth() + 1;
+  anoSelecionado: number = new Date().getFullYear();
+  despesasDoMesDetalhado: Despesa[] = [];
+  entradasDoMesDetalhado: any[] = [];
+  resumoMesDetalhado = {
+    totalEntradas: 0,
+    totalDespesas: 0,
+    saldo: 0,
+    despesasPagas: 0,
+    despesasPendentes: 0,
+    despesasVencidas: 0
+  };
+  categoriasMesDetalhado: DespesaPorCategoria[] = [];
+
+  // Opções de meses e anos
+  meses = [
+    { valor: 1, nome: 'Janeiro' },
+    { valor: 2, nome: 'Fevereiro' },
+    { valor: 3, nome: 'Março' },
+    { valor: 4, nome: 'Abril' },
+    { valor: 5, nome: 'Maio' },
+    { valor: 6, nome: 'Junho' },
+    { valor: 7, nome: 'Julho' },
+    { valor: 8, nome: 'Agosto' },
+    { valor: 9, nome: 'Setembro' },
+    { valor: 10, nome: 'Outubro' },
+    { valor: 11, nome: 'Novembro' },
+    { valor: 12, nome: 'Dezembro' }
+  ];
+  
+  anos: number[] = [];
+
+  constructor(private despesaService: DespesaService, private router: Router, private themeService: ThemeService) {
+    // Gerar lista de anos (últimos 5 anos + próximos 2 anos)
+    const anoAtual = new Date().getFullYear();
+    for (let i = anoAtual - 5; i <= anoAtual + 2; i++) {
+      this.anos.push(i);
+    }
+  }
 
   ngOnInit(): void {
     this.carregarDados();
@@ -146,6 +189,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(despesas => {
         this.despesasDoMes = despesas;
+        this.todasDespesas = despesas; // Armazenar para uso na visualização detalhada
+      });
+
+    // Carregar todas as entradas
+    this.despesaService.entradas$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(entradas => {
+        this.todasEntradas = entradas; // Armazenar para uso na visualização detalhada
       });
 
     // Carregar dados mensais
@@ -202,6 +253,154 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   alterarVisualizacao(tipo: VisualizacaoTipo): void {
     this.visualizacaoAtiva = tipo;
+    
+    // Se for visualização detalhada, carregar dados do mês específico
+    if (tipo.id === 'detalhada') {
+      this.carregarDadosMesDetalhado();
+    }
+  }
+
+  // === MÉTODOS PARA VISUALIZAÇÃO DETALHADA ===
+
+  alterarMesSelecionado(): void {
+    // Garantir que sejam números (ngModel retorna strings)
+    this.mesSelecionado = Number(this.mesSelecionado);
+    this.anoSelecionado = Number(this.anoSelecionado);
+    
+    this.carregarDadosMesDetalhado();
+  }
+
+  alterarAnoSelecionado(): void {
+    // Garantir que seja número (ngModel retorna strings)
+    this.anoSelecionado = Number(this.anoSelecionado);
+    
+    this.carregarDadosMesDetalhado();
+  }
+
+  carregarDadosMesDetalhado(): void {
+    if (this.todasDespesas.length === 0 && this.todasEntradas.length === 0) {
+      // Se os dados ainda não foram carregados, aguardar um pouco e tentar novamente
+      setTimeout(() => {
+        if (this.todasDespesas.length > 0 || this.todasEntradas.length > 0) {
+          this.carregarDadosMesDetalhado();
+        }
+      }, 500);
+      return;
+    }
+    
+    // Usar os dados já disponíveis nas propriedades locais
+    this.filtrarDadosPorMes(this.todasDespesas);
+    this.filtrarEntradasPorMes(this.todasEntradas);
+  }
+
+  private filtrarDadosPorMes(despesas: Despesa[]): void {
+    // Filtrar despesas do mês/ano selecionado
+    this.despesasDoMesDetalhado = despesas.filter(despesa => {
+      let dataVencimento: Date;
+      
+      // Lidar com diferentes formatos de data
+      if (despesa.dataVencimento instanceof Date) {
+        dataVencimento = despesa.dataVencimento;
+      } else if (typeof despesa.dataVencimento === 'string') {
+        dataVencimento = new Date(despesa.dataVencimento);
+      } else if (despesa.dataVencimento && (despesa.dataVencimento as any).toDate) {
+        // Firestore Timestamp
+        dataVencimento = (despesa.dataVencimento as any).toDate();
+      } else {
+        return false;
+      }
+      
+      const mesData = dataVencimento.getMonth() + 1;
+      const anoData = dataVencimento.getFullYear();
+      
+      return mesData === this.mesSelecionado && anoData === this.anoSelecionado;
+    });
+
+    // Calcular resumo do mês
+    this.calcularResumoMesDetalhado();
+    
+    // Calcular categorias do mês
+    this.calcularCategoriasMesDetalhado();
+  }
+
+  private filtrarEntradasPorMes(entradas: any[]): void {
+    // Filtrar entradas do mês/ano selecionado
+    this.entradasDoMesDetalhado = entradas.filter(entrada => {
+      let dataEntrada: Date;
+      
+      // Lidar com diferentes formatos de data
+      if (entrada.data instanceof Date) {
+        dataEntrada = entrada.data;
+      } else if (typeof entrada.data === 'string') {
+        dataEntrada = new Date(entrada.data);
+      } else if (entrada.data && (entrada.data as any).toDate) {
+        // Firestore Timestamp
+        dataEntrada = (entrada.data as any).toDate();
+      } else {
+        return false;
+      }
+      
+      const mesData = dataEntrada.getMonth() + 1;
+      const anoData = dataEntrada.getFullYear();
+      
+      return mesData === this.mesSelecionado && anoData === this.anoSelecionado;
+    });
+
+    // Recalcular resumo após carregar entradas
+    this.calcularResumoMesDetalhado();
+  }
+
+  private calcularResumoMesDetalhado(): void {
+    const totalDespesas = this.despesasDoMesDetalhado.reduce((total, despesa) => total + despesa.valor, 0);
+    const totalEntradas = this.entradasDoMesDetalhado.reduce((total, entrada) => total + entrada.valor, 0);
+    
+    const despesasPagas = this.despesasDoMesDetalhado.filter(d => d.paga).length;
+    const despesasPendentes = this.despesasDoMesDetalhado.filter(d => !d.paga && new Date(d.dataVencimento) >= new Date()).length;
+    const despesasVencidas = this.despesasDoMesDetalhado.filter(d => !d.paga && new Date(d.dataVencimento) < new Date()).length;
+
+    this.resumoMesDetalhado = {
+      totalEntradas,
+      totalDespesas,
+      saldo: totalEntradas - totalDespesas,
+      despesasPagas,
+      despesasPendentes,
+      despesasVencidas
+    };
+  }
+
+  private calcularCategoriasMesDetalhado(): void {
+    const categoriasMap = new Map<string, { categoria: any; valor: number; quantidade: number }>();
+    
+    this.despesasDoMesDetalhado.forEach(despesa => {
+      const categoriaId = despesa.categoria.id;
+      const atual = categoriasMap.get(categoriaId) || { categoria: despesa.categoria, valor: 0, quantidade: 0 };
+      categoriasMap.set(categoriaId, {
+        categoria: despesa.categoria,
+        valor: atual.valor + despesa.valor,
+        quantidade: atual.quantidade + 1
+      });
+    });
+
+    this.categoriasMesDetalhado = Array.from(categoriasMap.entries()).map(([id, dados]) => ({
+      categoria: dados.categoria,
+      valor: dados.valor,
+      quantidade: dados.quantidade,
+      percentual: this.resumoMesDetalhado.totalDespesas > 0 ? (dados.valor / this.resumoMesDetalhado.totalDespesas) * 100 : 0
+    })).sort((a, b) => b.valor - a.valor);
+  }
+
+  private obterCorCategoria(categoria: string): string {
+    const cores = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
+      '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'
+    ];
+    const index = categoria.length % cores.length;
+    return cores[index];
+  }
+
+  getNomeMesSelecionado(): string {
+    const mes = this.meses.find(m => m.valor === this.mesSelecionado);
+    return mes ? mes.nome : '';
   }
 
   // Métodos para gestão de despesas na listagem
