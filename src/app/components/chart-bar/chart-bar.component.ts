@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ElementRef, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, registerables } from 'chart.js';
 import { DespesaService } from '../../services/despesa.service';
@@ -14,16 +14,25 @@ Chart.register(...registerables);
   templateUrl: './chart-bar.component.html',
   styleUrl: './chart-bar.component.scss'
 })
-export class ChartBarComponent implements OnInit, OnDestroy {
-  @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class ChartBarComponent implements OnInit, OnDestroy, AfterViewInit {
+  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   
   private chart?: Chart;
   private subscription?: Subscription;
+  private dados?: GraficoBarra[];
 
   constructor(private despesaService: DespesaService) {}
 
   ngOnInit(): void {
     this.carregarGrafico();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.dados) {
+      setTimeout(() => {
+        this.criarGrafico();
+      }, 0);
+    }
   }
 
   ngOnDestroy(): void {
@@ -38,7 +47,10 @@ export class ChartBarComponent implements OnInit, OnDestroy {
   private carregarGrafico(): void {
     this.subscription = this.despesaService.getGraficoComparativo().subscribe({
       next: (dadosGrafico: GraficoBarra) => {
-        this.criarGrafico(dadosGrafico);
+        this.dados = [dadosGrafico];
+        if (this.chartCanvas) {
+          this.criarGrafico();
+        }
       },
       error: (erro) => {
         console.error('Erro ao carregar dados do gráfico:', erro);
@@ -46,13 +58,28 @@ export class ChartBarComponent implements OnInit, OnDestroy {
     });
   }
 
-  private criarGrafico(dados: GraficoBarra): void {
+  private criarGrafico(): void {
+    if (!this.dados || this.dados.length === 0) {
+      console.warn('Dados do gráfico não disponíveis');
+      return;
+    }
+
+    if (!this.chartCanvas || !this.chartCanvas.nativeElement) {
+      console.warn('Canvas do gráfico não está disponível');
+      return;
+    }
+
     if (this.chart) {
       this.chart.destroy();
     }
 
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.warn('Contexto 2D não disponível');
+      return;
+    }
+
+    const dados = this.dados[0];
 
     const configuracao: ChartConfiguration = {
       type: 'bar',

@@ -346,6 +346,7 @@ export class DespesaService {
   getDadosMensais(): Observable<DadosMensais[]> {
     return new Observable(observer => {
       observer.next(this.gerarDadosHistoricos());
+      observer.complete();
     });
   }
 

@@ -1,4 +1,4 @@
-import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy } from '@angular/core';
+import { Component, Input, AfterViewInit, ViewChild, ElementRef, OnDestroy, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { DespesaPorCategoria } from '../../models/despesa.model';
@@ -12,15 +12,17 @@ Chart.register(...registerables);
   templateUrl: './chart.component.html',
   styleUrl: './chart.component.scss'
 })
-export class ChartComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('chartCanvas', { static: true }) chartCanvas!: ElementRef<HTMLCanvasElement>;
+export class ChartComponent implements AfterViewInit, OnDestroy, OnChanges {
+  @ViewChild('chartCanvas', { static: false }) chartCanvas!: ElementRef<HTMLCanvasElement>;
   @Input() despesasPorCategoria: DespesaPorCategoria[] = [];
   @Input() chartType: ChartType = 'pie';
 
   private chart: Chart | null = null;
 
   ngAfterViewInit(): void {
-    this.createChart();
+    setTimeout(() => {
+      this.createChart();
+    }, 0);
   }
 
   ngOnDestroy(): void {
@@ -32,12 +34,24 @@ export class ChartComponent implements AfterViewInit, OnDestroy {
   ngOnChanges(): void {
     if (this.chart) {
       this.updateChart();
+    } else if (this.chartCanvas && this.despesasPorCategoria.length > 0) {
+      setTimeout(() => {
+        this.createChart();
+      }, 0);
     }
   }
 
   private createChart(): void {
+    if (!this.chartCanvas || !this.chartCanvas.nativeElement) {
+      console.warn('Chart canvas não está disponível');
+      return;
+    }
+
     const ctx = this.chartCanvas.nativeElement.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      console.warn('Contexto 2D não disponível');
+      return;
+    }
 
     const data = this.prepareChartData();
     

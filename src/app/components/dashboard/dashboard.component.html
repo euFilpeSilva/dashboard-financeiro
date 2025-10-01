@@ -31,6 +31,76 @@
     </div>
   </header>
 
+  <!-- Seção Dados por Mês -->
+  <div *ngIf="showDadosMensais" class="dados-mensais">
+    
+    <div class="dados-header">
+      <div class="title-section">
+        <h2>📅 DADOS POR MÊS</h2>
+        <p class="subtitle">Visualize dados organizados por período</p>
+      </div>
+      
+      <div class="visualization-selector">
+        <label>Visualização:</label>
+        <select (change)="alterarVisualizacao(tiposVisualizacao[+($any($event.target).value)])" class="select-visualization">
+          <option *ngFor="let tipo of tiposVisualizacao; let i = index" [value]="i" [selected]="visualizacaoAtiva.id === tipo.id">
+            {{ tipo.nome }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Gráfico Comparativo -->
+    <section class="grafico-comparativo">
+      <h3>Comparativo Mensal - Entradas vs Despesas</h3>
+      <app-chart-bar></app-chart-bar>
+    </section>
+
+    <!-- Cards dos Meses -->
+    <section class="cards-mensais">
+      <div *ngFor="let dado of dadosMensais" class="card-mensal">
+        <div class="card-mensal-header">
+          <h4>{{ dado.descricao }}</h4>
+          <div class="valores-resumo">
+            <span class="entradas-valor">+R$ {{ dado.entradas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
+            <span class="despesas-valor">-R$ {{ dado.despesas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
+          </div>
+        </div>
+        
+        <div class="card-mensal-body">
+          <div class="item-financeiro">
+            <span class="label">Entradas:</span>
+            <span class="valor text-green">{{ formatarMoeda(dado.entradas) }}</span>
+          </div>
+          
+          <div class="item-financeiro">
+            <span class="label">Despesas:</span>
+            <span class="valor text-red">{{ formatarMoeda(dado.despesas) }}</span>
+          </div>
+          
+          <div class="item-financeiro saldo-item">
+            <span class="label">Saldo:</span>
+            <span class="valor" [ngClass]="dado.saldo >= 0 ? 'text-green' : 'text-red'">
+              {{ formatarMoeda(dado.saldo) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Destaques Mensais -->
+    <section class="destaques-mensais">
+      <h3>📈 Destaques do Mês</h3>
+      <div class="destaque-grid">
+        <div *ngFor="let destaque of destaquesMensais" class="destaque-item">
+          <div class="destaque-value">{{ formatarMoeda(destaque.valor) }}</div>
+          <div class="destaque-label">{{ destaque.descricao }}</div>
+          <small class="destaque-mes">{{ destaque.mes }}</small>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <!-- Conteúdo do Dashboard -->
   <div *ngIf="!showDespesaList && !showDadosMensais">
     <!-- Cards de Resumo -->
@@ -260,82 +330,6 @@
     </div>
   </div>
 
-  <!-- Seção Dados por Mês -->
-  <div *ngIf="showDadosMensais" class="dados-mensais">
-    <div class="dados-header">
-      <div class="title-section">
-        <h2>📅 DADOS POR MÊS</h2>
-        <p class="subtitle">Visualize dados organizados por período</p>
-      </div>
-      
-      <div class="visualization-selector">
-        <label>Visualização:</label>
-        <select (change)="alterarVisualizacao(tiposVisualizacao[+($any($event.target).value)])" class="select-visualization">
-          <option *ngFor="let tipo of tiposVisualizacao; let i = index" [value]="i" [selected]="visualizacaoAtiva.id === tipo.id">
-            {{ tipo.nome }}
-          </option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Gráfico Comparativo -->
-    <section class="grafico-comparativo">
-      <h3>Comparativo Mensal - Entradas vs Despesas</h3>
-      <app-chart-bar></app-chart-bar>
-    </section>
-
-    <!-- Cards dos Meses -->
-    <section class="cards-mensais">
-      <div *ngFor="let dado of dadosMensais" class="card-mensal">
-        <div class="card-mensal-header">
-          <h4>{{ dado.descricao }}</h4>
-          <div class="valores-resumo">
-            <span class="entradas-valor">+R$ {{ dado.entradas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
-            <span class="despesas-valor">-R$ {{ dado.despesas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
-          </div>
-        </div>
-        
-        <div class="card-mensal-body">
-          <div class="item-financeiro">
-            <span class="label">Entradas:</span>
-            <span class="valor text-green">{{ formatarMoeda(dado.entradas) }}</span>
-          </div>
-          
-          <div class="item-financeiro">
-            <span class="label">Despesas:</span>
-            <span class="valor text-red">{{ formatarMoeda(dado.despesas) }}</span>
-          </div>
-          
-          <div class="item-financeiro saldo-item">
-            <span class="label">Saldo:</span>
-            <span class="valor" [ngClass]="dado.saldo >= 0 ? 'text-green' : 'text-red'">
-              {{ formatarMoeda(dado.saldo) }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Cards de Destaque -->
-    <section class="cards-destaque">
-      <div *ngFor="let destaque of destaquesMensais" class="card-destaque" [ngClass]="'card-' + destaque.tipo">
-        <div class="destaque-icon">
-          <span *ngIf="destaque.tipo === 'entrada'">💰</span>
-          <span *ngIf="destaque.tipo === 'despesa'">💳</span>
-          <span *ngIf="destaque.tipo === 'melhor-saldo'">📈</span>
-          <span *ngIf="destaque.tipo === 'pior-saldo'">📉</span>
-        </div>
-        
-        <div class="destaque-content">
-          <h4>{{ destaque.descricao }}</h4>
-          <p class="destaque-valor" [style.color]="destaque.cor">
-            {{ formatarMoeda(destaque.valor) }}
-          </p>
-          <small class="destaque-mes">{{ destaque.mes }}</small>
-        </div>
-      </div>
-    </section>
-  </div>
 
   <!-- Conteúdo da Gestão de Despesas -->
   <div *ngIf="showDespesaList" class="despesa-management">

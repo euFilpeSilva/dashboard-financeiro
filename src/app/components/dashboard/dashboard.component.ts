@@ -128,6 +128,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.despesaService.getDadosMensais()
       .pipe(takeUntil(this.destroy$))
       .subscribe(dados => {
+        console.log('Dados mensais carregados:', dados);
         this.dadosMensais = dados;
       });
 
@@ -135,6 +136,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.despesaService.getDestaquesMensais()
       .pipe(takeUntil(this.destroy$))
       .subscribe(destaques => {
+        console.log('Destaques mensais carregados:', destaques);
         this.destaquesMensais = destaques;
       });
   }
@@ -168,8 +170,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   mostrarDadosMensais(): void {
+    console.log('Clicou em Dados por Mês');
+    console.log('dadosMensais:', this.dadosMensais);
+    console.log('destaquesMensais:', this.destaquesMensais);
     this.showDadosMensais = true;
     this.showDespesaList = false;
+    console.log('showDadosMensais agora é:', this.showDadosMensais);
   }
 
   voltarDashboard(): void {
