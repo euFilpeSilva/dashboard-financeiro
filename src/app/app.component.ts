@@ -21,10 +21,12 @@ export class AppComponent implements OnInit, OnDestroy {
   constructor(private authService: AuthService) {}
 
   ngOnInit(): void {
-    this.authService.currentUser$
+    // Observar mudanças no estado de autenticação para controlar a navbar
+    this.authService.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        this.isAuthenticated = !!user;
+      .subscribe(isAuthenticated => {
+        console.log('🔄 App: Estado de autenticação mudou:', isAuthenticated);
+        this.isAuthenticated = isAuthenticated;
       });
   }
 

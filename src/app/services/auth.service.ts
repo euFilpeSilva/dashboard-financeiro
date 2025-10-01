@@ -56,11 +56,6 @@ export class AuthService {
       }
       this.loadingSubject.next(false);
     });
-    
-    // Verificar persistência imediata
-    this.afAuth.onAuthStateChanged((user) => {
-      console.log('🔧 onAuthStateChanged chamado:', user ? user.email : 'sem usuário');
-    });
   }
 
   // Login com email e senha

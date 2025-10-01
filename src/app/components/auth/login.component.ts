@@ -1,10 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { FirebaseDebugComponent } from '../firebase-debug/firebase-debug.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
+import { Subject, takeUntil, filter } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -13,7 +14,7 @@ import { DataDebugComponent } from '../data-debug/data-debug.component';
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
   email = '';
   password = '';
   loading = false;
@@ -23,6 +24,9 @@ export class LoginComponent implements OnInit {
   // Modo: 'login' ou 'register'
   mode: 'login' | 'register' = 'login';
   displayName = '';
+  
+  private destroy$ = new Subject<void>();
+  private isLoggingIn = false;
 
   constructor(
     private authService: AuthService,
@@ -33,7 +37,25 @@ export class LoginComponent implements OnInit {
     // Verificar se já está autenticado
     if (this.authService.isAuthenticated()) {
       this.router.navigate(['/dashboard']);
+      return;
     }
+    
+    // Observar mudanças no estado de autenticação para navegar automaticamente
+    this.authService.currentUser$
+      .pipe(
+        takeUntil(this.destroy$),
+        filter(user => !!user && this.isLoggingIn) // Só navegar se estiver fazendo login
+      )
+      .subscribe(() => {
+        console.log('🔄 Usuário autenticado, navegando para dashboard...');
+        this.isLoggingIn = false;
+        this.router.navigate(['/dashboard']);
+      });
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   async onSubmit() {
@@ -44,6 +66,7 @@ export class LoginComponent implements OnInit {
 
     this.loading = true;
     this.error = '';
+    this.isLoggingIn = true;
 
     try {
       if (this.mode === 'login') {
@@ -52,9 +75,11 @@ export class LoginComponent implements OnInit {
         await this.authService.signUpWithEmail(this.email, this.password, this.displayName);
       }
       
-      this.router.navigate(['/dashboard']);
+      // A navegação será feita pelo observable no ngOnInit
+      console.log('🔄 Login realizado, aguardando navegação automática...');
     } catch (error: any) {
       this.error = error.message;
+      this.isLoggingIn = false;
     } finally {
       this.loading = false;
     }
@@ -63,12 +88,16 @@ export class LoginComponent implements OnInit {
   async signInWithGoogle() {
     this.loading = true;
     this.error = '';
+    this.isLoggingIn = true;
 
     try {
       await this.authService.signInWithGoogle();
-      this.router.navigate(['/dashboard']);
+      
+      // A navegação será feita pelo observable no ngOnInit
+      console.log('🔄 Login Google realizado, aguardando navegação automática...');
     } catch (error: any) {
       this.error = error.message;
+      this.isLoggingIn = false;
     } finally {
       this.loading = false;
     }
