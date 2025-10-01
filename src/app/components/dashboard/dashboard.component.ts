@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
-import { ThemeService } from '../../services/theme.service';
+import { ThemeService, LayoutConfig } from '../../services/theme.service';
 import { 
   ResumoDashboard, 
   DespesaPorCategoria, 
@@ -17,6 +17,7 @@ import {
 import { ChartComponent } from '../chart/chart.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
+import { CustomizableLayoutComponent } from '../customizable-layout/customizable-layout.component';
 
 // Interface para as anotações
 interface Anotacao {
@@ -29,12 +30,25 @@ interface Anotacao {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, DataDebugComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, DataDebugComponent, CustomizableLayoutComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  
+  // Propriedades de layout e tema
+  currentTheme = 'compacto';
+  currentLayout: LayoutConfig = {
+    tipo: 'compacto',
+    gridColumns: 4,
+    cardSpacing: 'small',
+    cardSize: 'small',
+    showSidebar: false,
+    sidebarPosition: 'left',
+    customizable: false,
+    enableDragDrop: false
+  };
   
   resumo: ResumoDashboard = {
     totalEntradas: 0,
@@ -86,6 +100,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   anoSelecionado: number = new Date().getFullYear();
   despesasDoMesDetalhado: Despesa[] = [];
   entradasDoMesDetalhado: any[] = [];
+  entradasDoMes: any[] = []; // Alias para compatibilidade
   resumoMesDetalhado = {
     totalEntradas: 0,
     totalDespesas: 0,
@@ -123,6 +138,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Escutar mudanças de tema
+    this.themeService.temaAtual$.pipe(takeUntil(this.destroy$))
+      .subscribe(tema => {
+        this.currentTheme = tema;
+        this.currentLayout = this.themeService.layoutAtual;
+      });
+
     this.carregarDados();
     this.carregarPreferenciaVisualizacao();
     this.carregarAnotacoes();
@@ -345,6 +367,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       return mesData === this.mesSelecionado && anoData === this.anoSelecionado;
     });
+
+    // Sync com alias para compatibilidade
+    this.entradasDoMes = [...this.entradasDoMesDetalhado];
 
     // Recalcular resumo após carregar entradas
     this.calcularResumoMesDetalhado();
@@ -596,5 +621,28 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // TrackBy para performance na lista de anotações
   trackByAnotacao(index: number, anotacao: Anotacao): string {
     return anotacao.id;
+  }
+
+  // Métodos para o layout compacto
+  mostrarDetalhes(): void {
+    this.showDadosMensais = true;
+  }
+
+  adicionarEntrada(): void {
+    // Navegar para página de gestão de entradas ou abrir modal
+    this.router.navigate(['/gestao']);
+  }
+
+  contarDespesasPagas(): number {
+    return this.despesasDoMes.filter(d => d.paga).length;
+  }
+
+  contarDespesasPendentes(): number {
+    return this.despesasDoMes.filter(d => !d.paga).length;
+  }
+
+  // Adicionar método para voltar ao dashboard
+  voltarAoDashboard(): void {
+    this.showDadosMensais = false;
   }
 }

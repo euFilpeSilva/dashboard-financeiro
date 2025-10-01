@@ -1,8 +1,263 @@
-<div class="dashboard">
-  <!-- Seção Dados por Mês -->
-  <div *ngIf="showDadosMensais" class="dados-mensais">
+<div class="dashboard-container" [attr.data-theme]="currentTheme">
+  
+  <!-- Layout Customizável (Draggable/Widgets) -->
+  <div *ngIf="currentTheme === 'customizavel' && !showDadosMensais" class="layout-container layout-customizavel">
+    <app-customizable-layout></app-customizable-layout>
+  </div>
+
+  <!-- Layout Compacto (Status Bar + Grid) -->
+  <div *ngIf="currentTheme === 'compacto' && !showDadosMensais" class="layout-container layout-compacto">
+    <!-- Status bar compacto -->
+    <div class="compact-status-bar">
+      <div class="status-metrics">
+        <div class="metric entrada">
+          <span class="metric-icon">💰</span>
+          <span class="metric-value">{{ formatarMoeda(resumo.totalEntradas) }}</span>
+          <span class="metric-label">Entradas</span>
+        </div>
+        <div class="metric despesa">
+          <span class="metric-icon">💸</span>
+          <span class="metric-value">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+          <span class="metric-label">Despesas</span>
+        </div>
+        <div class="metric saldo">
+          <span class="metric-icon">📊</span>
+          <span class="metric-value" [ngClass]="getSaldoClass()">{{ formatarMoeda(resumo.saldoPrevisto) }}</span>
+          <span class="metric-label">Saldo</span>
+        </div>
+        <div class="metric alert" *ngIf="despesasVencidas.length > 0">
+          <span class="metric-icon">⚠️</span>
+          <span class="metric-value">{{ despesasVencidas.length }}</span>
+          <span class="metric-label">Vencidas</span>
+        </div>
+      </div>
+      <div class="status-actions">
+        <button class="compact-btn primary" (click)="irParaGestao()">+ Nova</button>
+        <button class="compact-btn secondary" (click)="mostrarDadosMensais()">Detalhes</button>
+      </div>
+    </div>
+
+    <!-- Grid compacto principal -->
+    <div class="compact-grid">
+      <!-- Card de despesas -->
+      <div class="compact-card despesas-compact">
+        <div class="compact-header">
+          <h4>📋 Despesas</h4>
+          <span class="count-badge">{{ despesasDoMes.length }}</span>
+        </div>
+        <div class="compact-content">
+          <div class="despesas-mini-list">
+            <div *ngFor="let despesa of despesasDoMes.slice(0, 6)" 
+                 class="mini-despesa" 
+                 [ngClass]="getDespesaStatusClass(despesa)">
+              <span class="mini-icon">{{ despesa.categoria.icon }}</span>
+              <span class="mini-desc">{{ despesa.descricao }}</span>
+              <span class="mini-value">{{ formatarMoeda(despesa.valor) }}</span>
+              <span class="mini-status">{{ despesa.paga ? '✅' : '⏳' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de gráfico -->
+      <div class="compact-card chart-compact">
+        <div class="compact-header">
+          <h4>📊 Categorias</h4>
+        </div>
+        <div class="compact-content">
+          <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
+        </div>
+      </div>
+
+      <!-- Card de estatísticas -->
+      <div class="compact-card stats-compact">
+        <div class="compact-header">
+          <h4>📈 Resumo</h4>
+        </div>
+        <div class="compact-content">
+          <div class="stats-grid">
+            <div class="stat-item">
+              <span class="stat-number">{{ contarDespesasPagas() }}</span>
+              <span class="stat-label">Pagas</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ contarDespesasPendentes() }}</span>
+              <span class="stat-label">Pendentes</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ despesasVencidas.length }}</span>
+              <span class="stat-label">Vencidas</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de entradas -->
+      <div class="compact-card entradas-compact">
+        <div class="compact-header">
+          <h4>💰 Entradas</h4>
+          <span class="count-badge">{{ entradasDoMes.length }}</span>
+        </div>
+        <div class="compact-content">
+          <div class="entradas-mini-list">
+            <div *ngFor="let entrada of entradasDoMes.slice(0, 4)" class="mini-entrada">
+              <span class="entrada-fonte">{{ entrada.fonte }}</span>
+              <span class="entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Layout Clássico (Sidebar + Main Content) -->
+  <div *ngIf="currentTheme === 'classico' && !showDadosMensais" class="layout-container layout-classico">
+    <div class="classico-wrapper">
+      
+      <!-- Sidebar clássica -->
+      <aside class="classico-sidebar">
+        <!-- Resumo financeiro -->
+        <div class="sidebar-section financial-summary">
+          <h3>💰 Resumo Financeiro</h3>
+          <div class="summary-items">
+            <div class="summary-item entrada">
+              <div class="summary-icon">💵</div>
+              <div class="summary-data">
+                <span class="summary-label">Entradas</span>
+                <span class="summary-value positive">{{ formatarMoeda(resumo.totalEntradas) }}</span>
+              </div>
+            </div>
+            <div class="summary-item despesa">
+              <div class="summary-icon">💳</div>
+              <div class="summary-data">
+                <span class="summary-label">Despesas</span>
+                <span class="summary-value negative">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+              </div>
+            </div>
+            <div class="summary-item saldo">
+              <div class="summary-icon">📊</div>
+              <div class="summary-data">
+                <span class="summary-label">Saldo</span>
+                <span class="summary-value" [ngClass]="getSaldoClass()">{{ formatarMoeda(resumo.saldoPrevisto) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navegação -->
+        <div class="sidebar-section navigation">
+          <h3>🧭 Navegação</h3>
+          <div class="nav-buttons">
+            <button class="nav-btn" (click)="irParaGestao()">
+              <span class="nav-icon">📋</span>
+              <span class="nav-text">Gerenciar</span>
+            </button>
+            <button class="nav-btn" (click)="mostrarDadosMensais()">
+              <span class="nav-icon">📈</span>
+              <span class="nav-text">Relatórios</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="sidebar-section alerts" *ngIf="despesasVencidas.length > 0">
+          <h3>⚠️ Alertas</h3>
+          <div class="alert-list">
+            <div *ngFor="let despesa of despesasVencidas.slice(0, 3)" class="alert-item">
+              <span class="alert-badge">VENCIDA</span>
+              <span class="alert-desc">{{ despesa.descricao }}</span>
+              <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="sidebar-section stats">
+          <h3>📊 Estatísticas</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <span class="stat-value">{{ contarDespesasPagas() }}</span>
+              <span class="stat-label">Pagas</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">{{ contarDespesasPendentes() }}</span>
+              <span class="stat-label">Pendentes</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-value">{{ despesasPorCategoria.length }}</span>
+              <span class="stat-label">Categorias</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Conteúdo principal clássico -->
+      <main class="classico-main">
+        <!-- Header -->
+        <div class="main-header">
+          <div class="header-content">
+            <h1>Dashboard Financeiro</h1>
+            <p>Visão geral de suas finanças pessoais</p>
+          </div>
+          <div class="header-actions">
+            <button class="classico-btn primary" (click)="irParaGestao()">+ Nova Despesa</button>
+            <button class="classico-btn secondary" (click)="mostrarDadosMensais()">📊 Relatórios</button>
+          </div>
+        </div>
+
+        <!-- Conteúdo principal -->
+        <div class="main-content">
+          <!-- Gráfico principal -->
+          <div class="main-card chart-card">
+            <div class="card-header">
+              <h3>📊 Distribuição por Categoria</h3>
+            </div>
+            <div class="card-content">
+              <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
+            </div>
+          </div>
+
+          <!-- Tabela de despesas -->
+          <div class="main-card table-card">
+            <div class="card-header">
+              <h3>📋 Registro de Despesas</h3>
+              <span class="card-subtitle">{{ despesasDoMes.length }} registros</span>
+            </div>
+            <div class="card-content">
+              <div class="classico-table">
+                <div class="table-header">
+                  <span>Categoria</span>
+                  <span>Descrição</span>
+                  <span>Valor</span>
+                  <span>Status</span>
+                </div>
+                <div *ngFor="let despesa of despesasDoMes.slice(0, 8)" 
+                     class="table-row" 
+                     [ngClass]="getDespesaStatusClass(despesa)">
+                  <span class="table-cell categoria">
+                    <span class="categoria-icon">{{ despesa.categoria.icon }}</span>
+                    {{ despesa.categoria.nome }}
+                  </span>
+                  <span class="table-cell">{{ despesa.descricao }}</span>
+                  <span class="table-cell">{{ formatarMoeda(despesa.valor) }}</span>
+                  <span class="table-cell">
+                    <span class="status-badge" [ngClass]="despesa.paga ? 'paid' : 'pending'">
+                      {{ despesa.paga ? 'Pago' : 'Pendente' }}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Visualização de Dados Mensais (comum para todos os layouts) -->
+  <div *ngIf="showDadosMensais" class="monthly-data-view">
     
-    <div class="dados-header">
+    <div class="monthly-header">
       <div class="title-section">
         <h2>📅 DADOS POR MÊS</h2>
         <p class="subtitle">Visualize dados organizados por período</p>
@@ -16,199 +271,189 @@
           </option>
         </select>
       </div>
+
+      <!-- Botão para voltar ao dashboard -->
+      <div class="back-section">
+        <button class="back-btn" (click)="voltarAoDashboard()">← Voltar ao Dashboard</button>
+      </div>
     </div>
 
-    <!-- Visualização Detalhada (Mês Específico) -->
-    <div *ngIf="visualizacaoAtiva.id === 'detalhada'" class="visualizacao-detalhada">
+    <!-- Visualização Detalhada -->
+    <div *ngIf="visualizacaoAtiva.id === 'detalhada'" class="detailed-view">
       
-      <!-- Seletores de Mês e Ano -->
-      <div class="seletores-periodo">
-        <div class="seletor-grupo">
+      <!-- Seletores de período -->
+      <div class="period-selectors">
+        <div class="selector-group">
           <label>Mês:</label>
-          <select [(ngModel)]="mesSelecionado" (change)="alterarMesSelecionado()" class="select-periodo">
+          <select [(ngModel)]="mesSelecionado" (change)="alterarMesSelecionado()" class="period-select">
             <option *ngFor="let mes of meses" [value]="mes.valor">{{ mes.nome }}</option>
           </select>
         </div>
         
-        <div class="seletor-grupo">
+        <div class="selector-group">
           <label>Ano:</label>
-          <select [(ngModel)]="anoSelecionado" (change)="alterarAnoSelecionado()" class="select-periodo">
+          <select [(ngModel)]="anoSelecionado" (change)="alterarAnoSelecionado()" class="period-select">
             <option *ngFor="let ano of anos" [value]="ano">{{ ano }}</option>
           </select>
         </div>
       </div>
 
-      <!-- Resumo do Mês -->
-      <div class="resumo-mes-detalhado">
+      <!-- Resumo do mês -->
+      <div class="month-summary">
         <h3>📊 {{ getNomeMesSelecionado() }} de {{ anoSelecionado }}</h3>
         
-        <div class="cards-resumo-mes">
-          <div class="card-resumo entradas">
-            <div class="icone">💰</div>
-            <div class="conteudo">
-              <span class="label">Entradas</span>
-              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.totalEntradas) }}</span>
+        <div class="summary-cards">
+          <div class="summary-card entrada">
+            <div class="card-icon">💰</div>
+            <div class="card-content">
+              <span class="card-label">Entradas</span>
+              <span class="card-value">{{ formatarMoeda(resumoMesDetalhado.totalEntradas) }}</span>
             </div>
           </div>
           
-          <div class="card-resumo despesas">
-            <div class="icone">💸</div>
-            <div class="conteudo">
-              <span class="label">Despesas</span>
-              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.totalDespesas) }}</span>
+          <div class="summary-card despesa">
+            <div class="card-icon">💸</div>
+            <div class="card-content">
+              <span class="card-label">Despesas</span>
+              <span class="card-value">{{ formatarMoeda(resumoMesDetalhado.totalDespesas) }}</span>
             </div>
           </div>
           
-          <div class="card-resumo saldo" [ngClass]="resumoMesDetalhado.saldo >= 0 ? 'positivo' : 'negativo'">
-            <div class="icone">{{ resumoMesDetalhado.saldo >= 0 ? '📈' : '📉' }}</div>
-            <div class="conteudo">
-              <span class="label">Saldo</span>
-              <span class="valor">{{ formatarMoeda(resumoMesDetalhado.saldo) }}</span>
+          <div class="summary-card saldo" [ngClass]="resumoMesDetalhado.saldo >= 0 ? 'positive' : 'negative'">
+            <div class="card-icon">{{ resumoMesDetalhado.saldo >= 0 ? '📈' : '📉' }}</div>
+            <div class="card-content">
+              <span class="card-label">Saldo</span>
+              <span class="card-value">{{ formatarMoeda(resumoMesDetalhado.saldo) }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Status das Despesas -->
-        <div class="status-despesas">
-          <div class="status-item pagas">
-            <span class="numero">{{ resumoMesDetalhado.despesasPagas }}</span>
-            <span class="label">Pagas</span>
+        <!-- Status das despesas -->
+        <div class="status-summary">
+          <div class="status-item paid">
+            <span class="status-number">{{ resumoMesDetalhado.despesasPagas }}</span>
+            <span class="status-label">Pagas</span>
           </div>
-          <div class="status-item pendentes">
-            <span class="numero">{{ resumoMesDetalhado.despesasPendentes }}</span>
-            <span class="label">Pendentes</span>
+          <div class="status-item pending">
+            <span class="status-number">{{ resumoMesDetalhado.despesasPendentes }}</span>
+            <span class="status-label">Pendentes</span>
           </div>
-          <div class="status-item vencidas">
-            <span class="numero">{{ resumoMesDetalhado.despesasVencidas }}</span>
-            <span class="label">Vencidas</span>
+          <div class="status-item overdue">
+            <span class="status-number">{{ resumoMesDetalhado.despesasVencidas }}</span>
+            <span class="status-label">Vencidas</span>
           </div>
         </div>
       </div>
 
-      <!-- Categorias do Mês -->
-      <div class="categorias-mes-detalhado" *ngIf="categoriasMesDetalhado.length > 0">
-        <h4>💳 Despesas por Categoria</h4>
-        <div class="categorias-lista">
-          <div *ngFor="let categoria of categoriasMesDetalhado" class="categoria-item">
-            <div class="categoria-info">
-              <span class="categoria-nome">{{ categoria.categoria.icon }} {{ categoria.categoria.nome }}</span>
-              <span class="categoria-quantidade">({{ categoria.quantidade }} itens)</span>
-            </div>
-            <div class="categoria-valores">
-              <span class="categoria-valor">{{ formatarMoeda(categoria.valor) }}</span>
-              <span class="categoria-percentual">{{ categoria.percentual.toFixed(1) }}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Listas Detalhadas -->
-      <div class="listas-detalhadas">
+      <!-- Listas detalhadas -->
+      <div class="detailed-lists">
         
-        <!-- Lista de Entradas do Mês -->
-        <div class="lista-entradas" *ngIf="entradasDoMesDetalhado.length > 0">
+        <!-- Lista de entradas -->
+        <div class="list-section" *ngIf="entradasDoMesDetalhado.length > 0">
           <h4>💰 Entradas de {{ getNomeMesSelecionado() }}</h4>
-          <div class="itens-lista">
-            <div *ngFor="let entrada of entradasDoMesDetalhado" class="item-entrada">
+          <div class="items-list">
+            <div *ngFor="let entrada of entradasDoMesDetalhado" class="list-item entrada">
               <div class="item-info">
-                <span class="item-descricao">{{ entrada.descricao }}</span>
-                <span class="item-fonte">{{ entrada.fonte }}</span>
+                <span class="item-description">{{ entrada.descricao }}</span>
+                <span class="item-source">{{ entrada.fonte }}</span>
               </div>
-              <div class="item-valores">
-                <span class="item-data">{{ entrada.data | date:'dd/MM' }}</span>
-                <span class="item-valor entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
+              <div class="item-values">
+                <span class="item-date">{{ entrada.data | date:'dd/MM' }}</span>
+                <span class="item-amount positive">{{ formatarMoeda(entrada.valor) }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Lista de Despesas do Mês -->
-        <div class="lista-despesas" *ngIf="despesasDoMesDetalhado.length > 0">
+        <!-- Lista de despesas -->
+        <div class="list-section" *ngIf="despesasDoMesDetalhado.length > 0">
           <h4>💸 Despesas de {{ getNomeMesSelecionado() }}</h4>
-          <div class="itens-lista">
-            <div *ngFor="let despesa of despesasDoMesDetalhado" class="item-despesa">
+          <div class="items-list">
+            <div *ngFor="let despesa of despesasDoMesDetalhado" class="list-item despesa">
               <div class="item-info">
-                <span class="item-descricao">{{ despesa.descricao }}</span>
-                <span class="item-categoria">{{ despesa.categoria.icon }} {{ despesa.categoria.nome }}</span>
+                <span class="item-description">{{ despesa.descricao }}</span>
+                <span class="item-category">{{ despesa.categoria.icon }} {{ despesa.categoria.nome }}</span>
               </div>
-              <div class="item-valores">
-                <span class="item-data">{{ despesa.dataVencimento | date:'dd/MM' }}</span>
-                <span class="item-status" [ngClass]="despesa.paga ? 'pago' : 'pendente'">
+              <div class="item-values">
+                <span class="item-date">{{ despesa.dataVencimento | date:'dd/MM' }}</span>
+                <span class="item-status" [ngClass]="despesa.paga ? 'paid' : 'pending'">
                   {{ despesa.paga ? '✅' : '⏳' }}
                 </span>
-                <span class="item-valor despesa-valor">{{ formatarMoeda(despesa.valor) }}</span>
+                <span class="item-amount negative">{{ formatarMoeda(despesa.valor) }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Mensagem quando não há dados -->
-        <div *ngIf="entradasDoMesDetalhado.length === 0 && despesasDoMesDetalhado.length === 0" class="sem-dados">
-          <div class="sem-dados-icone">📭</div>
+        <!-- Mensagem sem dados -->
+        <div *ngIf="entradasDoMesDetalhado.length === 0 && despesasDoMesDetalhado.length === 0" class="no-data">
+          <div class="no-data-icon">📭</div>
           <h4>Nenhum dado encontrado</h4>
           <p>Não há entradas ou despesas registradas para {{ getNomeMesSelecionado() }} de {{ anoSelecionado }}.</p>
         </div>
       </div>
     </div>
 
-    <!-- Visualização Resumida (mantém o conteúdo existente) -->
-    <div *ngIf="visualizacaoAtiva.id === 'resumida'">
+    <!-- Visualização Resumida -->
+    <div *ngIf="visualizacaoAtiva.id === 'resumida'" class="summary-view">
+      <!-- Conteúdo da visualização resumida mantido do original -->
+      
+      <!-- Gráfico Comparativo -->
+      <section class="comparative-chart">
+        <h3>Comparativo Mensal - Entradas vs Despesas</h3>
+        <app-chart-bar></app-chart-bar>
+      </section>
 
-    <!-- Gráfico Comparativo -->
-    <section class="grafico-comparativo">
-      <h3>Comparativo Mensal - Entradas vs Despesas</h3>
-      <app-chart-bar></app-chart-bar>
-    </section>
-
-    <!-- Cards dos Meses -->
-    <section class="cards-mensais">
-      <div *ngFor="let dado of dadosMensais" class="card-mensal">
-        <div class="card-mensal-header">
-          <h4>{{ dado.descricao }}</h4>
-          <div class="valores-resumo">
-            <span class="entradas-valor">+R$ {{ dado.entradas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
-            <span class="despesas-valor">-R$ {{ dado.despesas.toLocaleString('pt-BR', {minimumFractionDigits: 2}) }}</span>
-          </div>
-        </div>
-        
-        <div class="card-mensal-body">
-          <div class="item-financeiro">
-            <span class="label">Entradas:</span>
-            <span class="valor text-green">{{ formatarMoeda(dado.entradas) }}</span>
+      <!-- Cards mensais -->
+      <section class="monthly-cards">
+        <div *ngFor="let dado of dadosMensais" class="monthly-card">
+          <div class="monthly-header">
+            <h4>{{ dado.descricao }}</h4>
+            <div class="monthly-values">
+              <span class="income">+{{ formatarMoeda(dado.entradas) }}</span>
+              <span class="expense">-{{ formatarMoeda(dado.despesas) }}</span>
+            </div>
           </div>
           
-          <div class="item-financeiro">
-            <span class="label">Despesas:</span>
-            <span class="valor text-red">{{ formatarMoeda(dado.despesas) }}</span>
-          </div>
-          
-          <div class="item-financeiro saldo-item">
-            <span class="label">Saldo:</span>
-            <span class="valor" [ngClass]="dado.saldo >= 0 ? 'text-green' : 'text-red'">
-              {{ formatarMoeda(dado.saldo) }}
-            </span>
+          <div class="monthly-body">
+            <div class="financial-item">
+              <span class="label">Entradas:</span>
+              <span class="value positive">{{ formatarMoeda(dado.entradas) }}</span>
+            </div>
+            
+            <div class="financial-item">
+              <span class="label">Despesas:</span>
+              <span class="value negative">{{ formatarMoeda(dado.despesas) }}</span>
+            </div>
+            
+            <div class="financial-item balance">
+              <span class="label">Saldo:</span>
+              <span class="value" [ngClass]="dado.saldo >= 0 ? 'positive' : 'negative'">
+                {{ formatarMoeda(dado.saldo) }}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- Destaques Mensais -->
-    <section class="destaques-mensais">
-      <h3>📈 Destaques do Mês</h3>
-      <div class="destaque-grid">
-        <div *ngFor="let destaque of destaquesMensais" class="destaque-item">
-          <div class="destaque-value">{{ formatarMoeda(destaque.valor) }}</div>
-          <div class="destaque-label">{{ destaque.descricao }}</div>
-          <small class="destaque-mes">{{ destaque.mes }}</small>
+      <!-- Destaques mensais -->
+      <section class="monthly-highlights">
+        <h3>📈 Destaques do Mês</h3>
+        <div class="highlights-grid">
+          <div *ngFor="let destaque of destaquesMensais" class="highlight-item">
+            <div class="highlight-value">{{ formatarMoeda(destaque.valor) }}</div>
+            <div class="highlight-label">{{ destaque.descricao }}</div>
+            <small class="highlight-month">{{ destaque.mes }}</small>
+          </div>
         </div>
-      </div>
-    </section>
-
-    </div> <!-- Fim da visualização resumida -->
+      </section>
+    </div>
   </div>
 
-  <!-- Conteúdo do Dashboard -->
-  <div *ngIf="!showDadosMensais">
+  <!-- Dashboard Principal (apenas quando não está na visualização mensal) -->
+  <div *ngIf="!showDadosMensais && currentTheme !== 'compacto' && currentTheme !== 'classico' && currentTheme !== 'customizavel'" class="main-dashboard">
+    <!-- Conteúdo do dashboard padrão mantido para compatibilidade -->
+    
     <!-- Cards de Resumo -->
     <section class="summary-cards">
       <div class="card card-entradas">
@@ -236,12 +481,8 @@
       </div>
     </section>
 
-    <!-- Período Atual -->
-    <!-- <section class="periodo-atual">
-      <h3>{{ periodoAtual.descricao }}</h3>
-    </section> -->
-
-        <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
+    <!-- Alertas -->
+    <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
       <h4>🔔 Próximas ao Vencimento</h4>
       <div *ngFor="let despesa of despesasProximasVencimento" class="alerta-item proxima">
         {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }} - Vence: {{ formatarData(despesa.dataVencimento) }}
