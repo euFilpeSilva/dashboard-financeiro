@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, map } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AuthService } from './auth.service';
-import { Despesa, Categoria } from '../models/despesa.model';
+import { Despesa, Categoria, Entrada } from '../models/despesa.model';
 import firebase from 'firebase/compat/app';
 
 export interface FirestoreDespesa {
@@ -14,6 +14,17 @@ export interface FirestoreDespesa {
   dataPagamento?: firebase.firestore.Timestamp | null;
   paga: boolean;
   prioridade: 'baixa' | 'media' | 'alta';
+  userId: string;
+  createdAt: firebase.firestore.Timestamp;
+  updatedAt: firebase.firestore.Timestamp;
+}
+
+export interface FirestoreEntrada {
+  id?: string;
+  descricao: string;
+  valor: number;
+  fonte: string;
+  data: firebase.firestore.Timestamp;
   userId: string;
   createdAt: firebase.firestore.Timestamp;
   updatedAt: firebase.firestore.Timestamp;
@@ -33,10 +44,12 @@ export interface FirestoreAnotacao {
 })
 export class FirestoreService {
   private despesasSubject = new BehaviorSubject<Despesa[]>([]);
+  private entradasSubject = new BehaviorSubject<Entrada[]>([]);
   private anotacoesSubject = new BehaviorSubject<any[]>([]);
   private loadingSubject = new BehaviorSubject<boolean>(false);
 
   public readonly despesas$ = this.despesasSubject.asObservable();
+  public readonly entradas$ = this.entradasSubject.asObservable();
   public readonly anotacoes$ = this.anotacoesSubject.asObservable();
   public readonly loading$ = this.loadingSubject.asObservable();
 
@@ -63,16 +76,28 @@ export class FirestoreService {
 
     // Listener para despesas
     this.firestore.collection<FirestoreDespesa>('despesas', ref => 
-      ref.where('userId', '==', userId).orderBy('dataVencimento', 'asc')
+      ref.where('userId', '==', userId)
     ).valueChanges({ idField: 'id' }).subscribe(despesas => {
       const mappedDespesas = despesas.map(data => this.mapFirestoreToDespesa(data));
+      // Ordenar no frontend temporariamente
+      mappedDespesas.sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
       this.despesasSubject.next(mappedDespesas);
       this.loadingSubject.next(false);
     });
 
+    // Listener para entradas
+    this.firestore.collection<FirestoreEntrada>('entradas', ref => 
+      ref.where('userId', '==', userId)
+    ).valueChanges({ idField: 'id' }).subscribe(entradas => {
+      const mappedEntradas = entradas.map(data => this.mapFirestoreToEntrada(data));
+      // Ordenar no frontend temporariamente
+      mappedEntradas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+      this.entradasSubject.next(mappedEntradas);
+    });
+
     // Listener para anotações
     this.firestore.collection<FirestoreAnotacao>('anotacoes', ref => 
-      ref.where('userId', '==', userId).orderBy('createdAt', 'desc')
+      ref.where('userId', '==', userId)
     ).valueChanges({ idField: 'id' }).subscribe(anotacoes => {
       const mappedAnotacoes = anotacoes.map(data => ({
         id: data.id,
@@ -80,12 +105,15 @@ export class FirestoreService {
         cor: data.cor,
         dataHora: data.createdAt.toDate()
       }));
+      // Ordenar no frontend temporariamente
+      mappedAnotacoes.sort((a, b) => b.dataHora.getTime() - a.dataHora.getTime());
       this.anotacoesSubject.next(mappedAnotacoes);
     });
   }
 
   private stopRealtimeListeners(): void {
     this.despesasSubject.next([]);
+    this.entradasSubject.next([]);
     this.anotacoesSubject.next([]);
     this.loadingSubject.next(false);
   }
@@ -153,6 +181,50 @@ export class FirestoreService {
     }
 
     await this.firestore.collection('despesas').doc(id).update(updates);
+  }
+
+  // === MÉTODOS PARA ENTRADAS ===
+
+  async adicionarEntrada(entrada: Omit<Entrada, 'id'>): Promise<string> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const firestoreEntrada: Omit<FirestoreEntrada, 'id'> = {
+      descricao: entrada.descricao,
+      valor: entrada.valor,
+      fonte: entrada.fonte,
+      data: firebase.firestore.Timestamp.fromDate(entrada.data),
+      userId: user.uid,
+      createdAt: firebase.firestore.Timestamp.now(),
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    const docRef = await this.firestore.collection('entradas').add(firestoreEntrada);
+    return docRef.id;
+  }
+
+  async atualizarEntrada(id: string, updates: Partial<Entrada>): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const firestoreUpdates: any = {
+      ...updates,
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    // Converter data para Timestamp se necessário
+    if (updates.data) {
+      firestoreUpdates.data = firebase.firestore.Timestamp.fromDate(updates.data);
+    }
+
+    await this.firestore.collection('entradas').doc(id).update(firestoreUpdates);
+  }
+
+  async removerEntrada(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    await this.firestore.collection('entradas').doc(id).delete();
   }
 
   // === MÉTODOS PARA ANOTAÇÕES ===
@@ -239,9 +311,23 @@ export class FirestoreService {
     };
   }
 
+  private mapFirestoreToEntrada(data: FirestoreEntrada): Entrada {
+    return {
+      id: data.id!,
+      descricao: data.descricao,
+      valor: data.valor,
+      fonte: data.fonte,
+      data: data.data.toDate()
+    };
+  }
+
   // Obter dados atuais (para compatibilidade)
   getDespesas(): Despesa[] {
     return this.despesasSubject.value;
+  }
+
+  getEntradas(): Entrada[] {
+    return this.entradasSubject.value;
   }
 
   getAnotacoes(): any[] {

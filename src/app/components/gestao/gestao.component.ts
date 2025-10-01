@@ -161,10 +161,6 @@ export class GestaoComponent implements OnInit, OnDestroy {
     }
   }
 
-  voltarDashboard(): void {
-    this.router.navigate(['/dashboard']);
-  }
-
   // === MÉTODOS DE DESPESAS ===
   
   abrirFormularioDespesa(despesa?: Despesa): void {
@@ -231,13 +227,13 @@ export class GestaoComponent implements OnInit, OnDestroy {
     this.showDespesaForm = false;
   }
 
-  salvarEntrada(entradaData: Omit<Entrada, 'id'>): void {
+  async salvarEntrada(entradaData: Omit<Entrada, 'id'>): Promise<void> {
     try {
       if (this.entradaEditando) {
-        this.despesaService.atualizarEntrada(this.entradaEditando.id, entradaData);
+        await this.despesaService.atualizarEntrada(this.entradaEditando.id, entradaData);
         this.toastService.success('Entrada atualizada com sucesso!');
       } else {
-        this.despesaService.adicionarEntrada(entradaData);
+        await this.despesaService.adicionarEntrada(entradaData);
         this.toastService.success('Entrada adicionada com sucesso!');
       }
       this.fecharFormularioEntrada();
@@ -256,9 +252,9 @@ export class GestaoComponent implements OnInit, OnDestroy {
     this.showConfirmation(
       'Excluir Entrada',
       `Tem certeza que deseja excluir a entrada "${entrada.descricao}"?`,
-      () => {
+      async () => {
         try {
-          this.despesaService.removerEntrada(entrada.id);
+          await this.despesaService.removerEntrada(entrada.id);
           this.toastService.success('Entrada excluída com sucesso!');
         } catch (error) {
           console.error('Erro ao excluir entrada:', error);

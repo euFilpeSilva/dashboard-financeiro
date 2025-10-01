@@ -1,36 +1,4 @@
 <div class="dashboard">
-  <header class="dashboard-header">
-    <div class="header-content">
-      <div class="header-left">
-        <h1>💰 PLANEJAMENTO FINANCEIRO</h1>
-        <h2>📊 DASHBOARD FINANCEIRO</h2>
-      </div>
-      
-      <div class="header-right">
-        <div class="theme-selector">
-          <label for="theme-select">Tema:</label>
-          <select id="theme-select" (change)="alterarTema($any($event.target).value)" [value]="temaAtual">
-            <option *ngFor="let tema of temasDisponiveis" [value]="tema.id">
-              {{ tema.nome }}
-            </option>
-          </select>
-        </div>
-      </div>
-    </div>
-    
-    <div class="navigation">
-      <button class="nav-btn" [class.active]="!showDadosMensais" (click)="voltarDashboard()">
-        📊 Dashboard
-      </button>
-      <button class="nav-btn" [class.active]="showDadosMensais" (click)="mostrarDadosMensais()">
-        📅 Dados por Mês
-      </button>
-      <button class="nav-btn nav-btn-gestao" (click)="irParaGestao()">
-        💼 Gestão Financeira
-      </button>
-    </div>
-  </header>
-
   <!-- Seção Dados por Mês -->
   <div *ngIf="showDadosMensais" class="dados-mensais">
     

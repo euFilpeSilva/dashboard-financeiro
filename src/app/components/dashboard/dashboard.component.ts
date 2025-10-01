@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
+import { ThemeService } from '../../services/theme.service';
 import { 
   ResumoDashboard, 
   DespesaPorCategoria, 
@@ -68,14 +69,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   textoEdicao: string = '';
   mostrarMuralAnotacoes: boolean = true;
   
-  // Sistema de temas
-  temaAtual = 'classico';
-  temasDisponiveis = [
-    { id: 'compacto', nome: '📱 Compacto', descricao: 'Layout otimizado' },
-    { id: 'classico', nome: '🎨 Clássico', descricao: 'Layout tradicional' },
-    { id: 'customizavel', nome: '⚙️ Customizável', descricao: 'Layout flexível' }
-  ];
-  
   // Tipos de visualização
   tiposVisualizacao: VisualizacaoTipo[] = [
     { id: 'resumida', nome: 'Resumida (Todos os meses)', descricao: 'Visão geral de todos os meses' },
@@ -84,11 +77,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   visualizacaoAtiva: VisualizacaoTipo = this.tiposVisualizacao[0];
 
-  constructor(private despesaService: DespesaService, private router: Router) {}
+  constructor(private despesaService: DespesaService, private router: Router, private themeService: ThemeService) {}
 
   ngOnInit(): void {
     this.carregarDados();
-    this.carregarTema();
     this.carregarPreferenciaVisualizacao();
     this.carregarAnotacoes();
     
@@ -97,9 +89,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (muralVisivel !== null) {
       this.mostrarMuralAnotacoes = muralVisivel === 'true';
     }
+
+    // Escutar eventos de navegação da navbar
+    window.addEventListener('dashboardNavigation', this.handleNavbarNavigation.bind(this));
+  }
+
+  handleNavbarNavigation(event: any): void {
+    const { showDadosMensais } = event.detail;
+    this.showDadosMensais = showDadosMensais;
   }
 
   ngOnDestroy(): void {
+    window.removeEventListener('dashboardNavigation', this.handleNavbarNavigation.bind(this));
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -199,10 +200,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showDadosMensais = false;
   }
 
-  irParaGestao(): void {
-    this.router.navigate(['/gestao']);
-  }
-
   alterarVisualizacao(tipo: VisualizacaoTipo): void {
     this.visualizacaoAtiva = tipo;
   }
@@ -210,6 +207,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Métodos para gestão de despesas na listagem
   editarDespesa(despesa: Despesa): void {
     // Redireciona para a página de gestão completa
+    this.router.navigate(['/gestao']);
+  }
+
+  irParaGestao(): void {
     this.router.navigate(['/gestao']);
   }
 
@@ -263,60 +264,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       'baixa': 'Baixa'
     };
     return prioridades[prioridade as keyof typeof prioridades] || prioridade;
-  }
-
-  // Métodos de gerenciamento de temas
-  alterarTema(temaId: string): void {
-    this.temaAtual = temaId;
-    this.aplicarTema(temaId);
-    this.salvarTema(temaId);
-  }
-
-  private aplicarTema(temaId: string): void {
-    // Remove classes de tema anteriores
-    document.body.className = document.body.className.replace(/tema-\w+/g, '');
-    document.body.classList.add(`tema-${temaId}`);
-
-    // Aplica variáveis CSS baseadas no tema
-    const root = document.documentElement;
-    
-    switch (temaId) {
-      case 'compacto':
-        root.style.setProperty('--tema-cor-primaria', '#2563eb');
-        root.style.setProperty('--tema-cor-secundaria', '#64748b');
-        root.style.setProperty('--tema-espacamento', '8px');
-        root.style.setProperty('--tema-borda-radius', '4px');
-        root.style.setProperty('--tema-fonte-tamanho', '0.875rem');
-        break;
-      case 'classico':
-        root.style.setProperty('--tema-cor-primaria', '#059669');
-        root.style.setProperty('--tema-cor-secundaria', '#6b7280');
-        root.style.setProperty('--tema-espacamento', '16px');
-        root.style.setProperty('--tema-borda-radius', '8px');
-        root.style.setProperty('--tema-fonte-tamanho', '1rem');
-        break;
-      case 'customizavel':
-        root.style.setProperty('--tema-cor-primaria', '#7c3aed');
-        root.style.setProperty('--tema-cor-secundaria', '#9ca3af');
-        root.style.setProperty('--tema-espacamento', '12px');
-        root.style.setProperty('--tema-borda-radius', '6px');
-        root.style.setProperty('--tema-fonte-tamanho', '1rem');
-        break;
-    }
-  }
-
-  private carregarTema(): void {
-    const temaSalvo = localStorage.getItem('dashboard-tema');
-    if (temaSalvo && this.temasDisponiveis.some(t => t.id === temaSalvo)) {
-      this.temaAtual = temaSalvo;
-      this.aplicarTema(temaSalvo);
-    } else {
-      this.aplicarTema(this.temaAtual);
-    }
-  }
-
-  private salvarTema(temaId: string): void {
-    localStorage.setItem('dashboard-tema', temaId);
   }
 
   // Método para alternar modo de visualização das despesas

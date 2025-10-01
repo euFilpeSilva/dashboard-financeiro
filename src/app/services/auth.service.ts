@@ -157,8 +157,16 @@ export class AuthService {
   // Logout
   async signOut(): Promise<void> {
     try {
+      console.log('🚪 Iniciando logout...');
+      
+      // Limpar estado imediatamente
+      this.currentUserSubject.next(null);
+      this.isAuthenticated$.next(false);
+      
       await this.afAuth.signOut();
+      console.log('✅ Logout realizado com sucesso');
     } catch (error: any) {
+      console.error('❌ Erro no logout:', error);
       throw this.handleAuthError(error);
     }
   }

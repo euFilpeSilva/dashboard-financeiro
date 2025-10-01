@@ -20,7 +20,6 @@ import { AuthService } from './auth.service';
   providedIn: 'root'
 })
 export class DespesaService {
-  private entradasSubject = new BehaviorSubject<Entrada[]>([]);
   private periodoAtualSubject = new BehaviorSubject<PeriodoFinanceiro>({
     mes: new Date().getMonth() + 1,
     ano: new Date().getFullYear(),
@@ -28,7 +27,7 @@ export class DespesaService {
   });
 
   public despesas$ = this.firestoreService.despesas$;
-  public entradas$ = this.entradasSubject.asObservable();
+  public entradas$ = this.firestoreService.entradas$;
   public periodoAtual$ = this.periodoAtualSubject.asObservable();
 
   private migracaoRealizada = false;
@@ -44,7 +43,6 @@ export class DespesaService {
     this.authService.currentUser$.subscribe(async (user) => {
       if (user && !this.migracaoRealizada) {
         await this.verificarMigracao();
-        this.carregarDadosEntradas();
         this.migracaoRealizada = true;
       }
     });
@@ -71,27 +69,6 @@ export class DespesaService {
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
     return `${meses[mes - 1]}/${ano}`;
-  }
-
-  private carregarDadosEntradas(): void {
-    const entradasIniciais: Entrada[] = [
-      {
-        id: '1',
-        descricao: 'Salário',
-        valor: 4500.00,
-        data: new Date(2024, 9, 1),
-        fonte: 'Salário'
-      },
-      {
-        id: '2',
-        descricao: 'Freelance',
-        valor: 800.00,
-        data: new Date(2024, 9, 15),
-        fonte: 'Trabalho Extra'
-      }
-    ];
-
-    this.entradasSubject.next(entradasIniciais);
   }
 
   async adicionarDespesa(despesa: Omit<Despesa, 'id'>): Promise<void> {
@@ -148,25 +125,31 @@ export class DespesaService {
     }
   }
 
-  adicionarEntrada(entrada: Omit<Entrada, 'id'>): void {
-    const novaEntrada: Entrada = {
-      ...entrada,
-      id: Date.now().toString()
-    };
-    const entradasAtuais = this.entradasSubject.value;
-    this.entradasSubject.next([...entradasAtuais, novaEntrada]);
+  async adicionarEntrada(entrada: Omit<Entrada, 'id'>): Promise<void> {
+    try {
+      await this.firestoreService.adicionarEntrada(entrada);
+    } catch (error) {
+      console.error('Erro ao adicionar entrada:', error);
+      throw error;
+    }
   }
 
-  atualizarEntrada(id: string, updates: Partial<Entrada>): void {
-    const entradas = this.entradasSubject.value.map(entrada =>
-      entrada.id === id ? { ...entrada, ...updates } : entrada
-    );
-    this.entradasSubject.next(entradas);
+  async atualizarEntrada(id: string, updates: Partial<Entrada>): Promise<void> {
+    try {
+      await this.firestoreService.atualizarEntrada(id, updates);
+    } catch (error) {
+      console.error('Erro ao atualizar entrada:', error);
+      throw error;
+    }
   }
 
-  removerEntrada(id: string): void {
-    const entradas = this.entradasSubject.value.filter(entrada => entrada.id !== id);
-    this.entradasSubject.next(entradas);
+  async removerEntrada(id: string): Promise<void> {
+    try {
+      await this.firestoreService.removerEntrada(id);
+    } catch (error) {
+      console.error('Erro ao remover entrada:', error);
+      throw error;
+    }
   }
 
   getResumoDashboard(): Observable<ResumoDashboard> {

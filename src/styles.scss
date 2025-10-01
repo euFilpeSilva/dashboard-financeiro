@@ -9,6 +9,7 @@
   // Paleta de cores baseada na imagem
   --bg-primary: #1a1d2e;
   --bg-secondary: #2a2f45;
+  --bg-tertiary: #343a52;
   --bg-card: #1e2337;
   --bg-card-hover: #242842;
   
@@ -40,6 +41,21 @@ body {
   min-height: 100vh;
   color: var(--text-primary);
   overflow-x: hidden;
+}
+
+// Layout principal
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+app-navbar {
+  flex-shrink: 0;
+}
+
+router-outlet + * {
+  flex: 1;
 }
 
 .container {
