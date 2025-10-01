@@ -45,14 +45,14 @@ export class ChartBarComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private carregarGrafico(): void {
-    this.subscription = this.despesaService.getGraficoComparativo().subscribe({
+    this.subscription = this.despesaService.getGraficoBarras().subscribe({
       next: (dadosGrafico: GraficoBarra) => {
         this.dados = [dadosGrafico];
         if (this.chartCanvas) {
           this.criarGrafico();
         }
       },
-      error: (erro) => {
+      error: (erro: any) => {
         console.error('Erro ao carregar dados do gráfico:', erro);
       }
     });

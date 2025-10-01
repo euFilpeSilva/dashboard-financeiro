@@ -13,12 +13,13 @@ import {
   GraficoBarra
 } from '../models/despesa.model';
 import { CATEGORIAS_PADRAO } from '../models/categorias.data';
+import { FirestoreService } from './firestore.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DespesaService {
-  private despesasSubject = new BehaviorSubject<Despesa[]>([]);
   private entradasSubject = new BehaviorSubject<Entrada[]>([]);
   private periodoAtualSubject = new BehaviorSubject<PeriodoFinanceiro>({
     mes: new Date().getMonth() + 1,
@@ -26,12 +27,42 @@ export class DespesaService {
     descricao: this.formatarMesAno(new Date().getMonth() + 1, new Date().getFullYear())
   });
 
-  public despesas$ = this.despesasSubject.asObservable();
+  public despesas$ = this.firestoreService.despesas$;
   public entradas$ = this.entradasSubject.asObservable();
   public periodoAtual$ = this.periodoAtualSubject.asObservable();
 
-  constructor() {
-    this.carregarDadosIniciais();
+  private migracaoRealizada = false;
+
+  constructor(
+    private firestoreService: FirestoreService,
+    private authService: AuthService
+  ) {
+    this.inicializarDados();
+  }
+
+  private async inicializarDados(): Promise<void> {
+    this.authService.currentUser$.subscribe(async (user) => {
+      if (user && !this.migracaoRealizada) {
+        await this.verificarMigracao();
+        this.carregarDadosEntradas();
+        this.migracaoRealizada = true;
+      }
+    });
+  }
+
+  private async verificarMigracao(): Promise<void> {
+    try {
+      const despesasLocal = localStorage.getItem('despesas');
+      const anotacoesLocal = localStorage.getItem('dashboard-anotacoes');
+      
+      if (despesasLocal || anotacoesLocal) {
+        console.log('📦 Iniciando migração de dados do localStorage...');
+        await this.firestoreService.migrarDadosLocalStorage();
+        console.log('✅ Migração concluída com sucesso!');
+      }
+    } catch (error) {
+      console.error('❌ Erro na migração:', error);
+    }
   }
 
   private formatarMesAno(mes: number, ano: number): string {
@@ -42,163 +73,95 @@ export class DespesaService {
     return `${meses[mes - 1]}/${ano}`;
   }
 
-  private carregarDadosIniciais(): void {
-    // Dados de exemplo baseados na imagem fornecida
-    const despesasIniciais: Despesa[] = [
-      {
-        id: '1',
-        descricao: 'Parcela Moto',
-        valor: 1421.74,
-        categoria: CATEGORIAS_PADRAO[0],
-        dataVencimento: new Date(2025, 9, 7), // 07/10
-        prioridade: Prioridade.ALTA,
-        paga: false
-      },
-      {
-        id: '2',
-        descricao: 'Fatura Nubank',
-        valor: 1273.33,
-        categoria: CATEGORIAS_PADRAO[1],
-        dataVencimento: new Date(2025, 9, 11), // 11/10
-        prioridade: Prioridade.ALTA,
-        paga: false
-      },
-      {
-        id: '3',
-        descricao: 'Internet Fixa',
-        valor: 99.90,
-        categoria: CATEGORIAS_PADRAO[6],
-        dataVencimento: new Date(2025, 9, 15), // 15/10
-        prioridade: Prioridade.MEDIA,
-        paga: false
-      },
-      {
-        id: '4',
-        descricao: 'Seguro Moto',
-        valor: 237.49,
-        categoria: CATEGORIAS_PADRAO[4],
-        dataVencimento: new Date(2025, 9, 15), // 15/10
-        prioridade: Prioridade.MEDIA,
-        paga: false
-      },
-      {
-        id: '5',
-        descricao: 'Parcela Consórcio',
-        valor: 907.50,
-        categoria: CATEGORIAS_PADRAO[3],
-        dataVencimento: new Date(2025, 9, 18), // 18/10
-        prioridade: Prioridade.ALTA,
-        paga: false
-      },
-      {
-        id: '6',
-        descricao: 'Repasse Thiago',
-        valor: 110.00,
-        categoria: CATEGORIAS_PADRAO[7],
-        dataVencimento: new Date(2025, 9, 30), // início do mês
-        prioridade: Prioridade.BAIXA,
-        paga: false
-      },
-      {
-        id: '7',
-        descricao: 'Fatura Inter',
-        valor: 1563.23,
-        categoria: CATEGORIAS_PADRAO[2],
-        dataVencimento: new Date(2025, 10, 20), // 20/11 (segunda metade)
-        prioridade: Prioridade.ALTA,
-        paga: false
-      },
-      {
-        id: '8',
-        descricao: 'Pós-graduação',
-        valor: 149.02,
-        categoria: CATEGORIAS_PADRAO[5],
-        dataVencimento: new Date(2025, 10, 22), // 22/11
-        prioridade: Prioridade.MEDIA,
-        paga: false
-      },
-      {
-        id: '9',
-        descricao: 'Internet Móvel',
-        valor: 20.00,
-        categoria: CATEGORIAS_PADRAO[6],
-        dataVencimento: new Date(2025, 10, 25), // início do mês
-        prioridade: Prioridade.BAIXA,
-        paga: false
-      },
-      {
-        id: '10',
-        descricao: 'Sobrancelha/Cabelo',
-        valor: 60.00,
-        categoria: CATEGORIAS_PADRAO[7],
-        dataVencimento: new Date(2025, 10, 30), // A definir
-        prioridade: Prioridade.BAIXA,
-        paga: false
-      }
-    ];
-
+  private carregarDadosEntradas(): void {
     const entradasIniciais: Entrada[] = [
       {
         id: '1',
         descricao: 'Salário',
-        valor: 4130.13,
-        data: new Date(2025, 9, 5),
-        fonte: 'Trabalho Principal'
+        valor: 4500.00,
+        data: new Date(2024, 9, 1),
+        fonte: 'Salário'
       },
       {
         id: '2',
-        descricao: 'Adiantamento Quinzenal',
-        valor: 2364.31,
-        data: new Date(2025, 9, 20),
-        fonte: 'Adiantamento'
-      },
-      {
-        id: '3',
-        descricao: 'Retorno Ticket',
-        valor: 489.09,
-        data: new Date(2025, 9, 25),
-        fonte: 'Reembolso'
+        descricao: 'Freelance',
+        valor: 800.00,
+        data: new Date(2024, 9, 15),
+        fonte: 'Trabalho Extra'
       }
     ];
 
-    this.despesasSubject.next(despesasIniciais);
     this.entradasSubject.next(entradasIniciais);
   }
 
-  // Métodos para gerenciar despesas
-  adicionarDespesa(despesa: Omit<Despesa, 'id'>): void {
-    const novoId = Date.now().toString();
-    const novaDespesa: Despesa = { ...despesa, id: novoId };
-    const despesasAtuais = this.despesasSubject.value;
-    this.despesasSubject.next([...despesasAtuais, novaDespesa]);
+  async adicionarDespesa(despesa: Omit<Despesa, 'id'>): Promise<void> {
+    try {
+      await this.firestoreService.adicionarDespesa(despesa);
+    } catch (error) {
+      console.error('Erro ao adicionar despesa:', error);
+      throw error;
+    }
   }
 
-  editarDespesa(id: string, despesaAtualizada: Partial<Despesa>): void {
-    const despesas = this.despesasSubject.value.map(despesa =>
-      despesa.id === id ? { ...despesa, ...despesaAtualizada } : despesa
-    );
-    this.despesasSubject.next(despesas);
+  async atualizarDespesa(id: string, updates: Partial<Despesa>): Promise<void> {
+    try {
+      await this.firestoreService.atualizarDespesa(id, updates);
+    } catch (error) {
+      console.error('Erro ao atualizar despesa:', error);
+      throw error;
+    }
   }
 
-  removerDespesa(id: string): void {
-    const despesas = this.despesasSubject.value.filter(despesa => despesa.id !== id);
-    this.despesasSubject.next(despesas);
+  async removerDespesa(id: string): Promise<void> {
+    try {
+      await this.firestoreService.removerDespesa(id);
+    } catch (error) {
+      console.error('Erro ao remover despesa:', error);
+      throw error;
+    }
   }
 
-  marcarComoPaga(id: string): void {
-    this.editarDespesa(id, { paga: true, dataPagamento: new Date() });
+  async marcarComoPaga(id: string, paga: boolean = true): Promise<void> {
+    try {
+      await this.firestoreService.marcarComoPaga(id, paga);
+    } catch (error) {
+      console.error('Erro ao marcar como paga:', error);
+      throw error;
+    }
   }
 
-  marcarComoPendente(id: string): void {
-    this.editarDespesa(id, { paga: false, dataPagamento: undefined });
+  async marcarComoPendente(id: string): Promise<void> {
+    try {
+      await this.firestoreService.marcarComoPaga(id, false);
+    } catch (error) {
+      console.error('Erro ao marcar como pendente:', error);
+      throw error;
+    }
   }
 
-  // Métodos para gerenciar entradas
+  async editarDespesa(id: string, updates: Partial<Despesa>): Promise<void> {
+    try {
+      await this.firestoreService.atualizarDespesa(id, updates);
+    } catch (error) {
+      console.error('Erro ao editar despesa:', error);
+      throw error;
+    }
+  }
+
   adicionarEntrada(entrada: Omit<Entrada, 'id'>): void {
-    const novoId = Date.now().toString();
-    const novaEntrada: Entrada = { ...entrada, id: novoId };
+    const novaEntrada: Entrada = {
+      ...entrada,
+      id: Date.now().toString()
+    };
     const entradasAtuais = this.entradasSubject.value;
     this.entradasSubject.next([...entradasAtuais, novaEntrada]);
+  }
+
+  atualizarEntrada(id: string, updates: Partial<Entrada>): void {
+    const entradas = this.entradasSubject.value.map(entrada =>
+      entrada.id === id ? { ...entrada, ...updates } : entrada
+    );
+    this.entradasSubject.next(entradas);
   }
 
   removerEntrada(id: string): void {
@@ -206,21 +169,25 @@ export class DespesaService {
     this.entradasSubject.next(entradas);
   }
 
-  // Observables calculados
   getResumoDashboard(): Observable<ResumoDashboard> {
     return combineLatest([this.despesas$, this.entradas$]).pipe(
       map(([despesas, entradas]) => {
-        const hoje = new Date();
-        const proximoVencimento = new Date();
-        proximoVencimento.setDate(hoje.getDate() + 7); // Próximos 7 dias
-
-        const totalEntradas = entradas.reduce((sum, entrada) => sum + entrada.valor, 0);
-        const totalDespesas = despesas.reduce((sum, despesa) => sum + despesa.valor, 0);
+        const totalDespesas = despesas.reduce((total, despesa) => total + despesa.valor, 0);
+        const totalEntradas = entradas.reduce((total, entrada) => total + entrada.valor, 0);
         const despesasPagas = despesas.filter(d => d.paga).length;
         const despesasPendentes = despesas.filter(d => !d.paga).length;
-        const despesasVencidas = despesas.filter(d => !d.paga && d.dataVencimento < hoje).length;
+        
+        const hoje = new Date();
+        const despesasVencidas = despesas.filter(d => 
+          !d.paga && new Date(d.dataVencimento) < hoje
+        ).length;
+        
+        const proximaSemana = new Date();
+        proximaSemana.setDate(hoje.getDate() + 7);
         const despesasProximasVencimento = despesas.filter(d => 
-          !d.paga && d.dataVencimento >= hoje && d.dataVencimento <= proximoVencimento
+          !d.paga && 
+          new Date(d.dataVencimento) >= hoje && 
+          new Date(d.dataVencimento) <= proximaSemana
         ).length;
 
         return {
@@ -239,34 +206,22 @@ export class DespesaService {
   getDespesasPorCategoria(): Observable<DespesaPorCategoria[]> {
     return this.despesas$.pipe(
       map(despesas => {
-        const categoriaMap = new Map<string, DespesaPorCategoria>();
-        let totalGeral = 0;
-
+        const despesasPorCategoria = new Map<string, { valor: number; quantidade: number; categoria: any }>();
+        
         despesas.forEach(despesa => {
-          const categoriaId = despesa.categoria.id;
-          totalGeral += despesa.valor;
-
-          if (categoriaMap.has(categoriaId)) {
-            const item = categoriaMap.get(categoriaId)!;
-            item.valor += despesa.valor;
-            item.quantidade += 1;
-          } else {
-            categoriaMap.set(categoriaId, {
-              categoria: despesa.categoria,
-              valor: despesa.valor,
-              percentual: 0,
-              quantidade: 1
-            });
-          }
+          const nomeCategoria = despesa.categoria.nome;
+          const atual = despesasPorCategoria.get(nomeCategoria) || { valor: 0, quantidade: 0, categoria: despesa.categoria };
+          atual.valor += despesa.valor;
+          atual.quantidade++;
+          despesasPorCategoria.set(nomeCategoria, atual);
         });
 
-        // Calcular percentuais
-        const resultado = Array.from(categoriaMap.values()).map(item => ({
-          ...item,
-          percentual: totalGeral > 0 ? (item.valor / totalGeral) * 100 : 0
+        return Array.from(despesasPorCategoria.entries()).map(([nome, dados]) => ({
+          categoria: dados.categoria,
+          valor: dados.valor,
+          quantidade: dados.quantidade,
+          percentual: 0
         }));
-
-        return resultado.sort((a, b) => b.valor - a.valor);
       })
     );
   }
@@ -275,7 +230,9 @@ export class DespesaService {
     return this.despesas$.pipe(
       map(despesas => {
         const hoje = new Date();
-        return despesas.filter(despesa => !despesa.paga && despesa.dataVencimento < hoje);
+        return despesas.filter(despesa => 
+          !despesa.paga && new Date(despesa.dataVencimento) < hoje
+        );
       })
     );
   }
@@ -284,169 +241,170 @@ export class DespesaService {
     return this.despesas$.pipe(
       map(despesas => {
         const hoje = new Date();
-        const proximoVencimento = new Date();
-        proximoVencimento.setDate(hoje.getDate() + 7);
+        const proximaSemana = new Date();
+        proximaSemana.setDate(hoje.getDate() + 7);
         
         return despesas.filter(despesa => 
           !despesa.paga && 
-          despesa.dataVencimento >= hoje && 
-          despesa.dataVencimento <= proximoVencimento
+          new Date(despesa.dataVencimento) >= hoje && 
+          new Date(despesa.dataVencimento) <= proximaSemana
         );
       })
     );
   }
 
-  // Métodos para período
-  setPeriodo(mes: number, ano: number): void {
-    this.periodoAtualSubject.next({
-      mes,
-      ano,
-      descricao: this.formatarMesAno(mes, ano)
-    });
-  }
-
-  // Métodos para dados mensais históricos
-  private gerarDadosHistoricos(): DadosMensais[] {
-    return [
-      {
-        mes: 1,
-        ano: 2025,
-        descricao: 'Janeiro de 2025',
-        entradas: 4130.13,
-        despesas: 250.50,
-        saldo: 3879.63
-      },
-      {
-        mes: 10,
-        ano: 2025,
-        descricao: 'Outubro de 2025',
-        entradas: 7003.53,
-        despesas: 2794.97,
-        saldo: 4208.56
-      },
-      {
-        mes: 11,
-        ano: 2025,
-        descricao: 'Novembro de 2025',
-        entradas: 4130.13,
-        despesas: 1521.64,
-        saldo: 2608.49
-      },
-      {
-        mes: 12,
-        ano: 2025,
-        descricao: 'Dezembro de 2025',
-        entradas: 1500.00,
-        despesas: 1200.00,
-        saldo: 300.00
-      }
-    ];
+  getDespesasDoMes(): Observable<Despesa[]> {
+    return this.despesas$.pipe(
+      map(despesas => {
+        const agora = new Date();
+        const mesAtual = agora.getMonth();
+        const anoAtual = agora.getFullYear();
+        
+        return despesas.filter(despesa => {
+          const dataVencimento = new Date(despesa.dataVencimento);
+          return dataVencimento.getMonth() === mesAtual && 
+                 dataVencimento.getFullYear() === anoAtual;
+        });
+      })
+    );
   }
 
   getDadosMensais(): Observable<DadosMensais[]> {
-    return new Observable(observer => {
-      observer.next(this.gerarDadosHistoricos());
-      observer.complete();
-    });
-  }
+    return combineLatest([this.despesas$, this.entradas$]).pipe(
+      map(([despesas, entradas]) => {
+        const meses = new Map<string, DadosMensais>();
+        
+        despesas.forEach(despesa => {
+          const data = new Date(despesa.dataVencimento);
+          const chave = `${data.getFullYear()}-${data.getMonth()}`;
+          const mesAno = this.formatarMesAno(data.getMonth() + 1, data.getFullYear());
+          
+          if (!meses.has(chave)) {
+            meses.set(chave, {
+              mes: data.getMonth() + 1,
+              ano: data.getFullYear(),
+              descricao: mesAno,
+              entradas: 0,
+              despesas: 0,
+              saldo: 0
+            });
+          }
+          
+          const dados = meses.get(chave)!;
+          dados.despesas += despesa.valor;
+        });
 
-  getComparativoMensal(): Observable<ComparativoMensal> {
-    return this.getDadosMensais().pipe(
-      map(dados => {
-        const janeiro = dados.find(d => d.mes === 1)!;
-        const outubro = dados.find(d => d.mes === 10)!;
-        const novembro = dados.find(d => d.mes === 11)!;
-        const dezembro = dados.find(d => d.mes === 12)!;
+        entradas.forEach(entrada => {
+          const data = new Date(entrada.data);
+          const chave = `${data.getFullYear()}-${data.getMonth()}`;
+          const mesAno = this.formatarMesAno(data.getMonth() + 1, data.getFullYear());
+          
+          if (!meses.has(chave)) {
+            meses.set(chave, {
+              mes: data.getMonth() + 1,
+              ano: data.getFullYear(),
+              descricao: mesAno,
+              entradas: 0,
+              despesas: 0,
+              saldo: 0
+            });
+          }
+          
+          const dados = meses.get(chave)!;
+          dados.entradas += entrada.valor;
+        });
 
-        return {
-          janeiro,
-          outubro,
-          novembro,
-          dezembro
-        };
+        const resultado = Array.from(meses.values());
+        resultado.forEach(dados => {
+          dados.saldo = dados.entradas - dados.despesas;
+        });
+
+        return resultado.sort((a, b) => b.ano - a.ano || b.mes - a.mes);
       })
     );
+  }
+
+  getComparativoMensal(): Observable<DadosMensais[]> {
+    return this.getDadosMensais();
   }
 
   getDestaquesMensais(): Observable<DestaqueMensal[]> {
     return this.getDadosMensais().pipe(
       map(dados => {
-        const maiorEntrada = dados.reduce((max, atual) => 
-          atual.entradas > max.entradas ? atual : max
+        if (dados.length === 0) return [];
+        
+        const maiorEntrada = dados.reduce((max, item) => 
+          item.entradas > max.entradas ? item : max
         );
         
-        const maiorDespesa = dados.reduce((max, atual) => 
-          atual.despesas > max.despesas ? atual : max
+        const maiorDespesa = dados.reduce((max, item) => 
+          item.despesas > max.despesas ? item : max
         );
         
-        const melhorSaldo = dados.reduce((max, atual) => 
-          atual.saldo > max.saldo ? atual : max
-        );
-        
-        const piorSaldo = dados.reduce((min, atual) => 
-          atual.saldo < min.saldo ? atual : min
+        const melhorSaldo = dados.reduce((max, item) => 
+          item.saldo > max.saldo ? item : max
         );
 
         return [
           {
             tipo: 'entrada' as const,
+            descricao: 'Maior Entrada',
             valor: maiorEntrada.entradas,
             mes: maiorEntrada.descricao,
-            descricao: 'Maior Entrada',
-            cor: '#10b981'
+            cor: '#4fc3f7'
           },
           {
             tipo: 'despesa' as const,
+            descricao: 'Maior Despesa',
             valor: maiorDespesa.despesas,
             mes: maiorDespesa.descricao,
-            descricao: 'Maior Despesa',
-            cor: '#ef4444'
+            cor: '#ff6b6b'
           },
           {
             tipo: 'melhor-saldo' as const,
+            descricao: 'Melhor Saldo',
             valor: melhorSaldo.saldo,
             mes: melhorSaldo.descricao,
-            descricao: 'Melhor Saldo',
-            cor: '#3b82f6'
-          },
-          {
-            tipo: 'pior-saldo' as const,
-            valor: piorSaldo.saldo,
-            mes: piorSaldo.descricao,
-            descricao: 'Pior Saldo',
-            cor: '#f59e0b'
+            cor: '#4caf50'
           }
         ];
       })
     );
   }
 
-  getGraficoComparativo(): Observable<GraficoBarra> {
+  getGraficoBarras(): Observable<GraficoBarra> {
     return this.getDadosMensais().pipe(
-      map(dados => {
-        const labels = dados.map(d => d.descricao.split(' de ')[0]);
-        
-        return {
-          labels,
-          datasets: [
-            {
-              label: 'Entradas',
-              data: dados.map(d => d.entradas),
-              backgroundColor: '#10b981'
-            },
-            {
-              label: 'Despesas',
-              data: dados.map(d => d.despesas),
-              backgroundColor: '#ef4444'
-            },
-            {
-              label: 'Saldo',
-              data: dados.map(d => d.saldo),
-              backgroundColor: '#3b82f6'
-            }
-          ]
-        };
-      })
+      map(dados => ({
+        labels: dados.map(item => item.descricao),
+        datasets: [
+          {
+            label: 'Entradas',
+            data: dados.map(item => item.entradas),
+            backgroundColor: '#4fc3f7',
+            borderColor: '#29b6f6',
+            borderWidth: 1
+          },
+          {
+            label: 'Despesas',
+            data: dados.map(item => item.despesas),
+            backgroundColor: '#ff6b6b',
+            borderColor: '#ff5252',
+            borderWidth: 1
+          }
+        ]
+      }))
     );
+  }
+
+  formatarMoeda(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
+  }
+
+  formatarData(data: Date | string): string {
+    const dataObj = typeof data === 'string' ? new Date(data) : data;
+    return dataObj.toLocaleDateString('pt-BR');
   }
 }

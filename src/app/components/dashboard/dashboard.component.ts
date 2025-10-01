@@ -15,6 +15,7 @@ import {
 import { ChartComponent } from '../chart/chart.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DespesaListComponent } from '../despesa-list/despesa-list.component';
+import { DataDebugComponent } from '../data-debug/data-debug.component';
 
 // Interface para as anotações
 interface Anotacao {
@@ -27,7 +28,7 @@ interface Anotacao {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartComponent, DespesaListComponent, ChartBarComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, DespesaListComponent, ChartBarComponent, DataDebugComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })

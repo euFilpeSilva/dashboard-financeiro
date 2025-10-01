@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
-import { Observable, map, take } from 'rxjs';
+import { Observable, map, take, filter, switchMap } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
@@ -14,16 +14,25 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   canActivate(): Observable<boolean> {
-    return this.authService.currentUser$.pipe(
+    // Aguardar o loading terminar antes de verificar autenticação
+    return this.authService.loading$.pipe(
+      filter(loading => !loading), // Esperar loading terminar
       take(1),
-      map(user => {
-        if (user) {
-          return true;
-        } else {
-          this.router.navigate(['/login']);
-          return false;
-        }
-      })
+      switchMap(() => 
+        this.authService.currentUser$.pipe(
+          take(1),
+          map(user => {
+            if (user) {
+              console.log('🔒 AuthGuard: Usuário autenticado:', user.email);
+              return true;
+            } else {
+              console.log('🔒 AuthGuard: Usuário não autenticado, redirecionando...');
+              this.router.navigate(['/login']);
+              return false;
+            }
+          })
+        )
+      )
     );
   }
 }
@@ -39,16 +48,25 @@ export class RedirectAuthenticatedGuard implements CanActivate {
   ) {}
 
   canActivate(): Observable<boolean> {
-    return this.authService.currentUser$.pipe(
+    // Aguardar o loading terminar antes de verificar autenticação
+    return this.authService.loading$.pipe(
+      filter(loading => !loading), // Esperar loading terminar
       take(1),
-      map(user => {
-        if (user) {
-          this.router.navigate(['/dashboard']);
-          return false;
-        } else {
-          return true;
-        }
-      })
+      switchMap(() => 
+        this.authService.currentUser$.pipe(
+          take(1),
+          map(user => {
+            if (user) {
+              console.log('🔒 RedirectGuard: Usuário já autenticado, redirecionando para dashboard...');
+              this.router.navigate(['/dashboard']);
+              return false;
+            } else {
+              console.log('🔒 RedirectGuard: Usuário não autenticado, permitindo acesso ao login...');
+              return true;
+            }
+          })
+        )
+      )
     );
   }
 }

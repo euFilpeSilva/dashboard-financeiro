@@ -1,40 +1,22 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject, map, from, switchMap, of } from 'rxjs';
-import {
-  Firestore,
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  DocumentReference,
-  QuerySnapshot,
-  DocumentSnapshot,
-  serverTimestamp
-} from 'firebase/firestore';
-import { FirebaseService } from './firebase.service';
+import { Observable, BehaviorSubject, map } from 'rxjs';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AuthService } from './auth.service';
 import { Despesa, Categoria } from '../models/despesa.model';
+import firebase from 'firebase/compat/app';
 
 export interface FirestoreDespesa {
   id?: string;
   descricao: string;
   valor: number;
   categoria: Categoria;
-  dataVencimento: Timestamp;
-  dataPagamento?: Timestamp | null;
+  dataVencimento: firebase.firestore.Timestamp;
+  dataPagamento?: firebase.firestore.Timestamp | null;
   paga: boolean;
   prioridade: 'baixa' | 'media' | 'alta';
-  observacoes?: string;
   userId: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: firebase.firestore.Timestamp;
+  updatedAt: firebase.firestore.Timestamp;
 }
 
 export interface FirestoreAnotacao {
@@ -42,15 +24,14 @@ export interface FirestoreAnotacao {
   texto: string;
   cor?: string;
   userId: string;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: firebase.firestore.Timestamp;
+  updatedAt: firebase.firestore.Timestamp;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirestoreService {
-  private firestore: Firestore;
   private despesasSubject = new BehaviorSubject<Despesa[]>([]);
   private anotacoesSubject = new BehaviorSubject<any[]>([]);
   private loadingSubject = new BehaviorSubject<boolean>(false);
@@ -60,10 +41,9 @@ export class FirestoreService {
   public readonly loading$ = this.loadingSubject.asObservable();
 
   constructor(
-    private firebaseService: FirebaseService,
+    private firestore: AngularFirestore,
     private authService: AuthService
   ) {
-    this.firestore = this.firebaseService.firestore;
     this.initializeListeners();
   }
 
@@ -82,41 +62,25 @@ export class FirestoreService {
     this.loadingSubject.next(true);
 
     // Listener para despesas
-    const despesasQuery = query(
-      collection(this.firestore, 'despesas'),
-      where('userId', '==', userId),
-      orderBy('dataVencimento', 'asc')
-    );
-
-    onSnapshot(despesasQuery, (snapshot: QuerySnapshot) => {
-      const despesas: Despesa[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data() as FirestoreDespesa;
-        despesas.push(this.mapFirestoreToDespesa(doc.id, data));
-      });
-      this.despesasSubject.next(despesas);
+    this.firestore.collection<FirestoreDespesa>('despesas', ref => 
+      ref.where('userId', '==', userId).orderBy('dataVencimento', 'asc')
+    ).valueChanges({ idField: 'id' }).subscribe(despesas => {
+      const mappedDespesas = despesas.map(data => this.mapFirestoreToDespesa(data));
+      this.despesasSubject.next(mappedDespesas);
       this.loadingSubject.next(false);
     });
 
     // Listener para anotações
-    const anotacoesQuery = query(
-      collection(this.firestore, 'anotacoes'),
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
-
-    onSnapshot(anotacoesQuery, (snapshot: QuerySnapshot) => {
-      const anotacoes: any[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data() as FirestoreAnotacao;
-        anotacoes.push({
-          id: doc.id,
-          texto: data.texto,
-          cor: data.cor,
-          dataHora: data.createdAt.toDate()
-        });
-      });
-      this.anotacoesSubject.next(anotacoes);
+    this.firestore.collection<FirestoreAnotacao>('anotacoes', ref => 
+      ref.where('userId', '==', userId).orderBy('createdAt', 'desc')
+    ).valueChanges({ idField: 'id' }).subscribe(anotacoes => {
+      const mappedAnotacoes = anotacoes.map(data => ({
+        id: data.id,
+        texto: data.texto,
+        cor: data.cor,
+        dataHora: data.createdAt.toDate()
+      }));
+      this.anotacoesSubject.next(mappedAnotacoes);
     });
   }
 
@@ -136,16 +100,16 @@ export class FirestoreService {
       descricao: despesa.descricao,
       valor: despesa.valor,
       categoria: despesa.categoria,
-      dataVencimento: Timestamp.fromDate(despesa.dataVencimento),
-      dataPagamento: despesa.dataPagamento ? Timestamp.fromDate(despesa.dataPagamento) : null,
+      dataVencimento: firebase.firestore.Timestamp.fromDate(despesa.dataVencimento),
+      dataPagamento: despesa.dataPagamento ? firebase.firestore.Timestamp.fromDate(despesa.dataPagamento) : null,
       paga: despesa.paga,
       prioridade: despesa.prioridade as 'baixa' | 'media' | 'alta',
       userId: user.uid,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp
+      createdAt: firebase.firestore.Timestamp.now(),
+      updatedAt: firebase.firestore.Timestamp.now()
     };
 
-    const docRef = await addDoc(collection(this.firestore, 'despesas'), firestoreDespesa);
+    const docRef = await this.firestore.collection('despesas').add(firestoreDespesa);
     return docRef.id;
   }
 
@@ -153,45 +117,42 @@ export class FirestoreService {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const docRef = doc(this.firestore, 'despesas', id);
     const firestoreUpdates: any = {
       ...updates,
-      updatedAt: serverTimestamp()
+      updatedAt: firebase.firestore.Timestamp.now()
     };
 
     // Converter datas para Timestamp se necessário
     if (updates.dataVencimento) {
-      firestoreUpdates.dataVencimento = Timestamp.fromDate(updates.dataVencimento);
+      firestoreUpdates.dataVencimento = firebase.firestore.Timestamp.fromDate(updates.dataVencimento);
     }
     if (updates.dataPagamento) {
-      firestoreUpdates.dataPagamento = Timestamp.fromDate(updates.dataPagamento);
+      firestoreUpdates.dataPagamento = firebase.firestore.Timestamp.fromDate(updates.dataPagamento);
     }
 
-    await updateDoc(docRef, firestoreUpdates);
+    await this.firestore.collection('despesas').doc(id).update(firestoreUpdates);
   }
 
   async removerDespesa(id: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const docRef = doc(this.firestore, 'despesas', id);
-    await deleteDoc(docRef);
+    await this.firestore.collection('despesas').doc(id).delete();
   }
 
   async marcarComoPaga(id: string, paga: boolean): Promise<void> {
     const updates: any = {
       paga,
-      updatedAt: serverTimestamp()
+      updatedAt: firebase.firestore.Timestamp.now()
     };
 
     if (paga) {
-      updates.dataPagamento = serverTimestamp();
+      updates.dataPagamento = firebase.firestore.Timestamp.now();
     } else {
       updates.dataPagamento = null;
     }
 
-    const docRef = doc(this.firestore, 'despesas', id);
-    await updateDoc(docRef, updates);
+    await this.firestore.collection('despesas').doc(id).update(updates);
   }
 
   // === MÉTODOS PARA ANOTAÇÕES ===
@@ -204,11 +165,11 @@ export class FirestoreService {
       texto,
       cor,
       userId: user.uid,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp
+      createdAt: firebase.firestore.Timestamp.now(),
+      updatedAt: firebase.firestore.Timestamp.now()
     };
 
-    const docRef = await addDoc(collection(this.firestore, 'anotacoes'), anotacao);
+    const docRef = await this.firestore.collection('anotacoes').add(anotacao);
     return docRef.id;
   }
 
@@ -216,10 +177,9 @@ export class FirestoreService {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const docRef = doc(this.firestore, 'anotacoes', id);
-    await updateDoc(docRef, {
+    await this.firestore.collection('anotacoes').doc(id).update({
       texto,
-      updatedAt: serverTimestamp()
+      updatedAt: firebase.firestore.Timestamp.now()
     });
   }
 
@@ -227,8 +187,7 @@ export class FirestoreService {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const docRef = doc(this.firestore, 'anotacoes', id);
-    await deleteDoc(docRef);
+    await this.firestore.collection('anotacoes').doc(id).delete();
   }
 
   // === MÉTODOS DE MIGRAÇÃO ===
@@ -267,9 +226,9 @@ export class FirestoreService {
 
   // === MÉTODOS UTILITÁRIOS ===
 
-  private mapFirestoreToDespesa(id: string, data: FirestoreDespesa): Despesa {
+  private mapFirestoreToDespesa(data: FirestoreDespesa): Despesa {
     return {
-      id,
+      id: data.id!,
       descricao: data.descricao,
       valor: data.valor,
       categoria: data.categoria,

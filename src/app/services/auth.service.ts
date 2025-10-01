@@ -1,17 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { 
-  Auth, 
-  User, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  sendPasswordResetEmail,
-  updateProfile,
-  GoogleAuthProvider,
-  signInWithPopup
-} from 'firebase/auth';
+import { AngularFireAuth } from '@angular/fire/compat/auth';
+import firebase from 'firebase/compat/app';
 import { FirebaseService } from './firebase.service';
 
 export interface UserProfile {
@@ -27,7 +17,6 @@ export interface UserProfile {
   providedIn: 'root'
 })
 export class AuthService {
-  private auth: Auth;
   private currentUserSubject = new BehaviorSubject<UserProfile | null>(null);
   private loadingSubject = new BehaviorSubject<boolean>(true);
 
@@ -35,13 +24,19 @@ export class AuthService {
   public readonly loading$ = this.loadingSubject.asObservable();
   public readonly isAuthenticated$ = new BehaviorSubject<boolean>(false);
 
-  constructor(private firebaseService: FirebaseService) {
-    this.auth = this.firebaseService.auth;
+  constructor(
+    private afAuth: AngularFireAuth,
+    private firebaseService: FirebaseService
+  ) {
     this.initAuthStateListener();
   }
 
   private initAuthStateListener(): void {
-    onAuthStateChanged(this.auth, (user: User | null) => {
+    console.log('🔧 Inicializando listener de autenticação...');
+    
+    this.afAuth.authState.subscribe((user: firebase.User | null) => {
+      console.log('🔧 Estado de autenticação mudou:', user ? user.email : 'Usuário deslogado');
+      
       if (user) {
         const userProfile: UserProfile = {
           uid: user.uid,
@@ -53,19 +48,29 @@ export class AuthService {
         };
         this.currentUserSubject.next(userProfile);
         this.isAuthenticated$.next(true);
+        console.log('✅ Usuário autenticado:', userProfile.email);
       } else {
         this.currentUserSubject.next(null);
         this.isAuthenticated$.next(false);
+        console.log('❌ Usuário não autenticado');
       }
       this.loadingSubject.next(false);
+    });
+    
+    // Verificar persistência imediata
+    this.afAuth.onAuthStateChanged((user) => {
+      console.log('🔧 onAuthStateChanged chamado:', user ? user.email : 'sem usuário');
     });
   }
 
   // Login com email e senha
   async signInWithEmail(email: string, password: string): Promise<UserProfile> {
     try {
-      const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
-      return this.mapFirebaseUserToProfile(userCredential.user);
+      const userCredential = await this.afAuth.signInWithEmailAndPassword(email, password);
+      if (userCredential.user) {
+        return this.mapFirebaseUserToProfile(userCredential.user);
+      }
+      throw new Error('Falha na autenticação');
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -74,14 +79,17 @@ export class AuthService {
   // Registro com email e senha
   async signUpWithEmail(email: string, password: string, displayName?: string): Promise<UserProfile> {
     try {
-      const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
+      const userCredential = await this.afAuth.createUserWithEmailAndPassword(email, password);
       
       // Atualizar perfil com nome de exibição
-      if (displayName) {
-        await updateProfile(userCredential.user, { displayName });
+      if (displayName && userCredential.user) {
+        await userCredential.user.updateProfile({ displayName });
       }
       
-      return this.mapFirebaseUserToProfile(userCredential.user);
+      if (userCredential.user) {
+        return this.mapFirebaseUserToProfile(userCredential.user);
+      }
+      throw new Error('Falha no registro');
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -90,10 +98,58 @@ export class AuthService {
   // Login com Google
   async signInWithGoogle(): Promise<UserProfile> {
     try {
-      const provider = new GoogleAuthProvider();
-      const userCredential = await signInWithPopup(this.auth, provider);
-      return this.mapFirebaseUserToProfile(userCredential.user);
+      console.log('🔍 Iniciando login com Google...');
+      console.log('🔧 Firebase config check:', {
+        hasApiKey: !!firebase.apps.length,
+        authDomain: firebase.apps[0]?.options ? (firebase.apps[0].options as any).authDomain : 'N/A'
+      });
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      // Configurar para reduzir problemas de CORS
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
+      console.log('🚀 Chamando signInWithPopup...');
+      
+      // Tentar popup primeiro, se falhar usar redirect
+      let userCredential;
+      try {
+        userCredential = await this.afAuth.signInWithPopup(provider);
+      } catch (popupError: any) {
+        console.warn('⚠️ Popup falhou, tentando redirect...', popupError);
+        if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/popup-closed-by-user') {
+          // Se popup for bloqueado, usar redirect
+          await this.afAuth.signInWithRedirect(provider);
+          return new Promise((resolve, reject) => {
+            this.afAuth.getRedirectResult().then(result => {
+              if (result.user) {
+                resolve(this.mapFirebaseUserToProfile(result.user));
+              } else {
+                reject(new Error('Redirect não retornou usuário'));
+              }
+            }).catch(reject);
+          });
+        } else {
+          throw popupError;
+        }
+      }
+      
+      console.log('✅ Login realizado com sucesso:', userCredential.user?.email);
+      
+      if (userCredential.user) {
+        return this.mapFirebaseUserToProfile(userCredential.user);
+      }
+      throw new Error('Falha na autenticação Google');
     } catch (error: any) {
+      console.error('❌ Erro detalhado no Google Auth:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw this.handleAuthError(error);
     }
   }
@@ -101,7 +157,7 @@ export class AuthService {
   // Logout
   async signOut(): Promise<void> {
     try {
-      await signOut(this.auth);
+      await this.afAuth.signOut();
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -110,7 +166,7 @@ export class AuthService {
   // Reset de senha
   async resetPassword(email: string): Promise<void> {
     try {
-      await sendPasswordResetEmail(this.auth, email);
+      await this.afAuth.sendPasswordResetEmail(email);
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -119,8 +175,9 @@ export class AuthService {
   // Atualizar perfil
   async updateUserProfile(updates: { displayName?: string; photoURL?: string }): Promise<void> {
     try {
-      if (this.auth.currentUser) {
-        await updateProfile(this.auth.currentUser, updates);
+      const user = await this.afAuth.currentUser;
+      if (user) {
+        await user.updateProfile(updates);
         // Força a atualização do observable
         this.initAuthStateListener();
       }
@@ -140,7 +197,7 @@ export class AuthService {
   }
 
   // Mapear usuário Firebase para perfil customizado
-  private mapFirebaseUserToProfile(user: User): UserProfile {
+  private mapFirebaseUserToProfile(user: firebase.User): UserProfile {
     return {
       uid: user.uid,
       email: user.email,
@@ -153,9 +210,22 @@ export class AuthService {
 
   // Tratar erros de autenticação
   private handleAuthError(error: any): Error {
+    console.error('🔧 Erro capturado:', error);
     let message = 'Erro de autenticação';
 
     switch (error.code) {
+      case 'auth/configuration-not-found':
+        message = 'Configuração do Firebase não encontrada. Verifique as credenciais.';
+        break;
+      case 'auth/invalid-api-key':
+        message = 'Chave de API do Firebase inválida';
+        break;
+      case 'auth/unauthorized-domain':
+        message = 'Domínio não autorizado. Adicione localhost:4200 nos domínios autorizados do Firebase';
+        break;
+      case 'auth/operation-not-allowed':
+        message = 'Login com Google não habilitado. Ative o provedor no Firebase Console';
+        break;
       case 'auth/user-not-found':
         message = 'Usuário não encontrado';
         break;
@@ -183,8 +253,15 @@ export class AuthService {
       case 'auth/popup-closed-by-user':
         message = 'Login cancelado pelo usuário';
         break;
+      case 'auth/popup-blocked':
+        message = 'Popup bloqueado pelo navegador. Permita popups para este site';
+        break;
       default:
         message = error.message || 'Erro desconhecido';
+        // Se contém informações sobre configuração
+        if (error.message?.includes('CONFIGURATION_NOT_FOUND')) {
+          message = 'Erro de configuração do Firebase. Verifique as credenciais no arquivo de configuração.';
+        }
     }
 
     return new Error(message);

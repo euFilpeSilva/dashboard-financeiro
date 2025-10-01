@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { FirebaseDebugComponent } from '../firebase-debug/firebase-debug.component';
+import { DataDebugComponent } from '../data-debug/data-debug.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FirebaseDebugComponent, DataDebugComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
