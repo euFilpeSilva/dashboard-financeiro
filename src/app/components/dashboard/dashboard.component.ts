@@ -651,7 +651,20 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const vencidas = this.despesasVencidas.length;
     const proximas = this.despesasProximasVencimento.length;
     const metaExcedida = this.getPercentualGastoMes() > 80 ? 1 : 0;
-    return vencidas + proximas + metaExcedida;
+    const total = vencidas + proximas + metaExcedida;
+    
+    // Debug temporário
+    console.log('Debug Alertas:', {
+      vencidas,
+      proximas, 
+      metaExcedida,
+      total,
+      despesasVencidas: this.despesasVencidas,
+      despesasProximasVencimento: this.despesasProximasVencimento,
+      entradasDoMes: this.entradasDoMes
+    });
+    
+    return total;
   }
 
   getDiasVencimento(despesa: Despesa): string {

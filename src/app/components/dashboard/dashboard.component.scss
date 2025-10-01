@@ -144,10 +144,6 @@
           grid-row: span 2;
         }
         
-        &.entradas-compact {
-          grid-column: span 2;
-        }
-        
         .compact-header {
           display: flex;
           justify-content: space-between;
@@ -322,147 +318,11 @@
                 text-transform: uppercase;
               }
             }
-          }
-          
-          .no-alerts-section {
-            margin-top: 8px;
-            padding: 8px;
-            text-align: center;
             
-            .no-alert-icon {
-              font-size: 14px;
-              margin-right: 4px;
-            }
-            
-            .no-alert-text {
-              font-size: 10px;
-              color: #10b981;
-              font-weight: 500;
-            }
-          }
-          
-          .alerts-mini-list {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            height: 100%;
-            overflow-y: auto;
-            
-            &::-webkit-scrollbar {
-              width: 4px;
-            }
-            
-            &::-webkit-scrollbar-track {
-              background: rgba(15, 23, 42, 0.5);
-              border-radius: 2px;
-            }
-            
-            &::-webkit-scrollbar-thumb {
-              background: rgba(148, 163, 184, 0.4);
-              border-radius: 2px;
-              
-              &:hover {
-                background: rgba(148, 163, 184, 0.6);
-              }
-            }
-            
-            .mini-alert {
-              display: flex;
-              align-items: center;
-              gap: 8px;
-              padding: 6px 8px;
-              background: rgba(15, 23, 42, 0.4);
-              border-radius: 6px;
-              font-size: 11px;
-              transition: all 0.2s ease;
-              border: 1px solid transparent;
-              
-              &:hover {
-                background: rgba(51, 65, 85, 0.6);
-                border-color: rgba(148, 163, 184, 0.3);
-              }
-              
-              .alert-icon {
-                width: 16px;
-                text-align: center;
-                font-size: 10px;
-                flex-shrink: 0;
-              }
-              
-              .alert-info {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                min-width: 0;
-                
-                .alert-desc {
-                  color: #cbd5e1;
-                  font-weight: 500;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                  overflow: hidden;
-                }
-                
-                .alert-detail {
-                  color: #94a3b8;
-                  font-size: 9px;
-                }
-              }
-              
-              .alert-value {
-                font-weight: 600;
-                font-size: 10px;
-                color: #f1f5f9;
-                flex-shrink: 0;
-              }
-              
-              &.vencida {
-                background: rgba(239, 68, 68, 0.15);
-                border-color: rgba(239, 68, 68, 0.3);
-                
-                .alert-value {
-                  color: #ef4444;
-                }
-              }
-              
-              &.proxima {
-                background: rgba(245, 158, 11, 0.15);
-                border-color: rgba(245, 158, 11, 0.3);
-                
-                .alert-value {
-                  color: #f59e0b;
-                }
-              }
-              
-              &.meta {
-                background: rgba(139, 69, 19, 0.15);
-                border-color: rgba(139, 69, 19, 0.3);
-                
-                .alert-value {
-                  color: #d97706;
-                }
-              }
-            }
-            
-            .no-alerts {
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              padding: 16px 8px;
-              text-align: center;
-              
-              .no-alert-icon {
-                font-size: 16px;
-                margin-bottom: 4px;
-              }
-              
-              .no-alert-text {
-                font-size: 11px;
-                color: #10b981;
-                font-weight: 500;
-              }
+            .simple-alert {
+              font-size: 9px;
+              color: #cbd5e1;
+              padding: 2px 0;
             }
           }
         }
