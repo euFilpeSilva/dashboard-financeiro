@@ -757,10 +757,10 @@
   }
 }
 
-// ===== VISUALIZAÇÃO MENSAL (COMUM) =====
+// ===== VISUALIZAÇÃO MENSAL DARK =====
 .monthly-data-view {
   padding: 20px;
-  background: #f8fafc;
+  background: #0f172a;
   min-height: 100vh;
   
   .monthly-header {
@@ -769,22 +769,22 @@
     align-items: center;
     margin-bottom: 24px;
     padding: 20px;
-    background: white;
+    background: #1e293b;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid #334155;
     
     .title-section {
       h2 {
         margin: 0 0 4px 0;
         font-size: 24px;
         font-weight: 700;
-        color: #1e293b;
+        color: #f1f5f9;
       }
       
       .subtitle {
         margin: 0;
         font-size: 14px;
-        color: #64748b;
+        color: #94a3b8;
       }
     }
     
@@ -796,30 +796,40 @@
       label {
         font-size: 14px;
         font-weight: 500;
-        color: #374151;
+        color: #cbd5e1;
       }
       
       .select-visualization {
         padding: 8px 12px;
-        border: 1px solid #d1d5db;
+        border: 1px solid #475569;
         border-radius: 6px;
         font-size: 14px;
-        background: white;
+        background: #334155;
+        color: #f1f5f9;
+        
+        &:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
       }
     }
     
     .back-section {
       .back-btn {
         padding: 8px 16px;
-        background: #2563eb;
+        background: #3b82f6;
         color: white;
         border: none;
         border-radius: 6px;
         font-size: 14px;
         cursor: pointer;
+        transition: all 0.2s ease;
         
         &:hover {
-          background: #1d4ed8;
+          background: #2563eb;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
         }
       }
     }
@@ -831,9 +841,9 @@
       gap: 16px;
       margin-bottom: 24px;
       padding: 16px 20px;
-      background: white;
+      background: #1e293b;
       border-radius: 8px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #334155;
       
       .selector-group {
         display: flex;
@@ -843,22 +853,30 @@
         label {
           font-size: 14px;
           font-weight: 500;
-          color: #374151;
+          color: #cbd5e1;
         }
         
         .period-select {
           padding: 6px 10px;
-          border: 1px solid #d1d5db;
+          border: 1px solid #475569;
           border-radius: 4px;
           font-size: 14px;
+          background: #334155;
+          color: #f1f5f9;
+          
+          &:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+          }
         }
       }
     }
     
     .month-summary {
-      background: white;
+      background: #1e293b;
       border-radius: 12px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #334155;
       padding: 24px;
       margin-bottom: 24px;
       
@@ -866,7 +884,7 @@
         margin: 0 0 20px 0;
         font-size: 20px;
         font-weight: 600;
-        color: #1e293b;
+        color: #f1f5f9;
       }
       
       .summary-cards {
@@ -878,38 +896,45 @@
         .summary-card {
           padding: 20px;
           border-radius: 8px;
-          border: 1px solid #e2e8f0;
+          border: 1px solid #475569;
           display: flex;
           align-items: center;
           gap: 12px;
+          transition: all 0.2s ease;
+          
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          }
           
           &.entrada {
-            background: #dcfce7;
-            border-color: #bbf7d0;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
           }
           
           &.despesa {
-            background: #fef2f2;
-            border-color: #fecaca;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
           }
           
           &.saldo {
-            background: #dbeafe;
-            border-color: #bfdbfe;
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
             
             &.positive {
-              background: #dcfce7;
-              border-color: #bbf7d0;
+              background: rgba(16, 185, 129, 0.1);
+              border-color: rgba(16, 185, 129, 0.3);
             }
             
             &.negative {
-              background: #fef2f2;
-              border-color: #fecaca;
+              background: rgba(239, 68, 68, 0.1);
+              border-color: rgba(239, 68, 68, 0.3);
             }
           }
           
           .card-icon {
             font-size: 24px;
+            color: #cbd5e1;
           }
           
           .card-content {
@@ -918,14 +943,14 @@
             
             .card-label {
               font-size: 12px;
-              color: #64748b;
+              color: #94a3b8;
               font-weight: 500;
             }
             
             .card-value {
               font-size: 18px;
               font-weight: 600;
-              color: #1e293b;
+              color: #f1f5f9;
             }
           }
         }
@@ -935,7 +960,7 @@
         display: flex;
         justify-content: space-around;
         padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid #334155;
         
         .status-item {
           display: flex;
@@ -947,21 +972,21 @@
             font-weight: 700;
             
             &.paid {
-              color: #16a34a;
+              color: #10b981;
             }
             
             &.pending {
-              color: #d97706;
+              color: #f59e0b;
             }
             
             &.overdue {
-              color: #dc2626;
+              color: #ef4444;
             }
           }
           
           .status-label {
             font-size: 12px;
-            color: #64748b;
+            color: #94a3b8;
             font-weight: 500;
             text-transform: uppercase;
           }
@@ -975,16 +1000,16 @@
       gap: 24px;
       
       .list-section {
-        background: white;
+        background: #1e293b;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #334155;
         padding: 20px;
         
         h4 {
           margin: 0 0 16px 0;
           font-size: 16px;
           font-weight: 600;
-          color: #1e293b;
+          color: #f1f5f9;
         }
         
         .items-list {
@@ -997,9 +1022,16 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px;
-            background: #f8fafc;
+            background: #0f172a;
             border-radius: 6px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid #334155;
+            transition: all 0.2s ease;
+            
+            &:hover {
+              background: #334155;
+              border-color: #475569;
+              transform: translateX(2px);
+            }
             
             .item-info {
               display: flex;
@@ -1009,12 +1041,12 @@
               .item-description {
                 font-size: 14px;
                 font-weight: 500;
-                color: #1e293b;
+                color: #f1f5f9;
               }
               
               .item-source, .item-category {
                 font-size: 12px;
-                color: #64748b;
+                color: #94a3b8;
               }
             }
             
@@ -1025,18 +1057,18 @@
               
               .item-date {
                 font-size: 12px;
-                color: #64748b;
+                color: #94a3b8;
               }
               
               .item-status {
                 font-size: 14px;
                 
                 &.paid {
-                  color: #16a34a;
+                  color: #10b981;
                 }
                 
                 &.pending {
-                  color: #d97706;
+                  color: #f59e0b;
                 }
               }
               
@@ -1045,11 +1077,11 @@
                 font-weight: 600;
                 
                 &.positive {
-                  color: #16a34a;
+                  color: #10b981;
                 }
                 
                 &.negative {
-                  color: #dc2626;
+                  color: #ef4444;
                 }
               }
             }
@@ -1061,24 +1093,25 @@
         grid-column: span 2;
         text-align: center;
         padding: 40px;
-        background: white;
+        background: #1e293b;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #334155;
         
         .no-data-icon {
           font-size: 48px;
           margin-bottom: 16px;
+          color: #94a3b8;
         }
         
         h4 {
           margin: 0 0 8px 0;
           font-size: 18px;
-          color: #1e293b;
+          color: #f1f5f9;
         }
         
         p {
           margin: 0;
-          color: #64748b;
+          color: #94a3b8;
         }
       }
     }
@@ -1086,9 +1119,9 @@
   
   .summary-view {
     .comparative-chart {
-      background: white;
+      background: #1e293b;
       border-radius: 12px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #334155;
       padding: 24px;
       margin-bottom: 24px;
       
@@ -1096,7 +1129,7 @@
         margin: 0 0 20px 0;
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: #f1f5f9;
       }
     }
     
@@ -1107,10 +1140,17 @@
       margin-bottom: 24px;
       
       .monthly-card {
-        background: white;
+        background: #1e293b;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #334155;
         padding: 20px;
+        transition: all 0.2s ease;
+        
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          border-color: #475569;
+        }
         
         .monthly-header {
           display: flex;
@@ -1126,7 +1166,7 @@
             margin: 0;
             font-size: 16px;
             font-weight: 600;
-            color: #1e293b;
+            color: #f1f5f9;
           }
           
           .monthly-values {
@@ -1137,13 +1177,13 @@
             
             .income {
               font-size: 12px;
-              color: #16a34a;
+              color: #10b981;
               font-weight: 500;
             }
             
             .expense {
               font-size: 12px;
-              color: #dc2626;
+              color: #ef4444;
               font-weight: 500;
             }
           }
@@ -1161,30 +1201,31 @@
             
             .label {
               font-size: 14px;
-              color: #64748b;
+              color: #94a3b8;
             }
             
             .value {
               font-size: 14px;
               font-weight: 600;
+              color: #f1f5f9;
               
               &.positive {
-                color: #16a34a;
+                color: #10b981;
               }
               
               &.negative {
-                color: #dc2626;
+                color: #ef4444;
               }
             }
             
             &.balance {
               padding-top: 8px;
-              border-top: 1px solid #e2e8f0;
+              border-top: 1px solid #334155;
               margin-top: 8px;
               
               .label {
                 font-weight: 600;
-                color: #1e293b;
+                color: #f1f5f9;
               }
               
               .value {
@@ -1197,16 +1238,16 @@
     }
     
     .monthly-highlights {
-      background: white;
+      background: #1e293b;
       border-radius: 12px;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #334155;
       padding: 24px;
       
       h3 {
         margin: 0 0 20px 0;
         font-size: 18px;
         font-weight: 600;
-        color: #1e293b;
+        color: #f1f5f9;
       }
       
       .highlights-grid {
@@ -1217,25 +1258,33 @@
         .highlight-item {
           text-align: center;
           padding: 16px;
-          background: #f8fafc;
+          background: #0f172a;
           border-radius: 8px;
+          border: 1px solid #334155;
+          transition: all 0.2s ease;
+          
+          &:hover {
+            background: #334155;
+            border-color: #475569;
+            transform: translateY(-2px);
+          }
           
           .highlight-value {
             font-size: 18px;
             font-weight: 700;
-            color: #2563eb;
+            color: #3b82f6;
             margin-bottom: 4px;
           }
           
           .highlight-label {
             font-size: 12px;
-            color: #64748b;
+            color: #94a3b8;
             margin-bottom: 2px;
           }
           
           .highlight-month {
             font-size: 10px;
-            color: #9ca3af;
+            color: #64748b;
           }
         }
       }
