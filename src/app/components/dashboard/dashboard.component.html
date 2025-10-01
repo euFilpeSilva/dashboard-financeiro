@@ -65,20 +65,32 @@
             </div>
             
             <!-- Debug info -->
-            <div class="simple-alert" style="color: #f59e0b;">
-              Total: {{ getTotalAlertas() }} | Vencidas: {{ despesasVencidas.length }} | Próximas: {{ despesasProximasVencimento.length }}
+            <div class="simple-alert" style="color: #f59e0b; font-weight: bold;">
+              Total: {{ getTotalAlertas() }} | Vencidas: {{ despesasVencidas.length }} | Próximas: {{ despesasProximasVencimento.length }} | Meta: {{ getPercentualGastoMes() }}%
             </div>
             
-            <div class="simple-alert" *ngIf="despesasVencidas.length > 0">
-              🔴 {{ despesasVencidas.length }} despesas vencidas
+            <!-- Alertas sempre visíveis para debug -->
+            <div class="simple-alert" style="background: rgba(239, 68, 68, 0.2);">
+              🔴 Despesas vencidas: {{ despesasVencidas.length }}
             </div>
-            <div class="simple-alert" *ngIf="despesasProximasVencimento.length > 0">
-              🟡 {{ despesasProximasVencimento.length }} próximas ao vencimento  
+            <div class="simple-alert" style="background: rgba(245, 158, 11, 0.2);">
+              🟡 Próximas ao vencimento: {{ despesasProximasVencimento.length }}
             </div>
-            <div class="simple-alert" *ngIf="getPercentualGastoMes() > 80">
+            <div class="simple-alert" style="background: rgba(139, 69, 19, 0.2);">
               📊 Meta de gastos: {{ getPercentualGastoMes() }}% do orçamento
             </div>
-            <div class="simple-alert" *ngIf="getTotalAlertas() === 0">
+            
+            <!-- Condicionais originais -->
+            <div class="simple-alert" *ngIf="despesasVencidas.length > 0" style="border-left-color: #ef4444;">
+              ⚠️ {{ despesasVencidas.length }} despesas vencidas
+            </div>
+            <div class="simple-alert" *ngIf="despesasProximasVencimento.length > 0" style="border-left-color: #f59e0b;">
+              ⚠️ {{ despesasProximasVencimento.length }} próximas ao vencimento  
+            </div>
+            <div class="simple-alert" *ngIf="getPercentualGastoMes() > 80" style="border-left-color: #d97706;">
+              ⚠️ Meta de gastos: {{ getPercentualGastoMes() }}% do orçamento
+            </div>
+            <div class="simple-alert" *ngIf="getTotalAlertas() === 0" style="border-left-color: #10b981;">
               ✅ Todas as despesas em dia!
             </div>
           </div>
