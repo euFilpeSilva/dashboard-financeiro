@@ -116,7 +116,7 @@
     .compact-grid {
       flex: 1;
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
+      grid-template-columns: 2fr 1fr 1fr;
       grid-template-rows: 1fr 1fr;
       gap: 8px;
       padding: 8px;
@@ -306,7 +306,41 @@
             }
           }
           
-          // Estilos para o card de alertas
+          // Estilos para a seção de alertas integrada
+          .alerts-section {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(148, 163, 184, 0.2);
+            
+            .alerts-header {
+              margin-bottom: 6px;
+              
+              .alerts-title {
+                font-size: 10px;
+                font-weight: 600;
+                color: #f59e0b;
+                text-transform: uppercase;
+              }
+            }
+          }
+          
+          .no-alerts-section {
+            margin-top: 8px;
+            padding: 8px;
+            text-align: center;
+            
+            .no-alert-icon {
+              font-size: 14px;
+              margin-right: 4px;
+            }
+            
+            .no-alert-text {
+              font-size: 10px;
+              color: #10b981;
+              font-weight: 500;
+            }
+          }
+          
           .alerts-mini-list {
             display: flex;
             flex-direction: column;
@@ -432,10 +466,7 @@
             }
           }
         }
-        
-        &.alerts-compact {
-          grid-column: span 2;
-        }
+
       }
     }
   }
@@ -1592,10 +1623,6 @@
             grid-column: unset;
           }
           
-          &.alerts-compact {
-            grid-column: unset;
-          }
-          
           .compact-content {
             .stats-grid {
               grid-template-columns: 1fr 1fr 1fr;
@@ -1627,13 +1654,6 @@
       .compact-grid {
         grid-template-columns: 2fr 1fr 1fr;
         grid-template-rows: 1fr 1fr;
-        
-        .compact-card {
-          &.alerts-compact {
-            grid-column: span 1;
-            grid-row: span 1;
-          }
-        }
       }
     }
   }

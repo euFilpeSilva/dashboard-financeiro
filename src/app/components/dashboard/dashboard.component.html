@@ -39,15 +39,16 @@
 
     <!-- Grid compacto principal -->
     <div class="compact-grid">
-      <!-- Card de despesas -->
+      <!-- Card de despesas com alertas integrados -->
       <div class="compact-card despesas-compact">
         <div class="compact-header">
           <h4>📋 Despesas</h4>
           <span class="count-badge">{{ despesasDoMes.length }}</span>
         </div>
         <div class="compact-content">
+          <!-- Lista de despesas -->
           <div class="despesas-mini-list">
-            <div *ngFor="let despesa of despesasDoMes.slice(0, 6)" 
+            <div *ngFor="let despesa of despesasDoMes.slice(0, 4)" 
                  class="mini-despesa" 
                  [ngClass]="getDespesaStatusClass(despesa)">
               <span class="mini-icon">{{ despesa.categoria.icon }}</span>
@@ -55,6 +56,40 @@
               <span class="mini-value">{{ formatarMoeda(despesa.valor) }}</span>
               <span class="mini-status">{{ despesa.paga ? '✅' : '⏳' }}</span>
             </div>
+          </div>
+          
+          <!-- Seção de alertas integrada -->
+          <div class="alerts-section" *ngIf="getTotalAlertas() > 0">
+            <div class="alerts-header">
+              <span class="alerts-title">⚠️ Alertas ({{ getTotalAlertas() }})</span>
+            </div>
+            <div class="alerts-mini-list">
+              <!-- Despesas vencidas -->
+              <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="mini-alert vencida">
+                <span class="alert-icon">🔴</span>
+                <div class="alert-info">
+                  <span class="alert-desc">{{ despesa.descricao }}</span>
+                  <span class="alert-detail">Venceu {{ getDiasVencimento(despesa) }}</span>
+                </div>
+                <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
+              </div>
+              
+              <!-- Despesas próximas ao vencimento -->
+              <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="mini-alert proxima">
+                <span class="alert-icon">🟡</span>
+                <div class="alert-info">
+                  <span class="alert-desc">{{ despesa.descricao }}</span>
+                  <span class="alert-detail">Vence em {{ getDiasParaVencimento(despesa) }}</span>
+                </div>
+                <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Quando não há alertas -->
+          <div class="no-alerts-section" *ngIf="getTotalAlertas() === 0">
+            <span class="no-alert-icon">✅</span>
+            <span class="no-alert-text">Todas as despesas em dia!</span>
           </div>
         </div>
       </div>
@@ -100,56 +135,9 @@
         </div>
         <div class="compact-content">
           <div class="entradas-mini-list">
-            <div *ngFor="let entrada of entradasDoMes.slice(0, 4)" class="mini-entrada">
+            <div *ngFor="let entrada of entradasDoMes.slice(0, 6)" class="mini-entrada">
               <span class="entrada-fonte">{{ entrada.fonte }}</span>
               <span class="entrada-valor">{{ formatarMoeda(entrada.valor) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Card de alertas e notificações -->
-      <div class="compact-card alerts-compact">
-        <div class="compact-header">
-          <h4>⚠️ Alertas</h4>
-          <span class="count-badge" *ngIf="getTotalAlertas() > 0">{{ getTotalAlertas() }}</span>
-        </div>
-        <div class="compact-content">
-          <div class="alerts-mini-list">
-            <!-- Despesas vencidas -->
-            <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="mini-alert vencida">
-              <span class="alert-icon">🔴</span>
-              <div class="alert-info">
-                <span class="alert-desc">{{ despesa.descricao }}</span>
-                <span class="alert-detail">Venceu {{ getDiasVencimento(despesa) }}</span>
-              </div>
-              <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
-            </div>
-            
-            <!-- Despesas próximas ao vencimento -->
-            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="mini-alert proxima">
-              <span class="alert-icon">🟡</span>
-              <div class="alert-info">
-                <span class="alert-desc">{{ despesa.descricao }}</span>
-                <span class="alert-detail">Vence em {{ getDiasParaVencimento(despesa) }}</span>
-              </div>
-              <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
-            </div>
-            
-            <!-- Meta de gastos (se aplicável) -->
-            <div *ngIf="getPercentualGastoMes() > 80" class="mini-alert meta">
-              <span class="alert-icon">📊</span>
-              <div class="alert-info">
-                <span class="alert-desc">Meta de gastos</span>
-                <span class="alert-detail">{{ getPercentualGastoMes() }}% do orçamento</span>
-              </div>
-              <span class="alert-value">{{ formatarMoeda(resumo.totalDespesas) }}</span>
-            </div>
-            
-            <!-- Quando não há alertas -->
-            <div *ngIf="getTotalAlertas() === 0" class="no-alerts">
-              <span class="no-alert-icon">✅</span>
-              <span class="no-alert-text">Tudo em dia!</span>
             </div>
           </div>
         </div>
