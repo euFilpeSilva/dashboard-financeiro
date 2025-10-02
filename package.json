@@ -5,8 +5,12 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "deploy": "ng build --configuration production && firebase deploy --only hosting",
+    "deploy:dev": "ng build --configuration development && firebase deploy --only hosting",
+    "preview": "firebase serve --only hosting"
   },
   "private": true,
   "dependencies": {
