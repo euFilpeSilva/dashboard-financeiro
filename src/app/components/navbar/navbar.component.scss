@@ -261,6 +261,7 @@
   .navbar-container {
     padding: 0 16px;
     height: 64px; // Aumentar altura para melhor toque
+    overflow: visible; // Garantir que elementos não sejam cortados
   }
 
   .navbar-brand {
@@ -297,6 +298,10 @@
   }
 
   .navbar-user {
+    // Garantir que o perfil não seja cortado
+    margin-right: 0;
+    min-width: auto;
+    
     .user-details {
       display: none;
     }
@@ -304,10 +309,26 @@
     .user-info {
       padding: 8px 10px;
       min-height: 44px; // Área de toque adequada
+      margin-right: 0; // Remove margem para evitar corte
       
       .user-avatar {
         width: 36px; // Avatar ligeiramente maior
         height: 36px;
+      }
+    }
+    
+    .user-menu {
+      right: 0; // Garantir alinhamento correto
+      left: auto;
+      min-width: 200px;
+      max-width: calc(100vw - 32px); // Evitar overflow
+      
+      // Ajustar posição em telas pequenas
+      @media (max-width: 480px) {
+        right: -16px;
+        left: 16px;
+        min-width: auto;
+        width: calc(100vw - 32px);
       }
     }
   }

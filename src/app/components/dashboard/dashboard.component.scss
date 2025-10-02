@@ -2268,3 +2268,51 @@
     }
   }
 }
+
+// Correções específicas para problemas identificados
+@media (max-width: 768px) {
+  .dashboard-container[data-theme="compacto"] {
+    .layout-compacto {
+      height: 100vh;
+      overflow-y: auto;
+      
+      .compact-layout {
+        padding: 16px 12px 100px 12px; // Adicionar padding bottom para evitar cortes
+        min-height: calc(100vh - 90px);
+        
+        .compact-grid-bottom {
+          min-height: 400px;
+          max-height: 500px;
+          overflow: hidden;
+          
+          .compact-card.chart-compact {
+            .compact-content.chart-layout {
+              height: calc(100% - 60px);
+              overflow: hidden;
+              
+              app-chart {
+                height: 100%;
+                
+                :deep(.chart-section) {
+                  height: 100%;
+                  
+                  .chart-content {
+                    max-height: 350px;
+                    
+                    .chart-wrapper {
+                      max-height: 300px;
+                      
+                      canvas {
+                        max-height: 250px !important;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
