@@ -38,24 +38,42 @@ body {
   margin: 0;
   padding: 0;
   background: var(--bg-primary);
-  min-height: 100vh;
+  height: 100vh;
   color: var(--text-primary);
-  overflow-x: hidden;
+  overflow: hidden; // Remove scroll do body
 }
 
 // Layout principal
 app-root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 app-navbar {
   flex-shrink: 0;
 }
 
+// Container principal para conteúdo
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: calc(100vh - 60px);
+}
+
+// Container para tela de login (sem navbar)
+.login-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100vh;
+}
+
 router-outlet + * {
   flex: 1;
+  overflow-y: auto;
 }
 
 .container {
@@ -296,5 +314,12 @@ div[class*="chart"] {
 
   &::-webkit-scrollbar-track {
     background: transparent;
+  }
+}
+
+/* Responsive adjustments for navbar height */
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 56px; // Altura da navbar no mobile
   }
 }

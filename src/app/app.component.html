@@ -1,3 +1,8 @@
 <app-navbar *ngIf="isAuthenticated"></app-navbar>
-<router-outlet />
+<div class="main-content" *ngIf="isAuthenticated">
+  <router-outlet />
+</div>
+<div class="login-content" *ngIf="!isAuthenticated">
+  <router-outlet />
+</div>
 <app-toast></app-toast>
