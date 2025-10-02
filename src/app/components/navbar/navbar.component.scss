@@ -260,25 +260,39 @@
 @media (max-width: 768px) {
   .navbar-container {
     padding: 0 16px;
-    height: 56px;
+    height: 64px; // Aumentar altura para melhor toque
   }
 
   .navbar-brand {
     .brand-text {
       display: none;
     }
+    
+    .brand-icon {
+      font-size: 1.6rem; // Ícone maior no mobile
+    }
   }
 
   .navbar-nav {
-    gap: 2px;
+    gap: 6px; // Mais espaço entre links
     
     .nav-link {
-      padding: 8px 12px;
-      font-size: 0.8rem;
+      padding: 10px 14px; // Área de toque maior
+      font-size: 0.85rem;
+      min-height: 44px; // Altura mínima para acessibilidade touch
       
       .nav-icon {
-        margin-right: 4px;
+        margin-right: 6px;
+        font-size: 1.1rem; // Ícones maiores
       }
+    }
+  }
+
+  .theme-selector {
+    .theme-select {
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      min-width: 120px;
     }
   }
 
@@ -288,7 +302,13 @@
     }
 
     .user-info {
-      padding: 6px;
+      padding: 8px 10px;
+      min-height: 44px; // Área de toque adequada
+      
+      .user-avatar {
+        width: 36px; // Avatar ligeiramente maior
+        height: 36px;
+      }
     }
   }
 }
@@ -296,21 +316,78 @@
 @media (max-width: 480px) {
   .navbar-container {
     padding: 0 12px;
+    height: 60px;
   }
 
   .navbar-nav {
+    gap: 4px;
+    
     .nav-link {
-      padding: 6px 8px;
+      padding: 8px 10px;
+      min-width: 44px; // Largura mínima para toque
+      justify-content: center;
       
       span {
-        display: none;
+        display: none; // Ocultar texto, manter apenas ícones
+      }
+      
+      .nav-icon {
+        margin-right: 0;
+        font-size: 1.2rem;
       }
     }
   }
 
-  .navbar-user .user-menu {
-    right: -12px;
-    left: 12px;
-    min-width: auto;
+  .theme-selector {
+    .theme-select {
+      padding: 8px 10px;
+      min-width: 100px;
+      font-size: 0.8rem;
+    }
+  }
+
+  .navbar-user {
+    .user-info {
+      padding: 6px 8px;
+      
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+      }
+    }
+    
+    .user-menu {
+      right: -12px;
+      left: 12px;
+      min-width: auto;
+      max-width: calc(100vw - 24px); // Evita overflow horizontal
+    }
+  }
+}
+
+// Breakpoint adicional para dispositivos muito pequenos
+@media (max-width: 360px) {
+  .navbar-container {
+    padding: 0 8px;
+  }
+
+  .navbar-nav {
+    gap: 2px;
+    
+    .nav-link {
+      padding: 6px 8px;
+      min-width: 40px;
+      
+      .nav-icon {
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  .theme-selector {
+    .theme-select {
+      min-width: 80px;
+      font-size: 0.75rem;
+    }
   }
 }

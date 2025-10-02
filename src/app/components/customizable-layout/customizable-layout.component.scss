@@ -1474,30 +1474,335 @@
     flex-direction: column;
     gap: 16px;
     text-align: center;
-    padding: 16px;
+    padding: 20px 16px; // Mais padding para mobile
+
+    .header-content h1 {
+      font-size: 1.8rem; // Título um pouco menor
+    }
 
     .layout-actions {
       flex-wrap: wrap;
       justify-content: center;
+      gap: 8px; // Reduzir gap entre botões
     }
 
     .action-btn {
-      padding: 8px 12px;
-      font-size: 0.8rem;
+      padding: 12px 16px; // Área de toque maior
+      font-size: 0.9rem;
+      min-height: 44px; // Altura mínima para acessibilidade
+    }
+  }
+
+  .layout-container {
+    height: calc(100vh - 80px); // Ajustar para novo header
+    
+    &.edit-mode .cards-workspace {
+      padding-left: 0;
+    }
+  }
+
+  .controls-sidebar {
+    position: fixed;
+    left: -100%;
+    top: 0;
+    width: 280px; // Sidebar um pouco menor no mobile
+    height: 100vh;
+    z-index: 1050;
+    transition: left 0.3s ease;
+
+    &.mobile-open {
+      left: 0;
+    }
+
+    .control-section {
+      padding: 16px; // Reduzir padding
+    }
+
+    .widgets-library .widget-item {
+      padding: 14px 12px; // Área de toque melhor
+      
+      .widget-icon {
+        font-size: 1.4rem;
+        width: 36px;
+      }
+      
+      .widget-info .widget-name {
+        font-size: 0.95rem;
+      }
     }
   }
 
   .cards-workspace {
-    padding: 16px;
+    padding: 20px 16px; // Melhor padding mobile
   }
 
   .dynamic-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
+    grid-template-columns: 1fr; // Uma coluna no mobile
+    gap: 20px; // Mais espaço entre cards
 
     .dynamic-card {
       grid-column: span 1 !important;
-      min-height: 240px !important;
+      min-height: 280px !important; // Altura adequada para mobile
+      max-height: none; // Remove limitação de altura
+
+      .card-content {
+        padding: 20px; // Mais padding interno
+      }
+
+      // Overlay de edição otimizado para mobile
+      .edit-overlay {
+        padding: 20px;
+
+        .card-actions {
+          gap: 12px;
+
+          .card-action-btn {
+            width: 44px; // Área de toque adequada
+            height: 44px;
+            font-size: 1.1rem;
+          }
+        }
+
+        .drag-handle {
+          padding: 12px;
+
+          .drag-icon {
+            font-size: 1.6rem;
+          }
+
+          .drag-text {
+            font-size: 0.85rem;
+          }
+        }
+      }
+    }
+  }
+
+  // Otimizações específicas para widgets
+  .widget-resumo-avancado {
+    .resumo-grid {
+      gap: 16px; // Mais espaço entre métricas
+
+      .metric-card {
+        padding: 18px 16px; // Área de toque maior
+        gap: 14px;
+        min-height: 70px; // Altura adequada para mobile
+
+        .metric-icon {
+          font-size: 1.8rem; // Ícones maiores
+          width: 52px;
+        }
+
+        .metric-content {
+          .metric-value {
+            font-size: 1.2rem; // Valores mais legíveis
+          }
+
+          .metric-label {
+            font-size: 0.9rem; // Labels mais legíveis
+          }
+        }
+      }
+    }
+  }
+
+  .widget-interativo {
+    .despesas-interativas .despesa-interativa {
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto;
+      gap: 10px 12px;
+      padding: 16px;
+      min-height: 80px;
+
+      .categoria-dot {
+        grid-row: 1;
+        width: 14px;
+        height: 14px;
+      }
+
+      .despesa-nome {
+        grid-row: 1;
+        font-size: 0.95rem;
+      }
+
+      .despesa-valor {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .status-badge {
+        grid-column: 2;
+        grid-row: 1;
+        justify-self: end;
+        font-size: 0.75rem;
+        padding: 6px 10px;
+      }
+    }
+  }
+
+  .widget-trending {
+    .entradas-trending .entrada-trend {
+      padding: 18px 16px;
+      gap: 16px;
+      min-height: 80px;
+
+      .fonte-icon {
+        font-size: 2rem;
+        width: 52px;
+      }
+
+      .entrada-info {
+        gap: 6px;
+
+        .fonte-nome {
+          font-size: 1rem;
+        }
+
+        .entrada-data {
+          font-size: 0.85rem;
+        }
+      }
+
+      .entrada-valor {
+        font-size: 1.1rem;
+
+        &.principal {
+          font-size: 1.2rem;
+        }
+      }
+    }
+  }
+
+  .widget-smart-alerts {
+    .smart-alerts .smart-alert {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 18px 16px;
+      min-height: 100px;
+
+      .alert-icon {
+        font-size: 1.8rem;
+        width: 44px;
+        align-self: flex-start;
+      }
+
+      .alert-content {
+        order: 1;
+        width: 100%;
+
+        .alert-title {
+          font-size: 1rem;
+        }
+
+        .alert-message {
+          font-size: 0.85rem;
+          line-height: 1.5;
+        }
+      }
+
+      .alert-action {
+        order: 2;
+        align-self: flex-end;
+        padding: 10px 16px;
+        font-size: 0.8rem;
+        min-height: 44px;
+      }
+    }
+  }
+
+  .widget-chart-avancado {
+    .chart-container {
+      padding: 12px;
+      min-height: 200px; // Altura adequada para mobile
+
+      .category-chart {
+        max-width: 180px;
+        height: 180px;
+        gap: 6px;
+        padding: 8px;
+
+        .category-slice {
+          padding: 8px 10px;
+          min-width: 120px;
+          border-radius: 8px;
+
+          .slice-label {
+            font-size: 0.8rem;
+            max-width: 100px;
+          }
+
+          .slice-value {
+            font-size: 0.75rem;
+          }
+        }
+      }
+    }
+  }
+
+  .widget-analytics {
+    .analytics-content {
+      gap: 16px;
+
+      .chart-area {
+        padding: 16px;
+        min-height: 120px;
+        max-height: 180px;
+
+        .trend-chart {
+          height: 100px;
+          gap: 8px;
+
+          .chart-bar {
+            max-height: 100px;
+          }
+        }
+      }
+
+      .trend-summary {
+        padding: 12px 16px;
+
+        .trend-text {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+// Breakpoints adicionais para dispositivos muito pequenos
+@media (max-width: 480px) {
+  .customization-header {
+    padding: 16px 12px;
+
+    .header-content h1 {
+      font-size: 1.6rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+    }
+
+    .action-btn {
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      flex: 1;
+      max-width: 140px;
+    }
+  }
+
+  .cards-workspace {
+    padding: 16px 12px;
+  }
+
+  .dynamic-grid {
+    gap: 16px;
+
+    .dynamic-card {
+      min-height: 260px !important;
 
       .card-content {
         padding: 16px;
@@ -1505,50 +1810,131 @@
     }
   }
 
+  // Ajustes específicos para widgets em telas muito pequenas
   .widget-resumo-avancado .resumo-grid .metric-card {
-    padding: 14px;
-    gap: 12px;
-
+    padding: 16px 14px;
+    
     .metric-icon {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
+      width: 48px;
     }
-
+    
     .metric-content {
       .metric-value {
+        font-size: 1.1rem;
+      }
+      
+      .metric-label {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .widget-chart-avancado .chart-container {
+    padding: 8px;
+    min-height: 180px;
+
+    .category-chart {
+      max-width: 160px;
+      height: 160px;
+      gap: 4px;
+
+      .category-slice {
+        padding: 6px 8px;
+        min-width: 100px;
+
+        .slice-label {
+          font-size: 0.75rem;
+          max-width: 85px;
+        }
+
+        .slice-value {
+          font-size: 0.7rem;
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .customization-header {
+    padding: 14px 10px;
+
+    .header-content h1 {
+      font-size: 1.4rem;
+    }
+
+    .action-btn {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      min-width: 120px;
+    }
+  }
+
+  .cards-workspace {
+    padding: 14px 10px;
+  }
+
+  .dynamic-card {
+    .card-content {
+      padding: 14px;
+    }
+
+    .edit-overlay {
+      padding: 16px;
+
+      .card-actions .card-action-btn {
+        width: 40px;
+        height: 40px;
         font-size: 1rem;
       }
     }
   }
 
-  .widget-interativo .despesas-interativas .despesa-interativa {
-    grid-template-columns: auto 1fr auto;
-    gap: 8px;
-    padding: 12px;
-
-    .status-badge {
-      grid-column: 1 / -1;
-      justify-self: start;
-      margin-top: 4px;
+  .widget-resumo-avancado .resumo-grid .metric-card {
+    padding: 14px 12px;
+    gap: 10px;
+    
+    .metric-icon {
+      font-size: 1.4rem;
+      width: 44px;
+    }
+    
+    .metric-content {
+      .metric-value {
+        font-size: 1rem;
+      }
+      
+      .metric-label {
+        font-size: 0.8rem;
+      }
     }
   }
 
-  .widget-smart-alerts .smart-alerts .smart-alert {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .widget-chart-avancado .chart-container {
+    padding: 6px;
+    min-height: 160px;
 
-    .alert-content {
-      order: 1;
-    }
+    .category-chart {
+      max-width: 140px;
+      height: 140px;
 
-    .alert-action {
-      order: 2;
-      align-self: flex-end;
+      .category-slice {
+        padding: 5px 6px;
+        min-width: 85px;
+
+        .slice-label {
+          font-size: 0.7rem;
+          max-width: 70px;
+        }
+
+        .slice-value {
+          font-size: 0.65rem;
+        }
+      }
     }
   }
 }
-
-// Custom scrollbar styles for dark theme
 :host ::ng-deep {
   // Webkit browsers (Chrome, Safari, Edge)
   *::-webkit-scrollbar {

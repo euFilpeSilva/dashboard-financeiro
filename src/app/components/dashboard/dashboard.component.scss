@@ -2246,3 +2246,25 @@
     }
   }
 }
+
+// Melhorias adicionais para mobile
+@media (max-width: 480px) {
+  .dashboard-container[data-theme="compacto"] {
+    .layout-compacto {
+      .compact-status-bar {
+        padding: 12px 10px;
+        
+        .status-metrics .metric .metric-value {
+          font-size: 13px;
+          font-weight: 700;
+        }
+        
+        .status-actions .compact-btn {
+          padding: 8px 14px;
+          font-size: 0.8rem;
+          min-height: 40px;
+        }
+      }
+    }
+  }
+}

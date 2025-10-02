@@ -1,0 +1,248 @@
+// Melhorias específicas para mobile do dashboard
+// Este arquivo será importado no dashboard.component.scss
+
+// Breakpoints para dispositivos móveis (480px e menor)
+@media (max-width: 480px) {
+  .dashboard-container[data-theme="compacto"] {
+    .layout-compacto {
+      .compact-status-bar {
+        padding: 12px 10px;
+        min-height: 100px;
+        flex-wrap: wrap;
+        
+        .status-metrics {
+          width: 100%;
+          order: 2;
+          justify-content: space-around;
+          gap: 12px;
+          margin-top: 8px;
+          
+          .metric {
+            min-width: 65px;
+            
+            .metric-icon {
+              font-size: 16px;
+            }
+            
+            .metric-value {
+              font-size: 13px;
+              font-weight: 700;
+            }
+            
+            .metric-label {
+              font-size: 9px;
+              font-weight: 600;
+            }
+          }
+        }
+        
+        .status-actions {
+          order: 1;
+          width: 100%;
+          justify-content: center;
+          gap: 10px;
+          
+          .compact-btn {
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            min-height: 40px;
+            flex: 1;
+            max-width: 140px;
+          }
+        }
+      }
+      
+      .compact-layout {
+        padding: 12px 8px;
+        gap: 12px;
+        
+        .compact-grid-top {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          
+          .compact-card {
+            &.despesas-compact {
+              min-height: 260px;
+            }
+            
+            &.stats-compact {
+              min-height: 220px;
+            }
+          }
+        }
+        
+        .compact-grid-bottom {
+          min-height: 300px;
+          
+          .compact-card.chart-compact {
+            min-height: 300px;
+          }
+        }
+      }
+      
+      .compact-card {
+        padding: 14px;
+        
+        .compact-header {
+          margin-bottom: 10px;
+          
+          h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+          }
+          
+          .count-badge, .chart-summary {
+            font-size: 0.7rem;
+            padding: 3px 8px;
+            font-weight: 600;
+          }
+        }
+        
+        .compact-content {
+          .despesas-mini-list, .entradas-mini-list {
+            gap: 8px;
+            max-height: 180px;
+            
+            .mini-despesa, .mini-entrada {
+              padding: 12px 10px;
+              gap: 10px;
+              font-size: 0.85rem;
+              min-height: 48px;
+              border-radius: 8px;
+              
+              .mini-icon {
+                width: 20px;
+                font-size: 0.95rem;
+              }
+              
+              .mini-desc, .entrada-fonte {
+                font-size: 0.85rem;
+                font-weight: 500;
+              }
+              
+              .mini-value, .entrada-valor {
+                font-size: 0.85rem;
+                font-weight: 700;
+              }
+              
+              .mini-status {
+                font-size: 0.75rem;
+                font-weight: 600;
+              }
+            }
+          }
+          
+          .stats-grid {
+            gap: 10px;
+            
+            .stat-item {
+              padding: 14px 10px;
+              min-height: 75px;
+              
+              .stat-number {
+                font-size: 1.4rem;
+                font-weight: 800;
+              }
+              
+              .stat-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Breakpoints para dispositivos muito pequenos (360px e menor)
+@media (max-width: 360px) {
+  .dashboard-container[data-theme="compacto"] {
+    .layout-compacto {
+      .compact-status-bar {
+        padding: 10px 8px;
+        
+        .status-metrics {
+          gap: 8px;
+          
+          .metric {
+            min-width: 55px;
+            
+            .metric-icon {
+              font-size: 14px;
+            }
+            
+            .metric-value {
+              font-size: 12px;
+            }
+            
+            .metric-label {
+              font-size: 8px;
+            }
+          }
+        }
+        
+        .status-actions .compact-btn {
+          padding: 6px 10px;
+          font-size: 0.75rem;
+          min-height: 36px;
+          max-width: 120px;
+        }
+      }
+      
+      .compact-layout {
+        padding: 10px 6px;
+        gap: 10px;
+        
+        .compact-card {
+          padding: 12px;
+          
+          .compact-header h4 {
+            font-size: 0.9rem;
+          }
+          
+          .compact-content {
+            .despesas-mini-list, .entradas-mini-list {
+              gap: 6px;
+              max-height: 160px;
+              
+              .mini-despesa, .mini-entrada {
+                padding: 10px 8px;
+                gap: 8px;
+                font-size: 0.8rem;
+                min-height: 44px;
+                
+                .mini-icon {
+                  width: 18px;
+                  font-size: 0.85rem;
+                }
+                
+                .mini-value, .entrada-valor {
+                  font-size: 0.8rem;
+                }
+              }
+            }
+            
+            .stats-grid {
+              gap: 8px;
+              
+              .stat-item {
+                padding: 12px 8px;
+                min-height: 65px;
+                
+                .stat-number {
+                  font-size: 1.2rem;
+                }
+                
+                .stat-label {
+                  font-size: 0.7rem;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
