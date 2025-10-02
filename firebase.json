@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/dashboard-financeiro",
+    "public": "dist/dashboard-financeiro/browser",
     "ignore": [
       "firebase.json",
       "**/.*",
