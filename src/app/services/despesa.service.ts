@@ -15,6 +15,7 @@ import {
 import { CATEGORIAS_PADRAO } from '../models/categorias.data';
 import { FirestoreService } from './firestore.service';
 import { AuthService } from './auth.service';
+import { UserPreferencesService } from './user-preferences.service';
 
 @Injectable({
   providedIn: 'root'
@@ -34,7 +35,8 @@ export class DespesaService {
 
   constructor(
     private firestoreService: FirestoreService,
-    private authService: AuthService
+    private authService: AuthService,
+    private userPreferencesService: UserPreferencesService
   ) {
     this.inicializarDados();
   }
@@ -58,6 +60,11 @@ export class DespesaService {
         await this.firestoreService.migrarDadosLocalStorage();
         console.log('✅ Migração concluída com sucesso!');
       }
+
+      // Migrar preferências do usuário
+      console.log('🔧 Verificando migração de preferências...');
+      await this.userPreferencesService.migrarPreferenciasLocalStorage();
+      console.log('✅ Verificação de preferências concluída!');
     } catch (error) {
       console.error('❌ Erro na migração:', error);
     }
