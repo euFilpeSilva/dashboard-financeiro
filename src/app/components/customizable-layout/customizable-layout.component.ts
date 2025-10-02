@@ -1,8 +1,14 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CdkDragDrop, moveItemInArray, DragDropModule } from '@angular/cdk/drag-drop';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, takeUntil, Observable, map } from 'rxjs';
 import { ThemeService, CardPosition } from '../../services/theme.service';
+import { DespesaService } from '../../services/despesa.service';
+import { ResumoDashboard, Despesa, Entrada, DespesaPorCategoria, DadosMensais } from '../../models/despesa.model';
+
+interface DadosMensaisComAltura extends DadosMensais {
+  altura?: number;
+}
 
 @Component({
   selector: 'app-customizable-layout',
@@ -175,29 +181,31 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                     <h3>💰 Resumo Financeiro</h3>
                     <div class="widget-badge">Personalizado</div>
                   </div>
-                  <div class="resumo-grid">
+                  <div class="resumo-grid" *ngIf="resumo$ | async as resumo">
                     <div class="metric-card entrada">
                       <div class="metric-icon">📈</div>
                       <div class="metric-content">
                         <span class="metric-label">Entradas</span>
-                        <span class="metric-value">R$ 5.200,00</span>
-                        <span class="metric-change positive">+12%</span>
+                        <span class="metric-value">{{ formatarMoeda(resumo.totalEntradas) }}</span>
+                        <span class="metric-change positive">Este mês</span>
                       </div>
                     </div>
                     <div class="metric-card despesa">
                       <div class="metric-icon">📉</div>
                       <div class="metric-content">
                         <span class="metric-label">Despesas</span>
-                        <span class="metric-value">R$ 3.450,00</span>
-                        <span class="metric-change negative">+8%</span>
+                        <span class="metric-value">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+                        <span class="metric-change" [class.negative]="resumo.despesasPendentes > 0">{{ resumo.despesasPendentes }} pendentes</span>
                       </div>
                     </div>
                     <div class="metric-card saldo">
                       <div class="metric-icon">💎</div>
                       <div class="metric-content">
                         <span class="metric-label">Saldo</span>
-                        <span class="metric-value">R$ 1.750,00</span>
-                        <span class="metric-change positive">+15%</span>
+                        <span class="metric-value" [class.negative]="resumo.saldoPrevisto < 0">{{ formatarMoeda(resumo.saldoPrevisto) }}</span>
+                        <span class="metric-change" [class.positive]="resumo.saldoPrevisto > 0" [class.negative]="resumo.saldoPrevisto < 0">
+                          {{ resumo.saldoPrevisto > 0 ? 'Positivo' : 'Negativo' }}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -210,23 +218,23 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                     <button class="widget-action">Ver Todas</button>
                   </div>
                   <div class="despesas-interativas">
-                    <div class="despesa-interativa paga">
-                      <span class="categoria-dot alimentacao"></span>
-                      <span class="despesa-nome">Mercado</span>
-                      <span class="despesa-valor">R$ 250,00</span>
-                      <span class="status-badge pago">Pago</span>
+                    <div *ngFor="let despesa of despesasRecentes$ | async" 
+                         class="despesa-interativa" 
+                         [class.paga]="despesa.paga" 
+                         [class.pendente]="isDespesaPendente(despesa)" 
+                         [class.vencida]="isDespesaVencida(despesa)">
+                      <span class="categoria-dot" [ngClass]="limparNomeCategoria(despesa.categoria.nome)"></span>
+                      <span class="despesa-nome">{{ despesa.descricao }}</span>
+                      <span class="despesa-valor">{{ formatarMoeda(despesa.valor) }}</span>
+                      <span class="status-badge" 
+                            [class.pago]="despesa.paga"
+                            [class.pendente]="isDespesaPendente(despesa)"
+                            [class.vencida]="isDespesaVencida(despesa)">
+                        {{ getStatusDespesa(despesa) }}
+                      </span>
                     </div>
-                    <div class="despesa-interativa pendente">
-                      <span class="categoria-dot transporte"></span>
-                      <span class="despesa-nome">Gasolina</span>
-                      <span class="despesa-valor">R$ 180,00</span>
-                      <span class="status-badge pendente">Pendente</span>
-                    </div>
-                    <div class="despesa-interativa vencida">
-                      <span class="categoria-dot saude"></span>
-                      <span class="despesa-nome">Farmácia</span>
-                      <span class="despesa-valor">R$ 85,00</span>
-                      <span class="status-badge vencida">Vencida</span>
+                    <div *ngIf="(despesasRecentes$ | async)?.length === 0" class="empty-state">
+                      <span>Nenhuma despesa encontrada</span>
                     </div>
                   </div>
                 </div>
@@ -235,24 +243,19 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                 <div *ngSwitchCase="'entradas-recentes'" class="widget-trending">
                   <div class="widget-header">
                     <h3>📥 Entradas Recentes</h3>
-                    <div class="trending-indicator up">↗️ +5%</div>
+                    <div class="trending-indicator up">📈 Recentes</div>
                   </div>
                   <div class="entradas-trending">
-                    <div class="entrada-trend">
-                      <span class="fonte-icon">💼</span>
+                    <div *ngFor="let entrada of entradasRecentes$ | async" class="entrada-trend">
+                      <span class="fonte-icon">�</span>
                       <div class="entrada-info">
-                        <span class="fonte-nome">Salário</span>
-                        <span class="entrada-data">15/Nov</span>
+                        <span class="fonte-nome">{{ entrada.descricao }}</span>
+                        <span class="entrada-data">{{ formatarData(entrada.data) }}</span>
                       </div>
-                      <span class="entrada-valor principal">R$ 4.500,00</span>
+                      <span class="entrada-valor principal">{{ formatarMoeda(entrada.valor) }}</span>
                     </div>
-                    <div class="entrada-trend">
-                      <span class="fonte-icon">💻</span>
-                      <div class="entrada-info">
-                        <span class="fonte-nome">Freelance</span>
-                        <span class="entrada-data">10/Nov</span>
-                      </div>
-                      <span class="entrada-valor secundario">R$ 700,00</span>
+                    <div *ngIf="(entradasRecentes$ | async)?.length === 0" class="empty-state">
+                      <span>Nenhuma entrada encontrada</span>
                     </div>
                   </div>
                 </div>
@@ -268,14 +271,15 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                   </div>
                   <div class="chart-container">
                     <div class="category-chart">
-                      <div class="category-slice alimentacao" style="--percentage: 35%">
-                        <span class="slice-label">Alimentação 35%</span>
+                      <div *ngFor="let categoria of categorias$ | async" 
+                           class="category-slice" 
+                           [ngClass]="limparNomeCategoria(categoria.categoria.nome)"
+                           [style.--percentage.%]="categoria.percentual">
+                        <span class="slice-label">{{ categoria.categoria.nome }} {{ categoria.percentual }}%</span>
+                        <span class="slice-value">{{ formatarMoeda(categoria.valor) }}</span>
                       </div>
-                      <div class="category-slice transporte" style="--percentage: 25%">
-                        <span class="slice-label">Transporte 25%</span>
-                      </div>
-                      <div class="category-slice saude" style="--percentage: 15%">
-                        <span class="slice-label">Saúde 15%</span>
+                      <div *ngIf="(categorias$ | async)?.length === 0" class="empty-state">
+                        <span>Nenhuma categoria encontrada</span>
                       </div>
                     </div>
                   </div>
@@ -293,16 +297,19 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                   <div class="analytics-content">
                     <div class="chart-area">
                       <div class="trend-chart">
-                        <div class="chart-bar" style="height: 60%" data-value="R$ 3.200"></div>
-                        <div class="chart-bar" style="height: 80%" data-value="R$ 4.100"></div>
-                        <div class="chart-bar" style="height: 45%" data-value="R$ 2.800"></div>
-                        <div class="chart-bar" style="height: 90%" data-value="R$ 4.500"></div>
-                        <div class="chart-bar" style="height: 70%" data-value="R$ 3.600"></div>
-                        <div class="chart-bar" style="height: 85%" data-value="R$ 4.200"></div>
+                        <div *ngFor="let item of dadosMensais$ | async" 
+                             class="chart-bar" 
+                             [style.height.%]="item.altura || 0" 
+                             [attr.data-value]="formatarMoeda(item.despesas)"
+                             [title]="item.descricao + ': ' + formatarMoeda(item.despesas)">
+                        </div>
+                        <div *ngIf="(dadosMensais$ | async)?.length === 0" class="empty-chart">
+                          <span>Nenhum dado encontrado</span>
+                        </div>
                       </div>
                     </div>
                     <div class="trend-summary">
-                      <span class="trend-text">Tendência: <strong>+12% ↗️</strong></span>
+                      <span class="trend-text">Últimos 6 meses de despesas</span>
                     </div>
                   </div>
                 </div>
@@ -311,32 +318,18 @@ import { ThemeService, CardPosition } from '../../services/theme.service';
                 <div *ngSwitchCase="'alertas'" class="widget-smart-alerts">
                   <div class="widget-header">
                     <h3>🚨 Alertas Inteligentes</h3>
-                    <div class="alert-count">3</div>
+                    <div class="alert-count">{{ (alertas$ | async)?.length || 0 }}</div>
                   </div>
                   <div class="smart-alerts">
-                    <div class="smart-alert critical">
-                      <div class="alert-icon">⚠️</div>
+                    <div *ngFor="let alerta of alertas$ | async" 
+                         class="smart-alert" 
+                         [ngClass]="alerta.tipo">
+                      <div class="alert-icon">{{ alerta.icone }}</div>
                       <div class="alert-content">
-                        <span class="alert-title">Contas Vencidas</span>
-                        <span class="alert-message">3 contas venceram esta semana</span>
+                        <span class="alert-title">{{ alerta.titulo }}</span>
+                        <span class="alert-message">{{ alerta.mensagem }}</span>
                       </div>
-                      <button class="alert-action">Pagar</button>
-                    </div>
-                    <div class="smart-alert warning">
-                      <div class="alert-icon">📊</div>
-                      <div class="alert-content">
-                        <span class="alert-title">Meta Mensal</span>
-                        <span class="alert-message">70% da meta atingida</span>
-                      </div>
-                      <button class="alert-action">Ver</button>
-                    </div>
-                    <div class="smart-alert info">
-                      <div class="alert-icon">💡</div>
-                      <div class="alert-content">
-                        <span class="alert-title">Dica de Economia</span>
-                        <span class="alert-message">Você gastou 15% menos em transporte</span>
-                      </div>
-                      <button class="alert-action">Mais</button>
+                      <button class="alert-action">{{ alerta.acao }}</button>
                     </div>
                   </div>
                 </div>
@@ -374,7 +367,103 @@ export class CustomizableLayoutComponent implements OnInit, OnDestroy {
     { id: 'alertas', order: 6, visible: true, size: 'small' }
   ];
 
-  constructor(private themeService: ThemeService) {}
+  // Propriedades reativas para dados reais
+  resumo$: Observable<ResumoDashboard>;
+  despesas$: Observable<Despesa[]>;
+  entradas$: Observable<Entrada[]>;
+  categorias$: Observable<DespesaPorCategoria[]>;
+  dadosMensais$: Observable<DadosMensaisComAltura[]>;
+  despesasRecentes$: Observable<Despesa[]>;
+  entradasRecentes$: Observable<Entrada[]>;
+  alertas$: Observable<any[]>;
+
+  constructor(private themeService: ThemeService, private despesaService: DespesaService) {
+    // Inicializar observables
+    this.resumo$ = this.despesaService.getResumoDashboard();
+    this.despesas$ = this.despesaService.getDespesasDoMes();
+    this.entradas$ = this.despesaService.entradas$;
+    // Categorias com percentuais calculados
+    this.categorias$ = this.despesaService.getDespesasPorCategoria().pipe(
+      map(categorias => {
+        const totalGeral = categorias.reduce((sum, cat) => sum + cat.valor, 0);
+        return categorias.map(cat => ({
+          ...cat,
+          percentual: totalGeral > 0 ? Math.round((cat.valor / totalGeral) * 100) : 0
+        })).slice(0, 6); // Limitar a 6 categorias
+      })
+    );
+    // Gráfico com dados calculados para alturas relativas
+    this.dadosMensais$ = this.despesaService.getDadosMensais().pipe(
+      map(dados => {
+        const ultimos6Meses = dados.slice(0, 6);
+        const valores = ultimos6Meses.map(item => item.despesas);
+        const maxValor = Math.max(...valores);
+        
+        return ultimos6Meses.map(item => ({
+          ...item,
+          altura: maxValor > 0 ? Math.round((item.despesas / maxValor) * 100) : 0
+        }));
+      })
+    );
+    
+    // Despesas e entradas recentes (últimas 5)
+    this.despesasRecentes$ = this.despesas$.pipe(
+      map(despesas => despesas.slice(0, 5))
+    );
+    
+    // Alertas inteligentes baseados nos dados
+    this.alertas$ = this.resumo$.pipe(
+      map(resumo => {
+        const alertas = [];
+        
+        if (resumo.despesasVencidas > 0) {
+          alertas.push({
+            tipo: 'critical',
+            icone: '⚠️',
+            titulo: 'Contas Vencidas',
+            mensagem: `${resumo.despesasVencidas} conta${resumo.despesasVencidas > 1 ? 's' : ''} vencida${resumo.despesasVencidas > 1 ? 's' : ''}`,
+            acao: 'Pagar'
+          });
+        }
+        
+        if (resumo.despesasProximasVencimento > 0) {
+          alertas.push({
+            tipo: 'warning',
+            icone: '📅',
+            titulo: 'Vencimento Próximo',
+            mensagem: `${resumo.despesasProximasVencimento} conta${resumo.despesasProximasVencimento > 1 ? 's' : ''} vence${resumo.despesasProximasVencimento > 1 ? 'm' : ''} esta semana`,
+            acao: 'Ver'
+          });
+        }
+        
+        if (resumo.saldoPrevisto < 0) {
+          alertas.push({
+            tipo: 'warning',
+            icone: '💰',
+            titulo: 'Saldo Negativo',
+            mensagem: 'Suas despesas superam as entradas',
+            acao: 'Revisar'
+          });
+        }
+        
+        if (alertas.length === 0) {
+          alertas.push({
+            tipo: 'info',
+            icone: '✅',
+            titulo: 'Tudo em Dia',
+            mensagem: 'Suas finanças estão organizadas!',
+            acao: 'Ótimo'
+          });
+        }
+        
+        return alertas;
+      })
+    );
+    
+    this.entradasRecentes$ = this.entradas$.pipe(
+      map(entradas => entradas.slice(0, 5))
+    );
+  }
 
   ngOnInit(): void {
     this.themeService.temaAtual$.pipe(takeUntil(this.destroy$))
@@ -622,5 +711,35 @@ export class CustomizableLayoutComponent implements OnInit, OnDestroy {
       'large': 'Grande'
     };
     return labels[size] || size;
+  }
+
+  formatarMoeda(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(valor);
+  }
+
+  formatarData(data: Date | string): string {
+    const dataObj = typeof data === 'string' ? new Date(data) : data;
+    return dataObj.toLocaleDateString('pt-BR');
+  }
+
+  // Métodos auxiliares para o template
+  isDespesaVencida(despesa: Despesa): boolean {
+    return !despesa.paga && new Date(despesa.dataVencimento) < new Date();
+  }
+
+  isDespesaPendente(despesa: Despesa): boolean {
+    return !despesa.paga && new Date(despesa.dataVencimento) >= new Date();
+  }
+
+  getStatusDespesa(despesa: Despesa): string {
+    if (despesa.paga) return 'Pago';
+    return this.isDespesaVencida(despesa) ? 'Vencida' : 'Pendente';
+  }
+
+  limparNomeCategoria(nome: string): string {
+    return nome.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 }
