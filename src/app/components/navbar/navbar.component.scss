@@ -65,6 +65,10 @@
       margin-right: 6px;
       font-size: 1rem;
     }
+    
+    .nav-text {
+      display: inline; // Mostrar texto por padrão no desktop
+    }
 
     &:hover {
       background: var(--bg-secondary);
@@ -75,6 +79,252 @@
       background: var(--color-blue);
       color: white;
       box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+    }
+  }
+}
+
+// === MOBILE MENU ===
+.mobile-menu-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 44px; // Aumentar tamanho
+  height: 44px; // Aumentar tamanho
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px; // Reduzir padding
+  margin-right: 8px; // Reduzir margem da borda
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: var(--bg-secondary);
+  }
+  
+  .hamburger-line {
+    width: 22px; // Aumentar largura
+    height: 3px; // Aumentar altura
+    background: var(--text-primary);
+    margin: 3px 0; // Mais espaçamento
+    transition: 0.3s;
+    border-radius: 2px; // Bordas mais arredondadas
+  }
+}
+
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  
+  &.show {
+    display: block;
+    opacity: 1;
+  }
+}
+
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: -300px;
+  width: 280px;
+  height: 100vh;
+  background: var(--bg-card);
+  z-index: 1000;
+  transition: right 0.3s ease;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+  overflow-y: auto;
+  
+  &.show {
+    right: 0;
+  }
+  
+  .mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    
+    h3 {
+      margin: 0;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      
+      &:hover {
+        background: var(--bg-card);
+        color: var(--text-primary);
+      }
+    }
+  }
+  
+  .mobile-menu-content {
+    padding: 20px 0;
+    
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      padding: 12px 20px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      
+      .nav-icon {
+        margin-right: 12px;
+        font-size: 1.2rem;
+        width: 24px;
+        text-align: center;
+      }
+      
+      &:hover {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+      }
+      
+      &.active {
+        background: var(--color-blue);
+        color: white;
+        border-left: 4px solid currentColor;
+      }
+    }
+    
+    .mobile-divider {
+      height: 1px;
+      background: var(--border-color);
+      margin: 16px 20px;
+    }
+    
+    .mobile-theme-selector {
+      padding: 12px 20px;
+      
+      label {
+        display: block;
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      
+      .mobile-theme-select {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        
+        &:focus {
+          outline: none;
+          border-color: var(--color-blue);
+        }
+      }
+    }
+    
+    .mobile-user-section {
+      .mobile-user-info {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        gap: 12px;
+        
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          overflow: hidden;
+          border: 2px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--bg-secondary);
+          
+          .avatar-fallback {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+          }
+          
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+        }
+        
+        .user-details {
+          flex: 1;
+          
+          .user-name {
+            display: block;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+          }
+          
+          .user-email {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+          }
+        }
+      }
+      
+      .mobile-menu-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        
+        .menu-icon {
+          margin-right: 12px;
+          font-size: 1.1rem;
+          width: 20px;
+          text-align: center;
+        }
+        
+        &:hover {
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+        
+        &.logout {
+          color: #ef4444;
+          
+          &:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+          }
+        }
+      }
     }
   }
 }
@@ -258,133 +508,146 @@
 
 // === RESPONSIVE DESIGN ===
 @media (max-width: 768px) {
+  .navbar {
+    .navbar-nav.desktop-nav {
+      display: none;
+    }
+    
+    .user-section {
+      display: none;
+    }
+    
+    .theme-selector {
+      display: none;
+    }
+    
+    .mobile-menu-btn {
+      display: flex;
+    }
+    
+    .mobile-menu-overlay {
+      &.show {
+        display: block;
+      }
+    }
+    
+    .mobile-menu {
+      display: block;
+    }
+  }
+  
   .navbar-container {
-    padding: 0 16px;
-    height: 64px; // Aumentar altura para melhor toque
-    overflow: visible; // Garantir que elementos não sejam cortados
+    padding: 0 8px; // Reduzir padding lateral ainda mais
+    height: 56px; // Altura mais compacta
+    overflow: visible;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px; // Menos espaçamento entre elementos
   }
 
   .navbar-brand {
+    flex-shrink: 0; // Não comprimir
+    max-width: 120px; // Reduzir largura máxima
+    
+    .brand-link {
+      font-size: 0.9rem; // Reduzir tamanho da fonte
+      padding: 8px 0; // Remover padding lateral
+      margin-left: 0; // Garantir que não há margem
+    }
+    
     .brand-text {
       display: none;
+      
+      // Mostrar apenas "Dashboard" no mobile
+      &::before {
+        content: "Dashboard";
+        display: inline;
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
     }
     
     .brand-icon {
-      font-size: 1.6rem; // Ícone maior no mobile
+      display: none; // Esconder ícone no mobile
     }
   }
-
-  .navbar-nav {
-    gap: 6px; // Mais espaço entre links
-    
-    .nav-link {
-      padding: 10px 14px; // Área de toque maior
-      font-size: 0.85rem;
-      min-height: 44px; // Altura mínima para acessibilidade touch
+  
+  // Melhorar exibição do botão Dados por Mês
+  .navbar {
+    .navbar-nav.desktop-nav {
+      display: flex;
+      flex: 1;
+      justify-content: center;
       
-      .nav-icon {
-        margin-right: 6px;
-        font-size: 1.1rem; // Ícones maiores
-      }
-    }
-  }
-
-  .theme-selector {
-    .theme-select {
-      padding: 10px 12px;
-      font-size: 0.9rem;
-      min-width: 120px;
-    }
-  }
-
-  .navbar-user {
-    // Garantir que o perfil não seja cortado
-    margin-right: 0;
-    min-width: auto;
-    
-    .user-details {
-      display: none;
-    }
-
-    .user-info {
-      padding: 8px 10px;
-      min-height: 44px; // Área de toque adequada
-      margin-right: 0; // Remove margem para evitar corte
-      
-      .user-avatar {
-        width: 36px; // Avatar ligeiramente maior
-        height: 36px;
-      }
-    }
-    
-    .user-menu {
-      right: 0; // Garantir alinhamento correto
-      left: auto;
-      min-width: 200px;
-      max-width: calc(100vw - 32px); // Evitar overflow
-      
-      // Ajustar posição em telas pequenas
-      @media (max-width: 480px) {
-        right: -16px;
-        left: 16px;
-        min-width: auto;
-        width: calc(100vw - 32px);
+      .nav-link {
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        
+        .nav-icon {
+          margin-right: 6px;
+          font-size: 1rem;
+        }
+        
+        .nav-text {
+          display: inline; // Mostrar texto no mobile
+        }
+        
+        &:hover, &.active {
+          background: var(--color-blue);
+          color: white;
+        }
       }
     }
   }
 }
 
 @media (max-width: 480px) {
+  .mobile-menu {
+    width: 100vw;
+    right: -100vw;
+    
+    &.show {
+      right: 0;
+    }
+  }
+  
   .navbar-container {
-    padding: 0 12px;
-    height: 60px;
+    padding: 0 4px; // Padding mínimo
+    height: 52px; // Altura mais compacta
+    gap: 2px; // Espaçamento mínimo
   }
-
-  .navbar-nav {
-    gap: 4px;
+  
+  .navbar-brand {
+    max-width: 80px; // Ainda menor para dar mais espaço
     
-    .nav-link {
-      padding: 8px 10px;
-      min-width: 44px; // Largura mínima para toque
-      justify-content: center;
-      
-      span {
-        display: none; // Ocultar texto, manter apenas ícones
-      }
-      
-      .nav-icon {
-        margin-right: 0;
-        font-size: 1.2rem;
-      }
+    .brand-link {
+      font-size: 0.8rem; // Fonte menor
+      padding: 6px 0; // Sem padding lateral
+      margin-left: 0;
     }
-  }
-
-  .theme-selector {
-    .theme-select {
-      padding: 8px 10px;
-      min-width: 100px;
-      font-size: 0.8rem;
-    }
-  }
-
-  .navbar-user {
-    .user-info {
-      padding: 6px 8px;
-      
-      .user-avatar {
-        width: 32px;
-        height: 32px;
+    
+    .brand-text {
+      &::before {
+        content: "Dashboard";
+        font-size: 0.8rem;
       }
     }
     
-    .user-menu {
-      right: -12px;
-      left: 12px;
-      min-width: auto;
-      max-width: calc(100vw - 24px); // Evita overflow horizontal
+    .brand-icon {
+      display: none; // Esconder ícone completamente
     }
   }
 }
+
 
 // Breakpoint adicional para dispositivos muito pequenos
 @media (max-width: 360px) {
@@ -404,11 +667,314 @@
       }
     }
   }
+}
+
+// === OTIMIZAÇÕES PARA TELAS QHD+ (1440x3120 e similares) ===
+@media (min-width: 1440px) and (min-height: 2500px) {
+  .navbar {
+    backdrop-filter: blur(12px);
+  }
+
+  .navbar-container {
+    max-width: 1400px;
+    padding: 0 32px;
+    height: 80px;
+  }
+
+  .navbar-brand {
+    .brand-link {
+      font-size: 1.4rem;
+      
+      .brand-icon {
+        font-size: 1.8rem;
+        margin-right: 16px;
+      }
+    }
+  }
+
+  .navbar-nav {
+    gap: 8px;
+    
+    .nav-link {
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      
+      .nav-icon {
+        font-size: 1.3rem;
+        margin-right: 12px;
+      }
+      
+      span {
+        font-weight: 500;
+      }
+    }
+  }
 
   .theme-selector {
     .theme-select {
-      min-width: 80px;
-      font-size: 0.75rem;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border-radius: 10px;
+      min-width: 180px;
+    }
+  }
+
+  .navbar-user {
+    .user-info {
+      padding: 8px 16px;
+      border-radius: 12px;
+      gap: 12px;
+      
+      .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-width: 3px;
+      }
+      
+      .user-details {
+        .user-name {
+          font-size: 1.1rem;
+        }
+        
+        .user-role {
+          font-size: 0.9rem;
+        }
+      }
+    }
+    
+    .user-menu {
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 240px;
+      
+      .menu-item {
+        padding: 12px 20px;
+        font-size: 1rem;
+        
+        .menu-icon {
+          font-size: 1.2rem;
+          margin-right: 12px;
+        }
+      }
+    }
+  }
+}
+
+// Media query adicional para telas muito altas (3000px+)
+@media (min-width: 1440px) and (min-height: 3000px) {
+  .navbar-container {
+    height: 100px;
+    padding: 0 40px;
+  }
+
+  .navbar-brand {
+    .brand-link {
+      font-size: 1.6rem;
+      
+      .brand-icon {
+        font-size: 2rem;
+        margin-right: 20px;
+      }
+    }
+  }
+
+  .navbar-nav {
+    gap: 12px;
+    
+    .nav-link {
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      
+      .nav-icon {
+        font-size: 1.4rem;
+        margin-right: 16px;
+      }
+    }
+  }
+
+  .theme-selector {
+    .theme-select {
+      padding: 16px 20px;
+      font-size: 1.1rem;
+      min-width: 200px;
+    }
+  }
+
+  .navbar-user {
+    .user-info {
+      padding: 12px 20px;
+      
+      .user-avatar {
+        width: 56px;
+        height: 56px;
+      }
+      
+      .user-details {
+        .user-name {
+          font-size: 1.2rem;
+        }
+        
+        .user-role {
+          font-size: 1rem;
+        }
+      }
+    }
+  }
+}
+
+// === OTIMIZAÇÕES PARA TELAS QHD+ (1440x3120 e similares) ===
+@media (min-width: 1440px) and (min-height: 2500px) {
+  .navbar {
+    backdrop-filter: blur(12px);
+  }
+
+  .navbar-container {
+    max-width: 1400px;
+    padding: 0 32px;
+    height: 80px;
+  }
+
+  .navbar-brand {
+    .brand-link {
+      font-size: 1.4rem;
+      
+      .brand-icon {
+        font-size: 1.8rem;
+        margin-right: 16px;
+      }
+    }
+  }
+
+  .navbar-nav {
+    gap: 8px;
+    
+    .nav-link {
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      
+      .nav-icon {
+        font-size: 1.3rem;
+        margin-right: 12px;
+      }
+      
+      span {
+        font-weight: 500;
+      }
+    }
+  }
+
+  .theme-selector {
+    .theme-select {
+      padding: 12px 16px;
+      font-size: 1rem;
+      border-radius: 10px;
+      min-width: 180px;
+    }
+  }
+
+  .navbar-user {
+    .user-info {
+      padding: 8px 16px;
+      border-radius: 12px;
+      gap: 12px;
+      
+      .user-avatar {
+        width: 48px;
+        height: 48px;
+        border-width: 3px;
+      }
+      
+      .user-details {
+        .user-name {
+          font-size: 1.1rem;
+        }
+        
+        .user-role {
+          font-size: 0.9rem;
+        }
+      }
+    }
+    
+    .user-menu {
+      margin-top: 12px;
+      border-radius: 12px;
+      padding: 12px 0;
+      min-width: 240px;
+      
+      .menu-item {
+        padding: 12px 20px;
+        font-size: 1rem;
+        
+        .menu-icon {
+          font-size: 1.2rem;
+          margin-right: 12px;
+        }
+      }
+    }
+  }
+}
+
+// Media query adicional para telas muito altas (3000px+)
+@media (min-width: 1440px) and (min-height: 3000px) {
+  .navbar-container {
+    height: 100px;
+    padding: 0 40px;
+  }
+
+  .navbar-brand {
+    .brand-link {
+      font-size: 1.6rem;
+      
+      .brand-icon {
+        font-size: 2rem;
+        margin-right: 20px;
+      }
+    }
+  }
+
+  .navbar-nav {
+    gap: 12px;
+    
+    .nav-link {
+      padding: 16px 24px;
+      font-size: 1.2rem;
+      
+      .nav-icon {
+        font-size: 1.4rem;
+        margin-right: 16px;
+      }
+    }
+  }
+
+  .theme-selector {
+    .theme-select {
+      padding: 16px 20px;
+      font-size: 1.1rem;
+      min-width: 200px;
+    }
+  }
+
+  .navbar-user {
+    .user-info {
+      padding: 12px 20px;
+      
+      .user-avatar {
+        width: 56px;
+        height: 56px;
+      }
+      
+      .user-details {
+        .user-name {
+          font-size: 1.2rem;
+        }
+        
+        .user-role {
+          font-size: 1rem;
+        }
+      }
     }
   }
 }

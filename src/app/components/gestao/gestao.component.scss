@@ -938,7 +938,8 @@
 
 @media (max-width: 640px) {
   .gestao-container {
-    padding: 16px;
+    padding: 16px 16px 120px 16px; // Padding inferior maior para evitar cortes
+    min-height: calc(100vh - 120px);
   }
 
   .gestao-header .header-content h1 {
@@ -952,6 +953,7 @@
 
   .items-grid {
     gap: 16px;
+    margin-bottom: 40px; // Margem adicional no final
   }
 
   .item-card {

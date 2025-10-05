@@ -126,6 +126,11 @@
       overflow: hidden;
       max-height: calc(100vh - 120px);
       
+      // Layout mobile sempre oculto no desktop
+      .mobile-layout {
+        display: none;
+      }
+      
       // Primeira linha: Cards de despesas e resumo lado a lado
       .compact-grid-top {
         display: grid;
@@ -2010,79 +2015,195 @@
 @media (max-width: 768px) {
   .dashboard-container[data-theme="classico"] {
     .layout-classico {
+      height: 100vh;
+      overflow: hidden;
+      
       .classico-wrapper {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        
         .classico-sidebar {
           flex-direction: column;
           width: 100%;
           height: auto;
-          max-height: 40vh;
+          max-height: 30vh;
+          min-height: 200px;
           overflow-y: auto;
+          flex-shrink: 0;
+          z-index: 2;
           
           .sidebar-section {
             min-width: unset;
+            margin-bottom: 12px;
+            
+            h3 {
+              font-size: 14px;
+              margin-bottom: 8px;
+            }
             
             &.financial-summary .summary-items {
-              flex-direction: row;
-              overflow-x: auto;
+              display: grid;
+              grid-template-columns: 1fr 1fr;
               gap: 8px;
               
               .summary-item {
-                min-width: 200px;
-                flex-shrink: 0;
+                padding: 10px;
+                border-radius: 8px;
+                
+                .summary-icon {
+                  width: 28px;
+                  height: 28px;
+                  font-size: 12px;
+                }
+                
+                .summary-data {
+                  .summary-value {
+                    font-size: 13px;
+                    margin-bottom: 2px;
+                  }
+                  
+                  .summary-label {
+                    font-size: 10px;
+                  }
+                }
               }
             }
             
             &.stats .stats-grid {
               grid-template-columns: 1fr 1fr;
+              gap: 6px;
             }
           }
         }
         
         .classico-main {
+          flex: 1;
+          min-height: 0;
+          display: flex;
+          flex-direction: column;
+          
           .main-header {
-            padding: 16px;
+            padding: 10px 16px;
             flex-direction: column;
-            gap: 12px;
+            gap: 6px;
             text-align: center;
+            flex-shrink: 0;
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            z-index: 1;
+            
+            .header-content {
+              h1 {
+                font-size: 1.3rem;
+                margin-bottom: 2px;
+              }
+              
+              p {
+                font-size: 11px;
+                margin: 0;
+              }
+            }
             
             .header-actions {
               justify-content: center;
               flex-wrap: wrap;
+              gap: 6px;
+              
+              .classico-btn {
+                padding: 6px 10px;
+                font-size: 11px;
+                border-radius: 6px;
+              }
             }
           }
           
           .main-content {
-            padding: 16px;
-            gap: 16px;
+            flex: 1;
+            padding: 12px 16px 80px 16px;
+            gap: 10px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             
             .main-card {
+              margin-bottom: 12px;
+              border-radius: 10px;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+              min-height: auto; // Permitir altura automática
+              
+              &:last-child {
+                margin-bottom: 40px;
+              }
+              
+              // Card específico do gráfico
+              &.chart-card {
+                min-height: 350px; // Altura mínima para o gráfico
+                
+                .card-content {
+                  height: 300px; // Altura fixa para o conteúdo do gráfico
+                  padding: 0; // Remover padding para maximizar espaço
+                  overflow: visible;
+                }
+              }
+              
+              .card-header {
+                padding: 10px 14px;
+                
+                h3 {
+                  font-size: 15px;
+                  margin: 0;
+                }
+              }
+              
               .card-content {
-                padding: 16px;
+                padding: 10px 14px;
                 
                 .classico-table {
                   .table-header {
-                    grid-template-columns: 1fr 1fr;
-                    gap: 8px;
-                    font-size: 10px;
+                    display: none;
                   }
                   
                   .table-row {
-                    grid-template-columns: 1fr 1fr;
-                    gap: 8px;
-                    padding: 12px 0;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    padding: 8px;
+                    margin-bottom: 8px;
+                    background: #0f172a;
+                    border-radius: 6px;
+                    border: 1px solid #334155;
                     
                     .table-cell {
-                      font-size: 12px;
+                      font-size: 11px;
+                      line-height: 1.3;
+                      display: flex;
+                      align-items: center;
+                      gap: 6px;
                       
-                      &.categoria .categoria-icon {
-                        width: 20px;
-                        height: 20px;
-                        font-size: 10px;
+                      &.categoria {
+                        font-weight: 600;
+                        color: #f1f5f9;
+                        
+                        .categoria-icon {
+                          width: 16px;
+                          height: 16px;
+                          font-size: 8px;
+                        }
                       }
                       
-                      .status-badge {
-                        padding: 2px 6px;
-                        font-size: 10px;
+                      &.valor {
+                        font-weight: 700;
+                        font-size: 12px;
+                      }
+                      
+                      &.status {
+                        align-self: flex-start;
+                        
+                        .status-badge {
+                          padding: 2px 6px;
+                          font-size: 8px;
+                          border-radius: 4px;
+                        }
                       }
                     }
                   }
@@ -2275,19 +2396,264 @@
     .layout-compacto {
       height: 100vh;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      
+      .compact-status-bar {
+        flex-shrink: 0;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(15, 23, 42, 0.98);
+        backdrop-filter: blur(15px);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
       
       .compact-layout {
-        padding: 16px 12px 100px 12px; // Adicionar padding bottom para evitar cortes
-        min-height: calc(100vh - 90px);
+        flex: 1;
+        padding: 16px 12px 120px 12px; // Extra padding bottom
+        overflow-y: auto;
+        overflow-x: hidden;
         
+        // MOBILE: Mostrar apenas layout mobile
+        .mobile-layout {
+          display: flex !important; // Forçar exibição no mobile
+        }
+        
+        // MOBILE: Ocultar layout desktop
+        .compact-grid-top,
         .compact-grid-bottom {
-          min-height: 400px;
-          max-height: 500px;
-          overflow: hidden;
+          display: none !important; // Ocultar layout desktop
+        }
+        
+        // Novo layout mobile vertical
+        .mobile-layout {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
           
-          .compact-card.chart-compact {
-            .compact-content.chart-layout {
-              height: calc(100% - 60px);
+          // 1. Seção de métricas compacta
+          .mobile-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+            
+            .metric-card {
+              background: rgba(30, 41, 59, 0.8);
+              border-radius: 12px;
+              padding: 16px;
+              text-align: center;
+              border: 1px solid rgba(148, 163, 184, 0.2);
+              
+              .metric-number {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #3b82f6;
+                margin-bottom: 4px;
+              }
+              
+              .metric-label {
+                font-size: 0.75rem;
+                color: #94a3b8;
+                text-transform: uppercase;
+                font-weight: 600;
+              }
+            }
+          }
+          
+          // 2. Lista de despesas otimizada
+          .mobile-despesas {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            
+            .mobile-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+              
+              h4 {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #f1f5f9;
+                margin: 0;
+              }
+              
+              .count-badge {
+                background: rgba(59, 130, 246, 0.3);
+                color: #60a5fa;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+              }
+            }
+            
+            .mobile-list {
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+              max-height: 300px;
+              overflow-y: auto;
+              
+              .mobile-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px;
+                background: rgba(15, 23, 42, 0.6);
+                border-radius: 8px;
+                border: 1px solid rgba(148, 163, 184, 0.1);
+                
+                .item-info {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  flex: 1;
+                  
+                  .item-icon {
+                    font-size: 1.2rem;
+                    width: 24px;
+                    text-align: center;
+                    color: #94a3b8;
+                  }
+                  
+                  .item-details {
+                    flex: 1;
+                    
+                    .item-name {
+                      font-size: 0.9rem;
+                      font-weight: 600;
+                      color: #f1f5f9;
+                      margin-bottom: 2px;
+                    }
+                    
+                    .item-status {
+                      font-size: 0.75rem;
+                      color: #94a3b8;
+                    }
+                  }
+                }
+                
+                .item-value {
+                  font-size: 0.9rem;
+                  font-weight: 700;
+                  color: #f1f5f9;
+                  text-align: right;
+                }
+                
+                &.paga {
+                  opacity: 0.7;
+                  .item-value {
+                    color: #10b981;
+                  }
+                }
+                
+                &.vencida {
+                  border-left: 3px solid #ef4444;
+                  .item-value {
+                    color: #ef4444;
+                  }
+                }
+              }
+            }
+          }
+          
+          // 3. Alertas compactos
+          .mobile-alerts {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            
+            .alerts-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 12px;
+              
+              .alerts-title {
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: #f59e0b;
+                text-transform: uppercase;
+              }
+              
+              .alerts-count {
+                background: rgba(245, 158, 11, 0.3);
+                color: #f59e0b;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 700;
+              }
+            }
+            
+            .alerts-list {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              
+              .alert-item {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 8px;
+                background: rgba(15, 23, 42, 0.4);
+                border-radius: 6px;
+                
+                .alert-icon {
+                  font-size: 1rem;
+                  color: #f59e0b;
+                }
+                
+                .alert-content {
+                  flex: 1;
+                  
+                  .alert-text {
+                    font-size: 0.8rem;
+                    color: #f1f5f9;
+                    font-weight: 500;
+                  }
+                  
+                  .alert-date {
+                    font-size: 0.7rem;
+                    color: #94a3b8;
+                  }
+                }
+                
+                .alert-amount {
+                  font-size: 0.8rem;
+                  font-weight: 700;
+                  color: #f59e0b;
+                }
+              }
+            }
+          }
+          
+          // 4. Gráfico redimensionado para mobile
+          .mobile-chart {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            
+            .chart-header {
+              margin-bottom: 12px;
+              
+              h4 {
+                font-size: 1rem;
+                font-weight: 700;
+                color: #f1f5f9;
+                margin: 0;
+              }
+            }
+            
+            .chart-container {
+              height: 300px; // Altura fixa para mobile
               overflow: hidden;
               
               app-chart {
@@ -2297,13 +2663,593 @@
                   height: 100%;
                   
                   .chart-content {
-                    max-height: 350px;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
                     
                     .chart-wrapper {
-                      max-height: 300px;
+                      flex: 1;
+                      height: 250px;
+                      display: flex;
+                      align-items: center;
+                      justify-content: center;
                       
                       canvas {
-                        max-height: 250px !important;
+                        max-width: 100% !important;
+                        max-height: 200px !important;
+                        width: auto !important;
+                        height: auto !important;
+                      }
+                    }
+                    
+                    .chart-legend-sidebar {
+                      height: auto;
+                      max-height: 150px;
+                      overflow-y: auto;
+                      margin-top: 12px;
+                      
+                      .legend-items {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 8px;
+                        
+                        .legend-item {
+                          padding: 6px;
+                          font-size: 0.75rem;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          // 5. Entradas compactas
+          .mobile-entradas {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            
+            .entradas-header {
+              margin-bottom: 12px;
+              
+              .entradas-title {
+                font-size: 0.9rem;
+                font-weight: 700;
+                color: #10b981;
+                text-transform: uppercase;
+              }
+            }
+            
+            .entradas-list {
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              
+              .entrada-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 8px;
+                background: rgba(15, 23, 42, 0.4);
+                border-radius: 6px;
+                border-left: 3px solid #10b981;
+                
+                .entrada-fonte {
+                  font-size: 0.8rem;
+                  color: #f1f5f9;
+                  font-weight: 500;
+                }
+                
+                .entrada-valor {
+                  font-size: 0.8rem;
+                  font-weight: 700;
+                  color: #10b981;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+// ===== OTIMIZAÇÕES PARA TELAS QHD+ (1440x3120 e similares) =====
+// Media query para dispositivos móveis de alta resolução
+@media (min-width: 1440px) and (min-height: 2500px) {
+  
+  // ===== TEMA COMPACTO QHD+ =====
+  .dashboard-container[data-theme="compacto"] {
+    .layout-compacto {
+      .compact-status-bar {
+        height: 80px;
+        padding: 16px 24px;
+        
+        .status-metrics {
+          gap: 32px;
+          
+          .metric {
+            gap: 4px;
+            
+            .metric-icon {
+              font-size: 24px;
+            }
+            
+            .metric-value {
+              font-size: 20px;
+              font-weight: 700;
+            }
+            
+            .metric-label {
+              font-size: 14px;
+            }
+          }
+        }
+        
+        .status-actions {
+          gap: 16px;
+          
+          .compact-btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 10px;
+          }
+        }
+      }
+      
+      .compact-grid {
+        padding: 24px;
+        gap: 20px;
+        grid-template-columns: 1fr 1fr;
+        
+        .compact-card {
+          min-height: 300px;
+          border-radius: 16px;
+          
+          .compact-header {
+            padding: 20px 24px;
+            
+            h3 {
+              font-size: 22px;
+              margin-bottom: 8px;
+            }
+          }
+          
+          .compact-content {
+            padding: 0 24px 24px 24px;
+            
+            .stats-grid {
+              grid-template-columns: 1fr 1fr;
+              gap: 16px;
+              margin-bottom: 20px;
+              
+              .stat-item {
+                padding: 16px;
+                border-radius: 12px;
+                
+                .stat-number {
+                  font-size: 28px;
+                  margin-bottom: 8px;
+                }
+                
+                .stat-label {
+                  font-size: 14px;
+                }
+              }
+            }
+            
+            .compact-list {
+              .list-item {
+                padding: 16px;
+                border-radius: 10px;
+                margin-bottom: 12px;
+                
+                .item-content {
+                  gap: 16px;
+                  
+                  .item-icon {
+                    font-size: 20px;
+                    width: 32px;
+                  }
+                  
+                  .item-details {
+                    .item-name {
+                      font-size: 18px;
+                      margin-bottom: 4px;
+                    }
+                    
+                    .item-status {
+                      font-size: 14px;
+                    }
+                  }
+                }
+                
+                .item-value {
+                  font-size: 18px;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Layout mobile para QHD+
+      .mobile-layout {
+        padding: 24px;
+        gap: 24px;
+        
+        .mobile-metrics {
+          gap: 16px;
+          
+          .metric-card {
+            padding: 20px;
+            border-radius: 16px;
+            
+            .metric-value {
+              font-size: 24px;
+              margin-bottom: 8px;
+            }
+            
+            .metric-label {
+              font-size: 16px;
+            }
+          }
+        }
+        
+        .mobile-despesas,
+        .mobile-alerts,
+        .mobile-chart,
+        .mobile-entradas {
+          padding: 24px;
+          border-radius: 16px;
+          
+          h4 {
+            font-size: 20px;
+            margin-bottom: 20px;
+          }
+          
+          .chart-container {
+            height: 400px;
+          }
+          
+          .despesas-list,
+          .alerts-list,
+          .entradas-list {
+            gap: 16px;
+            
+            .despesa-item,
+            .alert-item,
+            .entrada-item {
+              padding: 16px;
+              border-radius: 12px;
+              
+              .item-content {
+                gap: 16px;
+                
+                .item-icon,
+                .alert-icon {
+                  font-size: 20px;
+                }
+                
+                .item-details,
+                .alert-content {
+                  .item-name,
+                  .alert-text {
+                    font-size: 16px;
+                    margin-bottom: 4px;
+                  }
+                  
+                  .item-status {
+                    font-size: 14px;
+                  }
+                }
+              }
+              
+              .item-value,
+              .entrada-valor {
+                font-size: 16px;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // ===== TEMA CLÁSSICO QHD+ =====
+  .dashboard-container[data-theme="classico"] {
+    .layout-classico {
+      .classico-wrapper {
+        .classico-sidebar {
+          width: 400px;
+          padding: 32px;
+          gap: 32px;
+          
+          .sidebar-section {
+            h3 {
+              font-size: 20px;
+              margin-bottom: 16px;
+            }
+            
+            &.financial-summary {
+              .summary-items {
+                gap: 16px;
+                
+                .summary-item {
+                  padding: 20px;
+                  border-radius: 16px;
+                  gap: 16px;
+                  
+                  .summary-icon {
+                    width: 56px;
+                    height: 56px;
+                    font-size: 24px;
+                    border-radius: 14px;
+                  }
+                  
+                  .summary-data {
+                    .summary-label {
+                      font-size: 14px;
+                      margin-bottom: 4px;
+                    }
+                    
+                    .summary-value {
+                      font-size: 20px;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        .classico-main {
+          .main-header {
+            padding: 32px;
+            
+            .header-content {
+              h1 {
+                font-size: 32px;
+                margin-bottom: 8px;
+              }
+              
+              p {
+                font-size: 16px;
+              }
+            }
+            
+            .header-actions {
+              gap: 16px;
+              
+              .classico-btn {
+                padding: 16px 24px;
+                font-size: 16px;
+                border-radius: 12px;
+              }
+            }
+          }
+          
+          .main-content {
+            padding: 32px;
+            gap: 32px;
+            grid-template-columns: 1fr;
+            
+            .main-card {
+              border-radius: 16px;
+              
+              .card-header {
+                padding: 24px 32px;
+                
+                h3 {
+                  font-size: 22px;
+                }
+              }
+              
+              .card-content {
+                padding: 0 32px 32px 32px;
+                
+                .classico-table {
+                  th,
+                  td {
+                    padding: 16px;
+                    font-size: 16px;
+                  }
+                  
+                  th {
+                    font-size: 14px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // ===== TEMA CUSTOMIZÁVEL QHD+ =====
+  .dashboard-container[data-theme="customizavel"] {
+    .layout-customizavel {
+      padding: 32px;
+      gap: 24px;
+      
+      .grid-container {
+        gap: 24px;
+        
+        .dashboard-card {
+          border-radius: 16px;
+          
+          .card-header {
+            padding: 24px 32px;
+            
+            .card-title {
+              font-size: 22px;
+            }
+          }
+          
+          .card-content {
+            padding: 0 32px 32px 32px;
+            
+            .metric-value {
+              font-size: 32px;
+              margin-bottom: 8px;
+            }
+            
+            .metric-label {
+              font-size: 16px;
+            }
+            
+            .chart-container {
+              height: 400px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Media query adicional para telas muito altas (3000px+)
+@media (min-width: 1440px) and (min-height: 3000px) {
+  .dashboard-container {
+    .mobile-layout {
+      padding: 32px;
+      gap: 32px;
+      
+      .mobile-metrics {
+        .metric-card {
+          padding: 32px;
+          
+          .metric-value {
+            font-size: 32px;
+            margin-bottom: 12px;
+          }
+          
+          .metric-label {
+            font-size: 18px;
+          }
+        }
+      }
+      
+      .mobile-despesas,
+      .mobile-alerts,
+      .mobile-chart,
+      .mobile-entradas {
+        padding: 32px;
+        
+        h4 {
+          font-size: 24px;
+          margin-bottom: 24px;
+        }
+        
+        .chart-container {
+          height: 500px;
+        }
+      }
+    }
+  }
+}
+
+// Media query adicional para dispositivos menores - tema clássico
+@media (max-width: 480px) {
+  .dashboard-container[data-theme="classico"] {
+    .layout-classico {
+      .classico-wrapper {
+        .classico-sidebar {
+          max-height: 25vh;
+          min-height: 160px;
+          
+          .sidebar-section {
+            margin-bottom: 8px;
+            
+            h3 {
+              font-size: 12px;
+              margin-bottom: 6px;
+            }
+            
+            &.financial-summary .summary-items {
+              grid-template-columns: 1fr;
+              gap: 6px;
+              
+              .summary-item {
+                padding: 8px;
+                
+                .summary-icon {
+                  width: 24px;
+                  height: 24px;
+                  font-size: 10px;
+                }
+                
+                .summary-data {
+                  .summary-value {
+                    font-size: 12px;
+                  }
+                  
+                  .summary-label {
+                    font-size: 9px;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        .classico-main {
+          .main-header {
+            padding: 8px 12px;
+            
+            .header-content {
+              h1 {
+                font-size: 1.1rem;
+              }
+              
+              p {
+                font-size: 10px;
+              }
+            }
+            
+            .header-actions {
+              gap: 4px;
+              
+              .classico-btn {
+                padding: 4px 8px;
+                font-size: 10px;
+              }
+            }
+          }
+          
+          .main-content {
+            padding: 8px 12px 100px 12px;
+            
+            .main-card {
+              .card-header {
+                padding: 8px 10px;
+                
+                h3 {
+                  font-size: 13px;
+                }
+              }
+              
+              .card-content {
+                padding: 8px 10px;
+                
+                .classico-table {
+                  .table-row {
+                    padding: 6px;
+                    
+                    .table-cell {
+                      font-size: 10px;
+                      
+                      &.categoria .categoria-icon {
+                        width: 14px;
+                        height: 14px;
+                        font-size: 7px;
+                      }
+                      
+                      .status-badge {
+                        padding: 1px 4px;
+                        font-size: 7px;
                       }
                     }
                   }
@@ -2315,4 +3261,4 @@
       }
     }
   }
-}
+}}}

@@ -39,7 +39,107 @@
 
     <!-- Grid compacto principal -->
     <div class="compact-layout">
-      <!-- Primeira linha: Cards de despesas e resumo -->
+      
+      <!-- NOVO LAYOUT MOBILE OTIMIZADO -->
+      <div class="mobile-layout">
+        
+        <!-- 1. Métricas compactas -->
+        <div class="mobile-metrics">
+          <div class="metric-card">
+            <div class="metric-number">{{ despesasDoMes.length }}</div>
+            <div class="metric-label">Despesas</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-number">{{ entradasDoMes.length }}</div>
+            <div class="metric-label">Entradas</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-number">{{ resumo.despesasPagas }}</div>
+            <div class="metric-label">Pagas</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-number">{{ despesasVencidas.length }}</div>
+            <div class="metric-label">Vencidas</div>
+          </div>
+        </div>
+        
+        <!-- 2. Lista de despesas otimizada -->
+        <div class="mobile-despesas">
+          <div class="mobile-header">
+            <h4>📋 Despesas</h4>
+            <span class="count-badge">{{ despesasDoMes.length }}</span>
+          </div>
+          <div class="mobile-list">
+            <div *ngFor="let despesa of despesasDoMes.slice(0, 6)" 
+                 class="mobile-item" 
+                 [ngClass]="getDespesaStatusClass(despesa)">
+              <div class="item-info">
+                <span class="item-icon">{{ despesa.categoria.icon }}</span>
+                <div class="item-details">
+                  <div class="item-name">{{ despesa.descricao }}</div>
+                  <div class="item-status">
+                    Vence: {{ despesa.dataVencimento | date:'dd/MM' }} 
+                    - {{ despesa.paga ? 'Paga' : 'Pendente' }}
+                  </div>
+                </div>
+              </div>
+              <div class="item-value">{{ formatarMoeda(despesa.valor) }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 3. Alertas compactos -->
+        <div class="mobile-alerts" *ngIf="despesasVencidas.length > 0 || despesasProximasVencimento.length > 0">
+          <div class="alerts-header">
+            <div class="alerts-title">⚠️ Alertas</div>
+            <div class="alerts-count">{{ despesasVencidas.length + despesasProximasVencimento.length }}</div>
+          </div>
+          <div class="alerts-list">
+            <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="alert-item">
+              <div class="alert-icon">🔴</div>
+              <div class="alert-content">
+                <div class="alert-text">{{ despesa.descricao }}</div>
+                <div class="alert-date">Venceu em {{ despesa.dataVencimento | date:'dd/MM' }}</div>
+              </div>
+              <div class="alert-amount">{{ formatarMoeda(despesa.valor) }}</div>
+            </div>
+            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="alert-item">
+              <div class="alert-icon">🟡</div>
+              <div class="alert-content">
+                <div class="alert-text">{{ despesa.descricao }}</div>
+                <div class="alert-date">Vence em {{ despesa.dataVencimento | date:'dd/MM' }}</div>
+              </div>
+              <div class="alert-amount">{{ formatarMoeda(despesa.valor) }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 4. Gráfico otimizado para mobile -->
+        <div class="mobile-chart">
+          <div class="chart-header">
+            <h4>📊 Distribuição de Despesas</h4>
+          </div>
+          <div class="chart-container">
+            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
+          </div>
+        </div>
+        
+        <!-- 5. Entradas compactas -->
+        <div class="mobile-entradas" *ngIf="entradasDoMes.length > 0">
+          <div class="entradas-header">
+            <div class="entradas-title">💰 Entradas ({{ entradasDoMes.length }})</div>
+          </div>
+          <div class="entradas-list">
+            <div *ngFor="let entrada of entradasDoMes.slice(0, 4)" class="entrada-item">
+              <div class="entrada-fonte">{{ entrada.fonte }}</div>
+              <div class="entrada-valor">{{ formatarMoeda(entrada.valor) }}</div>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+      
+      <!-- LAYOUT DESKTOP ORIGINAL (oculto no mobile) -->
       <div class="compact-grid-top">
         <!-- Card de despesas com alertas integrados -->
         <div class="compact-card despesas-compact">

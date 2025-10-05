@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy }from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -21,31 +21,118 @@ import { ThemeService } from '../../services/theme.service';
           </a>
         </div>
 
-        <!-- Navigation Links -->
-        <div class="navbar-nav">
+        <!-- Desktop Navigation Links -->
+        <div class="navbar-nav desktop-nav">
           <a 
             routerLink="/dashboard" 
             class="nav-link"
             [class.active]="isCurrentRoute('/dashboard') && !showDadosMensais"
             (click)="navigateToDashboard()">
             <span class="nav-icon">📊</span>
-            Dashboard
+            <span class="nav-text">Dashboard</span>
           </a>
           <a 
             routerLink="/dashboard" 
             class="nav-link"
             [class.active]="isCurrentRoute('/dashboard') && showDadosMensais"
             (click)="navigateToMonthlyData()">
-            <span class="nav-icon">�</span>
-            Dados por Mês
+            <span class="nav-icon">📅</span>
+            <span class="nav-text">Dados por Mês</span>
           </a>
           <a 
             routerLink="/gestao" 
             routerLinkActive="active"
             class="nav-link">
             <span class="nav-icon">⚙️</span>
-            Gestão
+            <span class="nav-text">Gestão</span>
           </a>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+
+        <!-- Mobile Menu Overlay -->
+        <div class="mobile-menu-overlay" [class.show]="showMobileMenu" (click)="closeMobileMenu()"></div>
+        
+        <!-- Mobile Menu -->
+        <div class="mobile-menu" [class.show]="showMobileMenu">
+          <div class="mobile-menu-header">
+            <h3>Menu</h3>
+            <button class="close-btn" (click)="closeMobileMenu()">×</button>
+          </div>
+          
+          <div class="mobile-menu-content">
+            <a 
+              routerLink="/dashboard" 
+              class="mobile-nav-link"
+              [class.active]="isCurrentRoute('/dashboard') && !showDadosMensais"
+              (click)="navigateToDashboard(); closeMobileMenu()">
+              <span class="nav-icon">📊</span>
+              <span>Dashboard</span>
+            </a>
+            
+            <a 
+              routerLink="/dashboard" 
+              class="mobile-nav-link"
+              [class.active]="isCurrentRoute('/dashboard') && showDadosMensais"
+              (click)="navigateToMonthlyData(); closeMobileMenu()">
+              <span class="nav-icon">📅</span>
+              <span>Dados por Mês</span>
+            </a>
+            
+            <a 
+              routerLink="/gestao" 
+              class="mobile-nav-link"
+              [class.active]="isCurrentRoute('/gestao')"
+              (click)="closeMobileMenu()">
+              <span class="nav-icon">⚙️</span>
+              <span>Gestão</span>
+            </a>
+            
+            <div class="mobile-divider"></div>
+            
+            <div class="mobile-theme-selector">
+              <label>Tema:</label>
+              <select 
+                (change)="onThemeChange($any($event.target).value)" 
+                [value]="currentTheme"
+                class="mobile-theme-select">
+                <option *ngFor="let tema of temasDisponiveis" [value]="tema.id">
+                  {{ tema.nome }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="mobile-divider"></div>
+            
+            <div class="mobile-user-section" *ngIf="isAuthenticated">
+              <div class="mobile-user-info">
+                <div class="user-avatar">
+                  <div class="avatar-fallback" *ngIf="!user?.photoURL">
+                    {{ getInitials() }}
+                  </div>
+                  <img 
+                    *ngIf="user?.photoURL"
+                    [src]="user.photoURL" 
+                    [alt]="user?.displayName || 'Usuário'"
+                    (error)="onImageError($event)">
+                </div>
+                <div class="user-details">
+                  <span class="user-name">{{ user?.displayName || 'Usuário' }}</span>
+                  <span class="user-email">{{ user?.email }}</span>
+                </div>
+              </div>
+              
+              <button class="mobile-menu-item" (click)="logout(); closeMobileMenu()">
+                <span class="menu-icon">🚪</span>
+                <span>Sair</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Theme Selector -->
@@ -108,6 +195,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
   isAuthenticated = false;
   user: any = null;
   showUserMenu = false;
+  showMobileMenu = false;
   showDadosMensais = false;
   currentTheme = 'classico';
   temasDisponiveis = this.themeService.temasDisponiveis;
@@ -149,13 +237,33 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.showUserMenu = !this.showUserMenu;
   }
 
+  toggleMobileMenu(): void {
+    this.showMobileMenu = !this.showMobileMenu;
+    // Fechar menu de usuário se estiver aberto
+    if (this.showMobileMenu) {
+      this.showUserMenu = false;
+    }
+  }
+
+  closeMobileMenu(): void {
+    this.showMobileMenu = false;
+  }
+
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
     const userMenuTrigger = document.querySelector('.user-info');
     const userMenu = document.querySelector('.user-menu');
+    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+    const mobileMenu = document.querySelector('.mobile-menu');
     
+    // Fechar menu de usuário
     if (!userMenuTrigger?.contains(target) && !userMenu?.contains(target)) {
       this.showUserMenu = false;
+    }
+    
+    // Fechar menu mobile
+    if (!mobileMenuBtn?.contains(target) && !mobileMenu?.contains(target)) {
+      this.showMobileMenu = false;
     }
   }
 

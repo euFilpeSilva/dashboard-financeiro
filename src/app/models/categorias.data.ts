@@ -8,7 +8,10 @@ export const CATEGORIAS_PADRAO: Categoria[] = [
   { id: '5', nome: 'Seguro Moto', cor: '#9966FF', icon: '🛡️' },
   { id: '6', nome: 'Pós-graduação', cor: '#FF9F40', icon: '🎓' },
   { id: '7', nome: 'Internet Fixa', cor: '#FF6384', icon: '🌐' },
-  { id: '8', nome: 'Outros', cor: '#C9CBCF', icon: '📦' }
+  { id: '8', nome: 'Outros', cor: '#C9CBCF', icon: '📦' },
+  { id: '9', nome: 'Beleza', cor: '#C9CBCF', icon: '📦' },
+  { id: '10', nome: 'Debito', cor: '#C9CBCF', icon: '📦' },
+  { id: '11', nome: 'Pix', cor: '#C9CBCF', icon: '📦' },
 ];
 
 export const CORES_GRAFICOS = [
