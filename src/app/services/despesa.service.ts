@@ -197,12 +197,14 @@ export class DespesaService {
     return this.despesas$.pipe(
       map(despesas => {
         const despesasPorCategoria = new Map<string, { valor: number; quantidade: number; categoria: any }>();
+        let totalGeral = 0;
         
         despesas.forEach(despesa => {
           const nomeCategoria = despesa.categoria.nome;
           const atual = despesasPorCategoria.get(nomeCategoria) || { valor: 0, quantidade: 0, categoria: despesa.categoria };
           atual.valor += despesa.valor;
           atual.quantidade++;
+          totalGeral += despesa.valor;
           despesasPorCategoria.set(nomeCategoria, atual);
         });
 
@@ -210,8 +212,8 @@ export class DespesaService {
           categoria: dados.categoria,
           valor: dados.valor,
           quantidade: dados.quantidade,
-          percentual: 0
-        }));
+          percentual: totalGeral > 0 ? (dados.valor / totalGeral) * 100 : 0
+        })).sort((a, b) => b.valor - a.valor); // Ordenar por valor decrescente
       })
     );
   }
