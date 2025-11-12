@@ -171,7 +171,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // listener remover para ESC
   private escUnlisten: (() => void) | null = null;
   // flag para saber se o overlay foi movimentado para body
-  private overlayAppendedToBody = false;
+  // overlayAppendedToBody removed: avoid moving DOM nodes out of Angular's view
 
   constructor(
     private despesaService: DespesaService,
@@ -760,77 +760,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
   showAlertsModal: boolean = false;
 
   openAlertsModal(): void {
-    console.log('Opening alerts modal');
     this.showAlertsModal = true;
-    // After the template renders, ensure the overlay is appended to document.body so
-    // it is not clipped by any ancestor stacking-context (transforms, z-index, etc.).
-    setTimeout(() => {
-      try {
-        const el = document.querySelector('.alerts-modal-overlay') as HTMLElement | null;
-        console.log('alerts-modal-overlay element present?', !!el);
-        if (el && !this.overlayAppendedToBody) {
-          try {
-            this.renderer.appendChild(document.body, el);
-            this.overlayAppendedToBody = true;
-            console.log('alerts-modal-overlay appended to document.body');
-          } catch (appendErr) {
-            console.warn('Could not append alerts modal to body via renderer, falling back to direct appendChild', appendErr);
-            try { document.body.appendChild(el); this.overlayAppendedToBody = true; } catch (e) { /* swallow */ }
-          }
+    // Install ESC handler to close modal (if not already installed)
+    if (!this.escUnlisten) {
+      this.escUnlisten = this.renderer.listen('window', 'keydown', (ev: KeyboardEvent) => {
+        if (ev.key === 'Escape' || ev.key === 'Esc') {
+          this.closeAlertsModal();
         }
-        if (el) {
-          const cs = getComputedStyle(el);
-          console.log('alerts-modal-overlay computed:', {
-            display: cs.display,
-            visibility: cs.visibility,
-            zIndex: cs.zIndex,
-            position: cs.position,
-            top: cs.top,
-            left: cs.left
-          });
-        }
-      } catch (e) {
-        console.warn('Error inspecting/modal-moving element', e);
-      }
-
-      // install ESC handler to close modal
-      if (!this.escUnlisten) {
-        this.escUnlisten = this.renderer.listen('window', 'keydown', (ev: KeyboardEvent) => {
-          if (ev.key === 'Escape' || ev.key === 'Esc') {
-            this.closeAlertsModal();
-          }
-        });
-      }
-    }, 80);
+      });
+    }
   }
 
   closeAlertsModal(): void {
     this.showAlertsModal = false;
-
-    // Remove overlay from body if we appended it
-    setTimeout(() => {
-      try {
-        const el = document.querySelector('.alerts-modal-overlay') as HTMLElement | null;
-        if (el && this.overlayAppendedToBody) {
-          try {
-            this.renderer.removeChild(document.body, el);
-            this.overlayAppendedToBody = false;
-            console.log('alerts-modal-overlay removed from document.body');
-          } catch (removeErr) {
-            // fallback to direct removal
-            try { if (el.parentElement === document.body) document.body.removeChild(el); this.overlayAppendedToBody = false; } catch (e) { /* swallow */ }
-          }
-        }
-      } catch (e) {
-        console.warn('Error removing alerts modal overlay from body', e);
-      }
-
-      // remove ESC listener
-      if (this.escUnlisten) {
-        try { this.escUnlisten(); } catch (e) { /* ignore */ }
-        this.escUnlisten = null;
-      }
-    }, 30);
+    // remove ESC listener if present
+    if (this.escUnlisten) {
+      try { this.escUnlisten(); } catch (e) { /* ignore */ }
+      this.escUnlisten = null;
+    }
   }
 
   // Helper para formatar referência 'YYYY-MM' para 'MMM/YYYY'
