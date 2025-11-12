@@ -261,6 +261,46 @@
       border-color: var(--color-blue);
       box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
     }
+
+    .input-data {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-size: 0.9rem;
+      transition: all 0.15s ease;
+      width: 180px;
+
+      &:focus {
+        outline: none;
+        border-color: var(--color-blue);
+        box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.12);
+      }
+    }
+
+    .intervalo-datas {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+
+      @media (max-width: 640px) {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    .input-error {
+      border-color: var(--color-red) !important;
+      box-shadow: 0 0 0 3px rgba(239,83,80,0.08) !important;
+    }
+
+    .filtro-erro {
+      color: var(--color-red);
+      font-size: 0.8rem;
+      margin-top: 6px;
+      font-weight: 600;
+    }
   }
 
   .select-filtro {

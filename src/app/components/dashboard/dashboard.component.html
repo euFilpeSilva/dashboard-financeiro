@@ -62,6 +62,62 @@
             <div class="metric-label">Vencidas</div>
           </div>
         </div>
+
+        <!-- Modal: lista completa de alertas -->
+        <div class="alerts-modal-overlay" *ngIf="showAlertsModal" (click)="closeAlertsModal()">
+          <div class="alerts-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Lista completa de alertas">
+            <div class="alerts-modal-header">
+              <h4>Todos os Alertas</h4>
+              <button class="btn btn-icon" (click)="closeAlertsModal()" aria-label="Fechar">✕</button>
+            </div>
+            <div class="alerts-modal-body">
+              <div *ngIf="despesasVencidas.length > 0">
+                <h5>Vencidas</h5>
+                <div *ngFor="let d of despesasVencidas" class="alert-item vencida">
+                  <span class="alert-emoji">🔴</span>
+                  <div class="alert-info">
+                    <span class="alert-desc">{{ d.descricao }}</span>
+                    <span class="alert-date">Venceu {{ getDiasVencimento(d) }}</span>
+                  </div>
+                  <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="despesasProximasVencimento.length > 0" style="margin-top:12px">
+                <h5>Próximas do vencimento</h5>
+                <div *ngFor="let d of despesasProximasVencimento" class="alert-item proxima">
+                  <span class="alert-emoji">🟡</span>
+                  <div class="alert-info">
+                    <span class="alert-desc">{{ d.descricao }}</span>
+                    <span class="alert-date">Vence {{ getDiasParaVencimento(d) }}</span>
+                  </div>
+                  <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
+                </div>
+              </div>
+
+              <div style="margin-top:12px">
+                <h5>Metas</h5>
+                <div class="alert-item meta" [ngClass]="{ 'exceeded': getPercentualMetaUsada() >= 100 }">
+                  <span class="alert-emoji">📊</span>
+                  <div class="alert-info">
+                    <span class="alert-desc">Meta geral: {{ gastoMetaPercentualGeral }}% — R$ {{ formatarMoeda(getMetaBudgetValor()) }}</span>
+                    <span class="alert-date">Gasto atual: {{ formatarMoeda(resumo.totalDespesas) }} — {{ getPercentualMetaUsada() }}% da meta</span>
+                  </div>
+                  <span class="alert-amount">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+                </div>
+
+                <div class="alert-item meta" style="margin-top:8px" [ngClass]="{ 'exceeded': getPercentualMetaUsadaMesAtual() >= 100 }">
+                  <span class="alert-emoji">🗓️</span>
+                  <div class="alert-info">
+                    <span class="alert-desc">Meta do mês ({{ formatMonth(gastoMetaMesReferencia) }}): {{ gastoMetaPercentualMensal }}% — R$ {{ formatarMoeda(getMetaValorMesAtual()) }}</span>
+                    <span class="alert-date">Gasto atual (mês): {{ formatarMoeda(getGastosDoMesTotal()) }} — {{ getPercentualMetaUsadaMesAtual() }}% da meta</span>
+                  </div>
+                  <span class="alert-amount">{{ formatarMoeda(getGastosDoMesTotal()) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         
         <!-- 2. Lista de despesas otimizada -->
         <div class="mobile-despesas">
@@ -164,8 +220,13 @@
         <!-- Seção de alertas compacta e descritiva -->
         <div class="alerts-section compact">
           <div class="alerts-header">
-            <span class="alerts-title">⚠️ Alertas</span>
-            <span class="alerts-count" *ngIf="getTotalAlertas() > 0">{{ getTotalAlertas() }}</span>
+            <div class="alerts-header-left">
+              <span class="alerts-title">⚠️ Alertas</span>
+              <span class="alerts-count" *ngIf="getTotalAlertas() > 0">{{ getTotalAlertas() }}</span>
+            </div>
+            <div class="alerts-header-controls">
+              <button class="btn btn-sm btn-link" (click)="openAlertsModal()" aria-label="Ver todos os alertas">Ver todos</button>
+            </div>
           </div>
           
           <!-- Alertas mais descritivos e compactos -->
@@ -190,14 +251,58 @@
               <span class="alert-amount">{{ formatarMoeda(despesa.valor) }}</span>
             </div>
             
-            <!-- Meta de gastos -->
-            <div *ngIf="getPercentualGastoMes() > 80" class="alert-item meta">
+            <!-- Meta de gastos (sempre visível) -->
+            <div class="alert-item meta"
+                 [ngClass]="{
+                   'exceeded': getPercentualMetaUsada() >= 100,
+                   'warn': getPercentualMetaUsada() >= 80 && getPercentualMetaUsada() < 100,
+                   'ok': getPercentualMetaUsada() < 80
+                 }">
               <span class="alert-emoji">📊</span>
               <div class="alert-info">
                 <span class="alert-desc">Meta de gastos</span>
-                <span class="alert-date">{{ getPercentualGastoMes() }}% usado</span>
+                <span class="alert-date">Meta: {{ gastoMetaPercentualGeral }}% das entradas (R$ {{ formatarMoeda(getMetaBudgetValor()) }})</span>
+                <span class="alert-date">Gasto atual: {{ formatarMoeda(resumo.totalDespesas) }} — Restante: {{ formatarMoeda(getMetaBudgetValor() - resumo.totalDespesas) }}</span>
+
+                <div class="meta-progress" aria-hidden="false">
+                  <div class="meta-progress-bar"
+                       role="progressbar"
+                       [attr.aria-valuenow]="getPercentualMetaUsada()"
+                       aria-valuemin="0"
+                       aria-valuemax="100"
+                       [style.width.%]="getMetaProgressWidth()"></div>
+                </div>
+
+                <small class="alert-sub">{{ getPercentualMetaUsada() }}% da meta usada</small>
               </div>
               <span class="alert-amount">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+            </div>
+
+            <!-- Meta do mês atual (mesmo esquema) -->
+            <div class="alert-item meta meta-month"
+                 [ngClass]="{
+                   'exceeded': getPercentualMetaUsadaMesAtual() >= 100,
+                   'warn': getPercentualMetaUsadaMesAtual() >= 80 && getPercentualMetaUsadaMesAtual() < 100,
+                   'ok': getPercentualMetaUsadaMesAtual() < 80
+                 }">
+              <span class="alert-emoji">🗓️</span>
+              <div class="alert-info">
+                <span class="alert-desc">Meta do mês atual</span>
+                <span class="alert-date">Meta: {{ gastoMetaPercentualMensal }}% das entradas do mês (R$ {{ formatarMoeda(getMetaValorMesAtual()) }})</span>
+                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda(getGastosDoMesTotal()) }} — Restante: {{ formatarMoeda(getMetaMesAtualRestante()) }}</span>
+
+                <div class="meta-progress" aria-hidden="false">
+                  <div class="meta-progress-bar"
+                       role="progressbar"
+                       [attr.aria-valuenow]="getPercentualMetaUsadaMesAtual()"
+                       aria-valuemin="0"
+                       aria-valuemax="100"
+                       [style.width.%]="getMetaMesAtualProgressWidth()"></div>
+                </div>
+
+                <small class="alert-sub">{{ getPercentualMetaUsadaMesAtual() }}% da meta do mês usada</small>
+              </div>
+              <span class="alert-amount">{{ formatarMoeda(getGastosDoMesTotal()) }}</span>
             </div>
             
             <!-- Quando não há alertas -->

@@ -7,6 +7,10 @@ export interface Despesa {
   prioridade: Prioridade;
   paga: boolean;
   dataPagamento?: Date;
+  // Soft-delete support
+  deleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
 }
 
 export interface Categoria {
@@ -22,6 +26,10 @@ export interface Entrada {
   valor: number;
   data: Date;
   fonte: string;
+  // Soft-delete support
+  deleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: string;
 }
 
 export enum Prioridade {

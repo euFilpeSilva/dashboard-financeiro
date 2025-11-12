@@ -1,0 +1,29 @@
+.config-container {
+  padding: 16px;
+}
+.config-section {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+.field-row {
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.field-row input[type=number] {
+  width:100px;
+  padding:6px 8px;
+}
+.btn { padding:6px 12px }
+
+.card { padding:12px; box-shadow: var(--shadow-small); }
+.card-header small { color: var(--text-secondary); display:block; margin-top:4px }
+.meta-row { display:flex; align-items:center; gap:12px; margin-top:12px }
+.meta-control input[type=range] { width:320px }
+.meta-value { display:flex; align-items:center; gap:6px }
+.meta-value input { width:80px; padding:6px }
+.meta-help { margin-top:8px; color:var(--text-secondary) }
+.card-actions { margin-top:12px }
+

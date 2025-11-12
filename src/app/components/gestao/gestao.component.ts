@@ -21,11 +21,14 @@ export class GestaoComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
   // Estados das abas
-  abaAtiva: 'despesas' | 'entradas' = 'despesas';
+  abaAtiva: 'despesas' | 'entradas' | 'lixeira' | 'auditoria' = 'despesas';
   
   // Dados originais
   despesasOriginais: Despesa[] = [];
   entradasOriginais: Entrada[] = [];
+  // Auditoria
+  auditLogsOriginais: any[] = [];
+  auditLogs: any[] = [];
   
   // Dados filtrados e ordenados
   despesas: Despesa[] = [];
@@ -48,9 +51,23 @@ export class GestaoComponent implements OnInit, OnDestroy {
   filtroStatusDespesa: 'todas' | 'pagas' | 'pendentes' | 'vencidas' = 'todas';
   filtroPrioridade: 'todas' | 'alta' | 'media' | 'baixa' = 'todas';
   filtroCategoria: string = 'todas';
+  // Filtros de data para despesas
+  filtroDataTipoDespesa: 'todos' | 'dia' | 'intervalo' = 'todos';
+  filtroDataDiaDespesa: string = ''; // ISO date string yyyy-mm-dd
+  filtroDataInicioDespesa: string = '';
+  filtroDataFimDespesa: string = '';
+  // Validação de intervalo
+  intervaloInvalidoDespesa = false;
   
   // Filtros para entradas
   filtroFonte: string = 'todas';
+  // Filtros de data para entradas
+  filtroDataTipoEntrada: 'todos' | 'dia' | 'intervalo' = 'todos';
+  filtroDataDiaEntrada: string = '';
+  filtroDataInicioEntrada: string = '';
+  filtroDataFimEntrada: string = '';
+  // Validação de intervalo
+  intervaloInvalidoEntrada = false;
   
   // Ordenação
   ordenacaoAtual: 'data' | 'valor' | 'alfabetico' = 'data';
@@ -145,20 +162,42 @@ export class GestaoComponent implements OnInit, OnDestroy {
           this.carregandoEntradas = false;
         }
       });
+
+    // Carregar audit logs
+    this.despesaService.auditLogs$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (logs) => {
+          this.auditLogsOriginais = [...logs];
+          this.aplicarFiltrosAudit();
+        },
+        error: (error) => {
+          console.error('Erro ao carregar audit logs:', error);
+        }
+      });
+  }
+
+  aplicarFiltrosAudit(): void {
+    // Simples filtro: atualmente apenas copia todos os logs; podemos adicionar pesquisa/filtração
+    this.auditLogs = [...this.auditLogsOriginais];
   }
 
   // === MÉTODOS DE NAVEGAÇÃO ===
   
-  alterarAba(aba: 'despesas' | 'entradas'): void {
+  alterarAba(aba: 'despesas' | 'entradas' | 'lixeira' | 'auditoria'): void {
     this.abaAtiva = aba;
     this.fecharFormularios();
     
     // Aplicar filtros da aba ativa
     if (aba === 'despesas') {
       this.aplicarFiltros();
-    } else {
+    } else if (aba === 'entradas') {
       this.aplicarFiltrosEntradas();
+    } else {
+      // lixeira - nenhuma filtragem adicional necessária; apenas atualizar as listas
+      // garantir que filtros não afetem a lixeira
     }
+    
   }
 
   // === MÉTODOS DE DESPESAS ===
@@ -201,6 +240,34 @@ export class GestaoComponent implements OnInit, OnDestroy {
         } catch (error) {
           console.error('Erro ao excluir despesa:', error);
           this.toastService.error('Erro ao excluir despesa', 'Ocorreu um erro inesperado. Tente novamente.');
+        }
+      },
+      'Excluir',
+      'Cancelar'
+    );
+  }
+
+  async restaurarDespesa(despesa: Despesa): Promise<void> {
+    try {
+      await this.despesaService.restaurarDespesa(despesa.id);
+      this.toastService.success('Despesa restaurada', `A despesa "${despesa.descricao}" foi restaurada.`);
+    } catch (error) {
+      console.error('Erro ao restaurar despesa:', error);
+      this.toastService.error('Erro ao restaurar despesa', 'Tente novamente.');
+    }
+  }
+
+  async excluirDespesaPermanentemente(despesa: Despesa): Promise<void> {
+    this.showConfirmation(
+      'Excluir Permanentemente',
+      `Deseja excluir permanentemente a despesa "${despesa.descricao}"? Esta ação não pode ser desfeita.`,
+      async () => {
+        try {
+          await this.despesaService.excluirDespesaPermanentemente(despesa.id);
+          this.toastService.success('Despesa excluída permanentemente');
+        } catch (error) {
+          console.error('Erro ao excluir permanentemente:', error);
+          this.toastService.error('Erro ao excluir permanentemente', 'Tente novamente.');
         }
       },
       'Excluir',
@@ -266,10 +333,39 @@ export class GestaoComponent implements OnInit, OnDestroy {
     );
   }
 
+  async restaurarEntrada(entrada: Entrada): Promise<void> {
+    try {
+      await this.despesaService.restaurarEntrada(entrada.id);
+      this.toastService.success('Entrada restaurada', `A entrada "${entrada.descricao}" foi restaurada.`);
+    } catch (error) {
+      console.error('Erro ao restaurar entrada:', error);
+      this.toastService.error('Erro ao restaurar entrada', 'Tente novamente.');
+    }
+  }
+
+  async excluirEntradaPermanentemente(entrada: Entrada): Promise<void> {
+    this.showConfirmation(
+      'Excluir Permanentemente',
+      `Deseja excluir permanentemente a entrada "${entrada.descricao}"? Esta ação não pode ser desfeita.`,
+      async () => {
+        try {
+          await this.despesaService.excluirEntradaPermanentemente(entrada.id);
+          this.toastService.success('Entrada excluída permanentemente');
+        } catch (error) {
+          console.error('Erro ao excluir entrada permanentemente:', error);
+          this.toastService.error('Erro ao excluir permanentemente', 'Tente novamente.');
+        }
+      },
+      'Excluir',
+      'Cancelar'
+    );
+  }
+
   // === MÉTODOS DE FILTROS E ORDENAÇÃO ===
   
   aplicarFiltros(): void {
-    let despesasFiltradas = [...this.despesasOriginais];
+    // Excluir itens deletados da visualização normal
+    let despesasFiltradas = [...this.despesasOriginais].filter(d => !d.deleted);
 
     // Filtro por busca
     if (this.termoBusca.trim()) {
@@ -311,12 +407,39 @@ export class GestaoComponent implements OnInit, OnDestroy {
       );
     }
 
+    // Filtro por data (despesas - dataVencimento)
+    // reset validation flag
+    this.intervaloInvalidoDespesa = false;
+    if (this.filtroDataTipoDespesa === 'dia' && this.filtroDataDiaDespesa) {
+      const target = new Date(this.filtroDataDiaDespesa);
+      despesasFiltradas = despesasFiltradas.filter(despesa => {
+        const d = new Date(despesa.dataVencimento);
+        return d.getFullYear() === target.getFullYear() && d.getMonth() === target.getMonth() && d.getDate() === target.getDate();
+      });
+    } else if (this.filtroDataTipoDespesa === 'intervalo') {
+      // if intervalo selected but start/end missing -> mark invalid and skip filtering
+      if (!this.filtroDataInicioDespesa || !this.filtroDataFimDespesa) {
+        this.intervaloInvalidoDespesa = true;
+      } else {
+        const inicio = new Date(this.filtroDataInicioDespesa);
+        const fim = new Date(this.filtroDataFimDespesa);
+        // normalize times
+        inicio.setHours(0,0,0,0);
+        fim.setHours(23,59,59,999);
+        despesasFiltradas = despesasFiltradas.filter(despesa => {
+          const d = new Date(despesa.dataVencimento);
+          return d.getTime() >= inicio.getTime() && d.getTime() <= fim.getTime();
+        });
+      }
+    }
+
     // Aplicar ordenação
     this.despesas = this.ordenarDespesas(despesasFiltradas);
   }
 
   aplicarFiltrosEntradas(): void {
-    let entradasFiltradas = [...this.entradasOriginais];
+    // Excluir itens deletados da visualização normal
+    let entradasFiltradas = [...this.entradasOriginais].filter(e => !e.deleted);
 
     // Filtro por busca
     if (this.termoBusca.trim()) {
@@ -332,6 +455,30 @@ export class GestaoComponent implements OnInit, OnDestroy {
       entradasFiltradas = entradasFiltradas.filter(entrada =>
         entrada.fonte === this.filtroFonte
       );
+    }
+
+    // Filtro por data (entradas - data)
+    // reset validation flag
+    this.intervaloInvalidoEntrada = false;
+    if (this.filtroDataTipoEntrada === 'dia' && this.filtroDataDiaEntrada) {
+      const target = new Date(this.filtroDataDiaEntrada);
+      entradasFiltradas = entradasFiltradas.filter(entrada => {
+        const d = new Date(entrada.data);
+        return d.getFullYear() === target.getFullYear() && d.getMonth() === target.getMonth() && d.getDate() === target.getDate();
+      });
+    } else if (this.filtroDataTipoEntrada === 'intervalo') {
+      if (!this.filtroDataInicioEntrada || !this.filtroDataFimEntrada) {
+        this.intervaloInvalidoEntrada = true;
+      } else {
+        const inicio = new Date(this.filtroDataInicioEntrada);
+        const fim = new Date(this.filtroDataFimEntrada);
+        inicio.setHours(0,0,0,0);
+        fim.setHours(23,59,59,999);
+        entradasFiltradas = entradasFiltradas.filter(entrada => {
+          const d = new Date(entrada.data);
+          return d.getTime() >= inicio.getTime() && d.getTime() <= fim.getTime();
+        });
+      }
     }
 
     // Aplicar ordenação
@@ -435,6 +582,15 @@ export class GestaoComponent implements OnInit, OnDestroy {
     this.filtroFonte = 'todas';
     this.ordenacaoAtual = 'data';
     this.direcaoOrdenacao = 'desc';
+    // limpar filtros de data
+    this.filtroDataTipoDespesa = 'todos';
+    this.filtroDataDiaDespesa = '';
+    this.filtroDataInicioDespesa = '';
+    this.filtroDataFimDespesa = '';
+    this.filtroDataTipoEntrada = 'todos';
+    this.filtroDataDiaEntrada = '';
+    this.filtroDataInicioEntrada = '';
+    this.filtroDataFimEntrada = '';
     
     if (this.abaAtiva === 'despesas') {
       this.aplicarFiltros();
@@ -454,6 +610,15 @@ export class GestaoComponent implements OnInit, OnDestroy {
   get fontes(): string[] {
     const fontesUnicas = new Set(this.entradasOriginais.map(e => e.fonte));
     return Array.from(fontesUnicas);
+  }
+
+  // Itens na lixeira
+  get despesasExcluidas(): Despesa[] {
+    return this.despesasOriginais.filter(d => d.deleted);
+  }
+
+  get entradasExcluidas(): Entrada[] {
+    return this.entradasOriginais.filter(e => e.deleted);
   }
   
   private fecharFormularios(): void {

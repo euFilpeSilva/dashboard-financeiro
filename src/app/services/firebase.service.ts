@@ -3,6 +3,7 @@ import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireStorage } from '@angular/fire/compat/storage';
 import { environment } from '../../environments/environment';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,16 +13,17 @@ export class FirebaseService {
   constructor(
     public firestore: AngularFirestore,
     public auth: AngularFireAuth,
-    public storage: AngularFireStorage
+    public storage: AngularFireStorage,
+    private logger: LoggerService
   ) {
     this.initializeServices();
   }
 
   private initializeServices(): void {
-    console.log('🔥 Firebase inicializado com sucesso');
-    
+    this.logger.info('🔥 Firebase inicializado com sucesso');
+
     if (!environment.production && environment.enableDebug) {
-      console.log('🔧 Modo de desenvolvimento - Debug habilitado');
+      this.logger.debug('🔧 Modo de desenvolvimento - Debug habilitado');
     }
   }
 

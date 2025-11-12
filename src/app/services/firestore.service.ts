@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, map } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AuthService } from './auth.service';
+import { LoggerService } from './logger.service';
 import { Despesa, Categoria, Entrada } from '../models/despesa.model';
 import firebase from 'firebase/compat/app';
 
@@ -17,6 +18,10 @@ export interface FirestoreDespesa {
   userId: string;
   createdAt: firebase.firestore.Timestamp;
   updatedAt: firebase.firestore.Timestamp;
+  // Soft-delete fields
+  deleted?: boolean;
+  deletedAt?: firebase.firestore.Timestamp | null;
+  deletedBy?: string | null;
 }
 
 export interface FirestoreEntrada {
@@ -28,6 +33,10 @@ export interface FirestoreEntrada {
   userId: string;
   createdAt: firebase.firestore.Timestamp;
   updatedAt: firebase.firestore.Timestamp;
+  // Soft-delete fields
+  deleted?: boolean;
+  deletedAt?: firebase.firestore.Timestamp | null;
+  deletedBy?: string | null;
 }
 
 export interface FirestoreAnotacao {
@@ -39,6 +48,17 @@ export interface FirestoreAnotacao {
   updatedAt: firebase.firestore.Timestamp;
 }
 
+export interface FirestoreAuditLog {
+  id?: string;
+  action: string;
+  collection: string;
+  docId: string;
+  before?: any;
+  after?: any;
+  userId?: string | null;
+  timestamp: firebase.firestore.Timestamp;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -46,16 +66,19 @@ export class FirestoreService {
   private despesasSubject = new BehaviorSubject<Despesa[]>([]);
   private entradasSubject = new BehaviorSubject<Entrada[]>([]);
   private anotacoesSubject = new BehaviorSubject<any[]>([]);
+  private auditLogsSubject = new BehaviorSubject<any[]>([]);
   private loadingSubject = new BehaviorSubject<boolean>(false);
 
   public readonly despesas$ = this.despesasSubject.asObservable();
   public readonly entradas$ = this.entradasSubject.asObservable();
   public readonly anotacoes$ = this.anotacoesSubject.asObservable();
+  public readonly auditLogs$ = this.auditLogsSubject.asObservable();
   public readonly loading$ = this.loadingSubject.asObservable();
 
   constructor(
     private firestore: AngularFirestore,
-    private authService: AuthService
+    private authService: AuthService,
+    private logger: LoggerService
   ) {
     this.initializeListeners();
   }
@@ -78,10 +101,10 @@ export class FirestoreService {
     this.firestore.collection<FirestoreDespesa>('despesas', ref => 
       ref.where('userId', '==', userId)
     ).valueChanges({ idField: 'id' }).subscribe(despesas => {
-      const mappedDespesas = despesas.map(data => this.mapFirestoreToDespesa(data));
-      // Ordenar no frontend temporariamente
-      mappedDespesas.sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
-      this.despesasSubject.next(mappedDespesas);
+        const mappedDespesas = despesas.map(data => this.mapFirestoreToDespesa(data));
+        // Ordenar no frontend temporariamente
+        mappedDespesas.sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
+        this.despesasSubject.next(mappedDespesas);
       this.loadingSubject.next(false);
     });
 
@@ -90,7 +113,7 @@ export class FirestoreService {
       ref.where('userId', '==', userId)
     ).valueChanges({ idField: 'id' }).subscribe(entradas => {
       const mappedEntradas = entradas.map(data => this.mapFirestoreToEntrada(data));
-      // Ordenar no frontend temporariamente
+      // Ordenar no frontend temporarily
       mappedEntradas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
       this.entradasSubject.next(mappedEntradas);
     });
@@ -108,6 +131,27 @@ export class FirestoreService {
       // Ordenar no frontend temporariamente
       mappedAnotacoes.sort((a, b) => b.dataHora.getTime() - a.dataHora.getTime());
       this.anotacoesSubject.next(mappedAnotacoes);
+    });
+
+    // Listener para audit logs (somente logs do usuário)
+    // NOTE: ordering + where on different fields can require a composite index in Firestore.
+    // To avoid forcing an index during development, fetch by userId and sort client-side.
+    this.firestore.collection<FirestoreAuditLog>('auditLogs', ref =>
+      ref.where('userId', '==', userId)
+    ).valueChanges({ idField: 'id' }).subscribe(logs => {
+      const mapped = logs.map(l => ({
+        id: l.id,
+        action: l.action,
+        collection: l.collection,
+        docId: l.docId,
+        before: l.before || null,
+        after: l.after || null,
+        userId: l.userId || null,
+        timestamp: l.timestamp ? l.timestamp.toDate() : new Date()
+      }));
+      // Ordenar no cliente por timestamp desc e limitar a 200 para evitar downloads muito grandes
+      mapped.sort((a, b) => (b.timestamp?.getTime() || 0) - (a.timestamp?.getTime() || 0));
+      this.auditLogsSubject.next(mapped.slice(0, 200));
     });
   }
 
@@ -136,8 +180,12 @@ export class FirestoreService {
       createdAt: firebase.firestore.Timestamp.now(),
       updatedAt: firebase.firestore.Timestamp.now()
     };
+    // ensure soft-delete flag
+    (firestoreDespesa as any).deleted = false;
 
     const docRef = await this.firestore.collection('despesas').add(firestoreDespesa);
+    // audit
+    await this.createAuditLog('create', 'despesas', docRef.id, null, firestoreDespesa, user.uid);
     return docRef.id;
   }
 
@@ -159,13 +207,62 @@ export class FirestoreService {
     }
 
     await this.firestore.collection('despesas').doc(id).update(firestoreUpdates);
+    // audit
+    try {
+      const beforeSnap = await this.firestore.collection('despesas').doc(id).ref.get();
+      const before = beforeSnap.exists ? beforeSnap.data() : null;
+      await this.createAuditLog('update', 'despesas', id, before || null, firestoreUpdates, user?.uid);
+    } catch (e) {
+      console.warn('Não foi possível gravar audit log:', e);
+    }
   }
 
+  // Soft-delete: marcar como deleted. Para exclusão permanente, use permanentlyDeleteDespesa
   async removerDespesa(id: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
+    const updates: any = {
+      deleted: true,
+      deletedAt: firebase.firestore.Timestamp.now(),
+      deletedBy: user.uid,
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    const beforeSnap = await this.firestore.collection('despesas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
+    await this.firestore.collection('despesas').doc(id).update(updates);
+    await this.createAuditLog('delete', 'despesas', id, before || null, updates, user.uid);
+  }
+
+  async restoreDespesa(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const updates: any = {
+      deleted: false,
+      deletedAt: null,
+      deletedBy: null,
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    const beforeSnap = await this.firestore.collection('despesas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
+    await this.firestore.collection('despesas').doc(id).update(updates);
+    await this.createAuditLog('restore', 'despesas', id, before || null, updates, user.uid);
+  }
+
+  async permanentlyDeleteDespesa(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const beforeSnap = await this.firestore.collection('despesas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
     await this.firestore.collection('despesas').doc(id).delete();
+    await this.createAuditLog('permanent-delete', 'despesas', id, before || null, null, user.uid);
   }
 
   async marcarComoPaga(id: string, paga: boolean): Promise<void> {
@@ -180,7 +277,12 @@ export class FirestoreService {
       updates.dataPagamento = null;
     }
 
+    const beforeSnap = await this.firestore.collection('despesas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
     await this.firestore.collection('despesas').doc(id).update(updates);
+    const user = this.authService.getCurrentUser();
+    await this.createAuditLog('mark-paid', 'despesas', id, before || null, updates, user?.uid);
   }
 
   // === MÉTODOS PARA ENTRADAS ===
@@ -199,7 +301,10 @@ export class FirestoreService {
       updatedAt: firebase.firestore.Timestamp.now()
     };
 
+    (firestoreEntrada as any).deleted = false;
+
     const docRef = await this.firestore.collection('entradas').add(firestoreEntrada);
+    await this.createAuditLog('create', 'entradas', docRef.id, null, firestoreEntrada, user.uid);
     return docRef.id;
   }
 
@@ -218,13 +323,60 @@ export class FirestoreService {
     }
 
     await this.firestore.collection('entradas').doc(id).update(firestoreUpdates);
+    try {
+      const beforeSnap = await this.firestore.collection('entradas').doc(id).ref.get();
+      const before = beforeSnap.exists ? beforeSnap.data() : null;
+      await this.createAuditLog('update', 'entradas', id, before || null, firestoreUpdates, user?.uid);
+    } catch (e) {
+      console.warn('Não foi possível gravar audit log:', e);
+    }
   }
 
   async removerEntrada(id: string): Promise<void> {
     const user = this.authService.getCurrentUser();
     if (!user) throw new Error('Usuário não autenticado');
 
+    const updates: any = {
+      deleted: true,
+      deletedAt: firebase.firestore.Timestamp.now(),
+      deletedBy: user.uid,
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    const beforeSnap = await this.firestore.collection('entradas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
+    await this.firestore.collection('entradas').doc(id).update(updates);
+    await this.createAuditLog('delete', 'entradas', id, before || null, updates, user.uid);
+  }
+
+  async restoreEntrada(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const updates: any = {
+      deleted: false,
+      deletedAt: null,
+      deletedBy: null,
+      updatedAt: firebase.firestore.Timestamp.now()
+    };
+
+    const beforeSnap = await this.firestore.collection('entradas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
+    await this.firestore.collection('entradas').doc(id).update(updates);
+    await this.createAuditLog('restore', 'entradas', id, before || null, updates, user.uid);
+  }
+
+  async permanentlyDeleteEntrada(id: string): Promise<void> {
+    const user = this.authService.getCurrentUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const beforeSnap = await this.firestore.collection('entradas').doc(id).ref.get();
+    const before = beforeSnap.exists ? beforeSnap.data() : null;
+
     await this.firestore.collection('entradas').doc(id).delete();
+    await this.createAuditLog('permanent-delete', 'entradas', id, before || null, null, user.uid);
   }
 
   // === MÉTODOS PARA ANOTAÇÕES ===
@@ -242,6 +394,7 @@ export class FirestoreService {
     };
 
     const docRef = await this.firestore.collection('anotacoes').add(anotacao);
+    await this.createAuditLog('create', 'anotacoes', docRef.id, null, anotacao, user.uid);
     return docRef.id;
   }
 
@@ -289,9 +442,9 @@ export class FirestoreService {
         localStorage.removeItem('dashboard-anotacoes');
       }
 
-      console.log('✅ Migração de dados concluída com sucesso');
+      this.logger.info('✅ Migração de dados concluída com sucesso');
     } catch (error) {
-      console.error('❌ Erro na migração:', error);
+      this.logger.error('❌ Erro na migração:', error);
       throw error;
     }
   }
@@ -308,6 +461,10 @@ export class FirestoreService {
       dataPagamento: data.dataPagamento?.toDate() || undefined,
       paga: data.paga,
       prioridade: data.prioridade as any
+      ,
+      deleted: data.deleted || false,
+      deletedAt: data.deletedAt ? data.deletedAt.toDate() : undefined,
+      deletedBy: data.deletedBy || undefined
     };
   }
 
@@ -318,7 +475,69 @@ export class FirestoreService {
       valor: data.valor,
       fonte: data.fonte,
       data: data.data.toDate()
+      ,
+      deleted: data.deleted || false,
+      deletedAt: data.deletedAt ? data.deletedAt.toDate() : undefined,
+      deletedBy: data.deletedBy || undefined
     };
+  }
+
+  // Create an audit log entry
+  private async createAuditLog(action: string, collectionName: string, docId: string, before: any, after: any, userId?: string | null) {
+    const payload = {
+      action,
+      collection: collectionName,
+      docId,
+      before: before || null,
+      after: after || null,
+      userId: userId || null,
+      timestamp: firebase.firestore.Timestamp.now()
+    };
+
+    try {
+      const docRef = await this.firestore.collection('auditLogs').add(payload);
+      // Push the new log into the local subject so UI shows it immediately
+      try {
+        const mapped = {
+          id: (docRef as any).id,
+          action: payload.action,
+          collection: payload.collection,
+          docId: payload.docId,
+          before: payload.before,
+          after: payload.after,
+          userId: payload.userId,
+          timestamp: payload.timestamp ? payload.timestamp.toDate() : new Date()
+        };
+        // Prepend to keep newest first
+        this.auditLogsSubject.next([mapped, ...this.auditLogsSubject.value]);
+      } catch (inner) {
+        // Non-fatal: log but don't block
+        this.logger.warn('Falha ao atualizar cache local de audit logs', inner);
+      }
+    } catch (error) {
+      // If write failed, log detailed error so developer can inspect console
+      this.logger.error('Falha ao gravar audit log', {
+        error,
+        payload
+      });
+      // Push a fallback entry to local subject so the UI can surface the attempted action
+      try {
+        const fallback = {
+          id: `local-${Date.now()}`,
+          action: payload.action,
+          collection: payload.collection,
+          docId: payload.docId,
+          before: payload.before,
+          after: payload.after,
+          userId: payload.userId,
+          timestamp: new Date(),
+          persisted: false
+        };
+        this.auditLogsSubject.next([fallback, ...this.auditLogsSubject.value]);
+      } catch (inner) {
+        this.logger.warn('Falha ao atualizar cache local de audit logs (fallback)', inner);
+      }
+    }
   }
 
   // Obter dados atuais (para compatibilidade)

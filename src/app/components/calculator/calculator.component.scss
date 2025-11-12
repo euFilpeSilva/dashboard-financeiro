@@ -1,0 +1,65 @@
+:host { display: block; }
+
+.calculator-root {
+  max-width: 720px;
+  margin: 16px auto;
+  background: var(--card-bg, #0f1724);
+  padding: 16px;
+  border-radius: 8px;
+  color: var(--text, #e6eef6);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tabs button {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.04);
+  color: inherit;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  color: #04233a;
+  border: none;
+}
+
+.display {
+  background: rgba(255,255,255,0.03);
+  padding: 12px;
+  border-radius: 6px;
+  min-height: 56px;
+  margin-bottom: 12px;
+}
+
+.display .expr { font-size: 16px; color: #9fb4c9; }
+.display .res { font-size: 20px; font-weight: 600; margin-top: 4px; }
+
+.pad { display: grid; gap: 8px; }
+.pad .row { display:flex; gap:8px; }
+.pad button { flex: 1; padding: 10px 12px; border-radius:6px; border: none; cursor: pointer; background: rgba(255,255,255,0.03); color: inherit; }
+.pad button.equals { background: linear-gradient(90deg,#10b981,#34d399); color: #022; }
+
+.form-row { display:flex; flex-direction: column; gap:6px; margin-bottom:10px; }
+.form-row label { font-size: 13px; color: #9fb4c9; }
+.form-row input { padding: 8px 10px; border-radius:6px; border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.02); color: inherit; }
+
+.actions { display:flex; gap:8px; margin-top:8px; }
+.actions button { padding:8px 12px; border-radius:6px; border:none; cursor:pointer; background: linear-gradient(90deg,#3b82f6,#60a5fa); color:#04233a; }
+
+.result { margin-top:12px; background: rgba(0,0,0,0.1); padding:8px; border-radius:6px; }
+
+.compound-visual { display: flex; flex-direction: column; }
+.chart-wrapper { width: 100%; }
+.series-table table { width: 100%; border-collapse: collapse; }
+.series-table th, .series-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); text-align: left; }
+.clear-history { background: transparent; border: none; color: var(--accent, #60a5fa); cursor: pointer; margin-bottom:8px; }
+.history-list ul { list-style: none; padding: 0; margin: 0; }
+.history-list li { padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.02); }

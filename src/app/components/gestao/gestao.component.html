@@ -22,6 +22,18 @@
         (click)="alterarAba('entradas')">
         💰 Entradas ({{ entradas.length }})
       </button>
+      <button 
+        class="tab" 
+        [class.active]="abaAtiva === 'lixeira'"
+        (click)="alterarAba('lixeira')">
+        🗑️ Lixeira
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="abaAtiva === 'auditoria'"
+        (click)="alterarAba('auditoria')">
+        🔍 Auditoria
+      </button>
     </div>
   </div>
 
@@ -98,6 +110,24 @@
                 {{ categoria.icon }} {{ categoria.nome }}
               </option>
             </select>
+          </div>
+
+          <!-- Período (Despesas) -->
+          <div class="filtro-group">
+            <label>Período:</label>
+            <select [(ngModel)]="filtroDataTipoDespesa" (change)="aplicarFiltros()" class="select-filtro">
+              <option value="todos">📅 Todos</option>
+              <option value="dia">📆 Dia</option>
+              <option value="intervalo">↔️ Intervalo</option>
+            </select>
+
+            <input *ngIf="filtroDataTipoDespesa === 'dia'" type="date" [(ngModel)]="filtroDataDiaDespesa" (change)="aplicarFiltros()" class="input-data">
+
+            <div *ngIf="filtroDataTipoDespesa === 'intervalo'" class="intervalo-datas">
+              <input [class.input-error]="intervaloInvalidoDespesa && (!filtroDataInicioDespesa || !filtroDataFimDespesa)" type="date" [(ngModel)]="filtroDataInicioDespesa" (change)="aplicarFiltros()" class="input-data">
+              <input [class.input-error]="intervaloInvalidoDespesa && (!filtroDataInicioDespesa || !filtroDataFimDespesa)" type="date" [(ngModel)]="filtroDataFimDespesa" (change)="aplicarFiltros()" class="input-data">
+              <div *ngIf="intervaloInvalidoDespesa" class="filtro-erro">Preencha início e fim do intervalo para aplicar o filtro.</div>
+            </div>
           </div>
         </div>
 
@@ -195,6 +225,10 @@
                 <span class="label">Vencimento:</span>
                 <span class="value">{{ formatarData(despesa.dataVencimento) }}</span>
               </div>
+              <div class="detail-row" *ngIf="despesa.dataPagamento">
+                <span class="label">Pago em:</span>
+                <span class="value">{{ formatarData(despesa.dataPagamento) }}</span>
+              </div>
               <div class="detail-row">
                 <span class="label">Status:</span>
                 <button 
@@ -216,6 +250,7 @@
             <div class="header-col">Categoria</div>
             <div class="header-col">Valor</div>
             <div class="header-col">Vencimento</div>
+            <div class="header-col">Pago em</div>
             <div class="header-col">Status</div>
             <div class="header-col">Ações</div>
           </div>
@@ -246,6 +281,10 @@
               <div class="item-field">
                 <div class="field-label">Vencimento</div>
                 <div class="field-value">{{ formatarData(despesa.dataVencimento) }}</div>
+              </div>
+              <div class="item-field">
+                <div class="field-label">Pago em</div>
+                <div class="field-value">{{ despesa.dataPagamento ? formatarData(despesa.dataPagamento) : '—' }}</div>
               </div>
               
               <div class="item-field">
@@ -320,6 +359,24 @@
                 {{ fonte }}
               </option>
             </select>
+          </div>
+
+          <!-- Período (Entradas) -->
+          <div class="filtro-group">
+            <label>Período:</label>
+            <select [(ngModel)]="filtroDataTipoEntrada" (change)="aplicarFiltrosEntradas()" class="select-filtro">
+              <option value="todos">📅 Todos</option>
+              <option value="dia">📆 Dia</option>
+              <option value="intervalo">↔️ Intervalo</option>
+            </select>
+
+            <input *ngIf="filtroDataTipoEntrada === 'dia'" type="date" [(ngModel)]="filtroDataDiaEntrada" (change)="aplicarFiltrosEntradas()" class="input-data">
+
+            <div *ngIf="filtroDataTipoEntrada === 'intervalo'" class="intervalo-datas">
+              <input [class.input-error]="intervaloInvalidoEntrada && (!filtroDataInicioEntrada || !filtroDataFimEntrada)" type="date" [(ngModel)]="filtroDataInicioEntrada" (change)="aplicarFiltrosEntradas()" class="input-data">
+              <input [class.input-error]="intervaloInvalidoEntrada && (!filtroDataInicioEntrada || !filtroDataFimEntrada)" type="date" [(ngModel)]="filtroDataFimEntrada" (change)="aplicarFiltrosEntradas()" class="input-data">
+              <div *ngIf="intervaloInvalidoEntrada" class="filtro-erro">Preencha início e fim do intervalo para aplicar o filtro.</div>
+            </div>
           </div>
 
           <!-- Ordenação -->
@@ -454,6 +511,98 @@
                 <button class="btn-action editar" (click)="abrirFormularioEntrada(entrada)" title="Editar">✏️</button>
                 <button class="btn-action excluir" (click)="excluirEntrada(entrada)" title="Excluir">🗑️</button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA LIXEIRA -->
+    <div *ngIf="abaAtiva === 'lixeira'" class="content-section">
+      <div class="section-header">
+        <h2>🗑️ Lixeira</h2>
+        <div class="header-actions">
+          <button class="btn btn-primary" (click)="limparFiltros()">🔄 Atualizar</button>
+        </div>
+      </div>
+
+      <div class="filtros-container">
+        <p class="filtro-erro" style="margin:0 0 8px 0">Itens excluídos recentemente. Você pode restaurar ou excluir permanentemente.</p>
+        <div class="filtros-row">
+          <div class="filtro-group">
+            <label>Despesas na Lixeira</label>
+            <div *ngIf="despesasExcluidas.length === 0" class="empty-state">
+              <p>Nenhuma despesa na lixeira</p>
+            </div>
+            <div *ngFor="let desp of despesasExcluidas" class="lista-item" style="margin-bottom:8px;">
+              <div class="field-value"><strong>{{ desp.descricao }}</strong> — {{ formatarData(desp.dataVencimento) }} — {{ formatarMoeda(desp.valor) }}</div>
+              <div style="margin-top:6px; display:flex; gap:8px;">
+                <button class="btn" (click)="restaurarDespesa(desp)">♻️ Restaurar</button>
+                <button class="btn btn-limpar" (click)="excluirDespesaPermanentemente(desp)">🗑️ Excluir permanentemente</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="filtro-group">
+            <label>Entradas na Lixeira</label>
+            <div *ngIf="entradasExcluidas.length === 0" class="empty-state">
+              <p>Nenhuma entrada na lixeira</p>
+            </div>
+            <div *ngFor="let ent of entradasExcluidas" class="lista-item" style="margin-bottom:8px;">
+              <div class="field-value"><strong>{{ ent.descricao }}</strong> — {{ formatarData(ent.data) }} — {{ formatarMoeda(ent.valor) }}</div>
+              <div style="margin-top:6px; display:flex; gap:8px;">
+                <button class="btn" (click)="restaurarEntrada(ent)">♻️ Restaurar</button>
+                <button class="btn btn-limpar" (click)="excluirEntradaPermanentemente(ent)">🗑️ Excluir permanentemente</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA AUDITORIA -->
+    <div *ngIf="abaAtiva === 'auditoria'" class="content-section">
+      <div class="section-header">
+        <h2>🔍 Auditoria</h2>
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button class="toggle-btn" (click)="aplicarFiltrosAudit()">🔄 Atualizar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="filtros-container">
+        <div class="filtros-row">
+          <div class="filtro-group" style="flex:1">
+            <label>Pesquisar:</label>
+            <input type="text" [(ngModel)]="termoBusca" (input)="aplicarFiltrosAudit()" class="input-busca" placeholder="Pesquisar por ação, coleção, docId, usuário...">
+          </div>
+        </div>
+      </div>
+
+      <div class="items-container">
+        <div *ngIf="auditLogs.length === 0" class="empty-state">
+          <div class="empty-icon">🔎</div>
+          <h3>Nenhum log de auditoria encontrado</h3>
+        </div>
+
+        <div *ngIf="auditLogs.length > 0" class="items-lista">
+          <div class="lista-body">
+            <div *ngFor="let log of auditLogs" class="lista-item" style="padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                <div>
+                  <div><strong>{{ log.action }}</strong> — <small>{{ log.collection }}</small></div>
+                  <div style="color:var(--text-secondary); font-size:0.9rem">ID: {{ log.docId }} • Usuário: {{ log.userId || '–' }}</div>
+                </div>
+                <div style="text-align:right; min-width:160px;">
+                  <div>{{ log.timestamp | date:'short' }}</div>
+                </div>
+              </div>
+              <details style="margin-top:8px;">
+                <summary style="cursor:pointer">Ver detalhes</summary>
+                <pre style="white-space:pre-wrap; background:var(--bg-secondary); padding:12px; border-radius:8px; margin-top:8px; overflow:auto;">Antes: {{ log.before ? (log.before | json) : '—' }}</pre>
+                <pre style="white-space:pre-wrap; background:var(--bg-secondary); padding:12px; border-radius:8px; margin-top:8px; overflow:auto;">Depois: {{ log.after ? (log.after | json) : '—' }}</pre>
+              </details>
             </div>
           </div>
         </div>

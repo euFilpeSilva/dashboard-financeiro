@@ -1,0 +1,123 @@
+<div class="calculator-root">
+  <div class="tabs">
+    <button (click)="activeTab='standard'" [class.active]="activeTab==='standard'">Calculadora</button>
+    <button (click)="activeTab='compound'" [class.active]="activeTab==='compound'">Juros Compostos</button>
+  </div>
+
+  <div *ngIf="activeTab==='standard'" class="standard">
+    <div class="display">
+      <div class="expr">{{ expr || '0' }}</div>
+      <div class="res">{{ result || '' }}</div>
+    </div>
+
+    <div class="pad">
+      <div class="row">
+        <button (click)="clear()">C</button>
+        <button (click)="backspace()">⌫</button>
+        <button (click)="append('(')">(</button>
+        <button (click)="append(')')">)</button>
+      </div>
+
+      <div class="row">
+        <button (click)="append('7')">7</button>
+        <button (click)="append('8')">8</button>
+        <button (click)="append('9')">9</button>
+        <button (click)="append('/')">÷</button>
+      </div>
+
+      <div class="row">
+        <button (click)="append('4')">4</button>
+        <button (click)="append('5')">5</button>
+        <button (click)="append('6')">6</button>
+        <button (click)="append('*')">×</button>
+      </div>
+
+      <div class="row">
+        <button (click)="append('1')">1</button>
+        <button (click)="append('2')">2</button>
+        <button (click)="append('3')">3</button>
+        <button (click)="append('-')">−</button>
+      </div>
+
+      <div class="row">
+        <button (click)="append('0')">0</button>
+        <button (click)="append('.')">.</button>
+        <button (click)="append('+')">+</button>
+        <button class="equals" (click)="evaluate()">=</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="activeTab==='compound'" class="compound">
+    <div class="form-row">
+      <label>Principal (R$)</label>
+      <input type="number" [(ngModel)]="principal" placeholder="Ex: 1000" />
+    </div>
+
+    <div class="form-row">
+      <label>Taxa anual (%)</label>
+      <input type="number" [(ngModel)]="annualRate" step="0.01" placeholder="Ex: 5" />
+    </div>
+
+    <div class="form-row">
+      <label>Períodos por ano (n)</label>
+      <input type="number" [(ngModel)]="periodsPerYear" placeholder="Ex: 12" />
+    </div>
+
+    <div class="form-row">
+      <label>Anos (t)</label>
+      <input type="number" [(ngModel)]="years" placeholder="Ex: 5" />
+    </div>
+
+    <div class="form-row">
+      <label>Contribuição por período (opcional)</label>
+      <input type="number" [(ngModel)]="periodicContribution" placeholder="Ex: 50" />
+    </div>
+
+    <div class="actions">
+      <button (click)="calculateCompound()">Calcular</button>
+      <button (click)="resetCompound()">Limpar</button>
+    </div>
+
+    <div *ngIf="compoundResult" class="result">
+      <div>Valor Futuro: <strong>R$ {{ compoundResult.futureValue | number:'1.2-2' }}</strong></div>
+      <div>Total Contribuído: R$ {{ compoundResult.totalContributed | number:'1.2-2' }}</div>
+      <div>Juros Recebidos: R$ {{ compoundResult.interestEarned | number:'1.2-2' }}</div>
+    </div>
+
+    <div *ngIf="compoundResult" class="compound-visual">
+      <div class="chart-wrapper" style="height:220px; margin-top:12px;">
+        <canvas #compoundChart></canvas>
+      </div>
+
+      <div class="series-table" style="margin-top:12px;">
+        <h4>Série por Período</h4>
+        <div class="series-scroll" style="max-height:180px; overflow:auto;">
+          <table>
+            <thead><tr><th>Período</th><th>Saldo (R$)</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let v of chartDataPoints; let i=index">
+                <td>{{ i }}</td>
+                <td>{{ v | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="history" style="margin-top:14px;">
+    <h4>Histórico</h4>
+    <div *ngIf="history.length === 0">Nenhum cálculo recente.</div>
+    <div *ngIf="history.length > 0" class="history-list">
+      <button class="clear-history" (click)="clearHistory()">Limpar histórico</button>
+      <ul>
+        <li *ngFor="let item of history">
+          <div *ngIf="item.type==='standard'">[Calc] {{ item.expr }} = {{ item.result }} <small>{{ item.timestamp | date:'short' }}</small></div>
+          <div *ngIf="item.type==='compound'">[Juros] P: R$ {{ item.inputs.principal }} r: {{ item.inputs.annualRate }}% t: {{ item.inputs.years }} anos → R$ {{ item.result.futureValue | number:'1.2-2' }} <small>{{ item.timestamp | date:'short' }}</small></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

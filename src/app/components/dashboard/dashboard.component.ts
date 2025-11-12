@@ -1,10 +1,11 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
+import { UserPreferencesService } from '../../services/user-preferences.service';
 import { 
   ResumoDashboard, 
   DespesaPorCategoria, 
@@ -18,6 +19,7 @@ import { ChartComponent } from '../chart/chart.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
 import { CustomizableLayoutComponent } from '../customizable-layout/customizable-layout.component';
+import { ToastService } from '../../services/toast.service';
 
 // Interface para as anotações
 interface Anotacao {
@@ -129,7 +131,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   anos: number[] = [];
 
-  constructor(private despesaService: DespesaService, private router: Router, private themeService: ThemeService) {
+  // preferência do usuário (meta de gastos)
+  // preferências das metas (lidas do UserPreferences)
+  gastoMetaPercentualGeral: number = 100;
+  gastoMetaPercentualMensal: number = 100;
+  gastoMetaMesReferencia: string = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  // estados do alerta de meta para evitar toasts repetidos (separados por vertente)
+  private lastMetaAlertStateGeral: 'ok' | 'warn' | 'exceeded' | null = null;
+  private lastMetaAlertStateMes: 'ok' | 'warn' | 'exceeded' | null = null;
+  private lastPercentMetaUsedGeral: number = 0;
+  private lastPercentMetaUsedMes: number = 0;
+
+  // listener remover para ESC
+  private escUnlisten: (() => void) | null = null;
+  // flag para saber se o overlay foi movimentado para body
+  private overlayAppendedToBody = false;
+
+  constructor(
+    private despesaService: DespesaService,
+    private router: Router,
+    private themeService: ThemeService,
+    private userPreferencesService: UserPreferencesService,
+    private toastService: ToastService,
+    private renderer: Renderer2
+  ) {
     // Gerar lista de anos (últimos 5 anos + próximos 2 anos)
     const anoAtual = new Date().getFullYear();
     for (let i = anoAtual - 5; i <= anoAtual + 2; i++) {
@@ -148,6 +173,31 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.carregarDados();
     this.carregarPreferenciaVisualizacao();
     this.carregarAnotacoes();
+
+    // Escutar alteração na preferência de meta de gastos (porcentagem)
+    // Geral
+    this.userPreferencesService.getPreference$('gastoMetaPercentual')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(p => {
+        this.gastoMetaPercentualGeral = (p !== null && p !== undefined) ? (p as number) : 100;
+        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
+      });
+
+    // Mensal percent
+    this.userPreferencesService.getPreference$('gastoMetaPercentualMensal')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(p => {
+        this.gastoMetaPercentualMensal = (p !== null && p !== undefined) ? (p as number) : this.gastoMetaPercentualGeral;
+        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
+      });
+
+    // Mês de referência para a meta mensal (YYYY-MM)
+    this.userPreferencesService.getPreference$('gastoMetaMesReferencia')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(p => {
+        if (p) this.gastoMetaMesReferencia = p as string;
+        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
+      });
     
     // Carregar preferência de visibilidade do mural
     const muralVisivel = localStorage.getItem('dashboard-mural-visivel');
@@ -176,6 +226,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(resumo => {
         this.resumo = resumo;
+        // checar limites da meta sempre que os números mudam
+        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
       });
 
     // Carregar despesas por categoria
@@ -207,10 +259,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
       });
 
     // Carregar todas as despesas para a listagem do mês
+    // `despesas$` contém todas as despesas do usuário; para a listagem compacta do mês
+    // usamos o observable específico que já filtra pelo mês atual.
+    this.despesaService.getDespesasDoMes()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(despesasMes => {
+        this.despesasDoMes = despesasMes;
+      });
+
+    // Ainda armazenamos todas as despesas para uso em visualizações detalhadas
     this.despesaService.despesas$
       .pipe(takeUntil(this.destroy$))
       .subscribe(despesas => {
-        this.despesasDoMes = despesas;
         this.todasDespesas = despesas; // Armazenar para uso na visualização detalhada
       });
 
@@ -666,6 +726,94 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.showDadosMensais = true;
   }
 
+  // Alerts modal control
+  showAlertsModal: boolean = false;
+
+  openAlertsModal(): void {
+    console.log('Opening alerts modal');
+    this.showAlertsModal = true;
+    // After the template renders, ensure the overlay is appended to document.body so
+    // it is not clipped by any ancestor stacking-context (transforms, z-index, etc.).
+    setTimeout(() => {
+      try {
+        const el = document.querySelector('.alerts-modal-overlay') as HTMLElement | null;
+        console.log('alerts-modal-overlay element present?', !!el);
+        if (el && !this.overlayAppendedToBody) {
+          try {
+            this.renderer.appendChild(document.body, el);
+            this.overlayAppendedToBody = true;
+            console.log('alerts-modal-overlay appended to document.body');
+          } catch (appendErr) {
+            console.warn('Could not append alerts modal to body via renderer, falling back to direct appendChild', appendErr);
+            try { document.body.appendChild(el); this.overlayAppendedToBody = true; } catch (e) { /* swallow */ }
+          }
+        }
+        if (el) {
+          const cs = getComputedStyle(el);
+          console.log('alerts-modal-overlay computed:', {
+            display: cs.display,
+            visibility: cs.visibility,
+            zIndex: cs.zIndex,
+            position: cs.position,
+            top: cs.top,
+            left: cs.left
+          });
+        }
+      } catch (e) {
+        console.warn('Error inspecting/modal-moving element', e);
+      }
+
+      // install ESC handler to close modal
+      if (!this.escUnlisten) {
+        this.escUnlisten = this.renderer.listen('window', 'keydown', (ev: KeyboardEvent) => {
+          if (ev.key === 'Escape' || ev.key === 'Esc') {
+            this.closeAlertsModal();
+          }
+        });
+      }
+    }, 80);
+  }
+
+  closeAlertsModal(): void {
+    this.showAlertsModal = false;
+
+    // Remove overlay from body if we appended it
+    setTimeout(() => {
+      try {
+        const el = document.querySelector('.alerts-modal-overlay') as HTMLElement | null;
+        if (el && this.overlayAppendedToBody) {
+          try {
+            this.renderer.removeChild(document.body, el);
+            this.overlayAppendedToBody = false;
+            console.log('alerts-modal-overlay removed from document.body');
+          } catch (removeErr) {
+            // fallback to direct removal
+            try { if (el.parentElement === document.body) document.body.removeChild(el); this.overlayAppendedToBody = false; } catch (e) { /* swallow */ }
+          }
+        }
+      } catch (e) {
+        console.warn('Error removing alerts modal overlay from body', e);
+      }
+
+      // remove ESC listener
+      if (this.escUnlisten) {
+        try { this.escUnlisten(); } catch (e) { /* ignore */ }
+        this.escUnlisten = null;
+      }
+    }, 30);
+  }
+
+  // Helper para formatar referência 'YYYY-MM' para 'MMM/YYYY'
+  formatMonth(ref: string): string {
+    if (!ref || typeof ref !== 'string') return '';
+    const parts = ref.split('-');
+    if (parts.length !== 2) return '';
+    const ano = Number(parts[0]);
+    const mes = Number(parts[1]);
+    const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return `${meses[mes - 1] || ''}/${ano}`;
+  }
+
   adicionarEntrada(): void {
     // Navegar para página de gestão de entradas ou abrir modal
     this.router.navigate(['/gestao']);
@@ -685,24 +833,104 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   // Funções para o card de alertas
-  getTotalAlertas(): number {
-    const vencidas = this.despesasVencidas.length;
-    const proximas = this.despesasProximasVencimento.length;
-    const metaExcedida = this.getPercentualGastoMes() > 80 ? 1 : 0;
-    const total = vencidas + proximas + metaExcedida;
-    
-    // Debug temporário
-    console.log('Debug Alertas:', {
-      vencidas,
-      proximas, 
-      metaExcedida,
-      total,
-      despesasVencidas: this.despesasVencidas,
-      despesasProximasVencimento: this.despesasProximasVencimento,
-      entradasDoMes: this.entradasDoMes
-    });
-    
-    return total;
+  // Funções para o card de alertas
+
+  /** Retorna largura da barra de progresso (em %) limitada a 200% para visual */
+  getMetaProgressWidth(): number {
+    const pct = this.getPercentualMetaUsada();
+    return Math.min(Math.max(pct, 0), 200);
+  }
+
+  // --- Meta do mês atual (baseada nas entradas/despesas do mês atual) ---
+  getMetaValorMesAtual(): number {
+    const metaPercent = this.gastoMetaPercentualMensal ?? this.gastoMetaPercentualGeral ?? 100;
+    const entradasMes = this.getEntradasParaReferenciaMes();
+    // Vertente do mês atual: usar APENAS entradas do mês. Se não houver entradas do mês, retornar 0
+    if (!entradasMes || entradasMes === 0) return 0;
+    return Math.round((entradasMes * (metaPercent / 100)) * 100) / 100;
+  }
+
+  getPercentualMetaUsadaMesAtual(): number {
+    const metaValor = this.getMetaValorMesAtual();
+    // Se meta do mês for zero (por falta de entradas do mês), consideramos 0%
+    if (!metaValor || metaValor === 0) return 0;
+    const gastosMes = this.getGastosDoMesTotal();
+    return Math.round((gastosMes / metaValor) * 100);
+  }
+
+  getMetaMesAtualProgressWidth(): number {
+    const pct = this.getPercentualMetaUsadaMesAtual();
+    return Math.min(Math.max(pct, 0), 200);
+  }
+
+  getMetaMesAtualRestante(): number {
+    const meta = this.getMetaValorMesAtual();
+    const gastos = this.getGastosDoMesTotal();
+    return Math.round((meta - gastos) * 100) / 100;
+  }
+
+  getGastosDoMesTotal(): number {
+    // Retornar somente o total das despesas do mês atual.
+    // Não utilizar o resumo geral como fallback — desta forma a vertente mensal fica restrita ao mês.
+    if (Array.isArray(this.despesasDoMes) && this.despesasDoMes.length > 0) {
+      return this.despesasDoMes.reduce((s, d) => s + (d.valor || 0), 0);
+    }
+    return 0;
+  }
+
+  getEntradasDoMesTotal(): number {
+    // Retornar somente o total das entradas do mês atual.
+    if (Array.isArray(this.entradasDoMes) && this.entradasDoMes.length > 0) {
+      return this.entradasDoMes.reduce((s, e) => s + (e.valor || 0), 0);
+    }
+    return 0;
+  }
+
+  // --- Helpers para meta mensal baseada em mês de referência configurado ---
+  private parseReferenciaMes(ref: string): { mes: number; ano: number } {
+    // espera 'YYYY-MM'
+    if (!ref || typeof ref !== 'string') {
+      const now = new Date();
+      return { mes: now.getMonth() + 1, ano: now.getFullYear() };
+    }
+    const parts = ref.split('-');
+    if (parts.length !== 2) {
+      const now = new Date();
+      return { mes: now.getMonth() + 1, ano: now.getFullYear() };
+    }
+    const ano = Number(parts[0]) || new Date().getFullYear();
+    const mes = Number(parts[1]) || (new Date().getMonth() + 1);
+    return { mes, ano };
+  }
+
+  private getEntradasParaReferenciaMes(): number {
+    const { mes, ano } = this.parseReferenciaMes(this.gastoMetaMesReferencia);
+    if (!Array.isArray(this.todasEntradas) || this.todasEntradas.length === 0) return 0;
+    return this.todasEntradas.reduce((s: number, entrada: any) => {
+      let data: Date | null = null;
+      if (!entrada) return s;
+      if (entrada.data instanceof Date) data = entrada.data as Date;
+      else if (typeof entrada.data === 'string') data = new Date(entrada.data);
+      else if (entrada.data && (entrada.data as any).toDate) data = (entrada.data as any).toDate();
+      if (!data) return s;
+      if ((data.getMonth() + 1) === mes && data.getFullYear() === ano) return s + (entrada.valor || 0);
+      return s;
+    }, 0);
+  }
+
+  private getDespesasParaReferenciaMes(): number {
+    const { mes, ano } = this.parseReferenciaMes(this.gastoMetaMesReferencia);
+    if (!Array.isArray(this.todasDespesas) || this.todasDespesas.length === 0) return 0;
+    return this.todasDespesas.reduce((s: number, despesa: Despesa) => {
+      if (!despesa) return s;
+      let data: Date | null = null;
+      if (despesa.dataVencimento instanceof Date) data = despesa.dataVencimento as Date;
+      else if (typeof despesa.dataVencimento === 'string') data = new Date(despesa.dataVencimento);
+      else if (despesa.dataVencimento && (despesa.dataVencimento as any).toDate) data = (despesa.dataVencimento as any).toDate();
+      if (!data) return s;
+      if ((data.getMonth() + 1) === mes && data.getFullYear() === ano) return s + (despesa.valor || 0);
+      return s;
+    }, 0);
   }
 
   getDiasVencimento(despesa: Despesa): string {
@@ -727,10 +955,94 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   getPercentualGastoMes(): number {
     // Calcular um orçamento estimado baseado nas entradas ou um valor fixo
-    const orcamentoEstimado = this.resumo.totalEntradas > 0 
+    const orcamentoEstimado = this.resumo.totalEntradas > 0
       ? this.resumo.totalEntradas * 0.8 // 80% das entradas como orçamento
       : 5000; // Valor padrão se não houver entradas
-    
+
     return Math.round((this.resumo.totalDespesas / orcamentoEstimado) * 100);
+  }
+
+  /**
+   * Retorna o percentual do uso da meta (quanto da meta definida já foi consumida).
+   * Ex: se meta=28% do orçamento e atualmente usamos 56% do orçamento, retorna 200 (% da meta usada).
+   */
+  getPercentualGastoMesDaMeta(): number {
+    // Deprecated: keep for backwards compatibility but prefer getPercentualMetaUsada
+    const percentualOrcamento = this.getPercentualGastoMes();
+    const meta = this.gastoMetaPercentualGeral ?? 100;
+    if (!meta || meta <= 0) return 0;
+    return Math.round((percentualOrcamento / meta) * 100);
+  }
+
+  // --- NOVO: Cálculos mais claros para a meta ---
+  /** retorna o valor monetário da meta (R$) — por exemplo, 28% das entradas */
+  getMetaBudgetValor(): number {
+    const metaPercent = this.gastoMetaPercentualGeral ?? 100;
+    // Vertente geral: usar o total agregado de entradas (resumo) ou, se disponível, somatório de todasEntradas
+    const entradasGeral = (Array.isArray(this.todasEntradas) && this.todasEntradas.length > 0)
+      ? this.todasEntradas.reduce((s: number, e: any) => s + (e.valor || 0), 0)
+      : (this.resumo.totalEntradas > 0 ? this.resumo.totalEntradas : 0);
+
+    if (!entradasGeral || entradasGeral === 0) return 0;
+    return Math.round((entradasGeral * (metaPercent / 100)) * 100) / 100; // arredondar para centavos
+  }
+
+  /** Percentual da meta já usado: (totalDespesas / metaBudget) * 100 */
+  getPercentualMetaUsada(): number {
+    const metaValor = this.getMetaBudgetValor();
+    if (!metaValor || metaValor === 0) return 0;
+    const gastosGeral = (Array.isArray(this.todasDespesas) && this.todasDespesas.length > 0)
+      ? this.todasDespesas.reduce((s, d) => s + (d.valor || 0), 0)
+      : (this.resumo.totalDespesas || 0);
+    return Math.round((gastosGeral / metaValor) * 100);
+  }
+
+  /** Checa thresholds de meta e emite toasts quando cruzados (80% e 100%). */
+  private checkMetaThresholds(): void {
+    // Checar vertente GERAL
+    const percentGeral = this.getPercentualMetaUsada();
+    let stateGeral: 'ok' | 'warn' | 'exceeded' = 'ok';
+    if (percentGeral >= 100) stateGeral = 'exceeded';
+    else if (percentGeral >= 80) stateGeral = 'warn';
+
+    if (this.lastMetaAlertStateGeral !== stateGeral) {
+      if (stateGeral === 'warn') {
+        this.toastService.warning('Atenção: Meta (Geral) próxima', `Você atingiu ${percentGeral}% da meta geral (${this.gastoMetaPercentualGeral}% das entradas).`);
+      } else if (stateGeral === 'exceeded') {
+        this.toastService.error('Meta (Geral) excedida', `Você ultrapassou a meta geral (${percentGeral}% da meta — Meta: ${this.gastoMetaPercentualGeral}% das entradas).`);
+      }
+      this.lastMetaAlertStateGeral = stateGeral;
+    }
+    this.lastPercentMetaUsedGeral = percentGeral;
+
+    // Checar vertente MÊS ATUAL
+    const percentMes = this.getPercentualMetaUsadaMesAtual();
+    let stateMes: 'ok' | 'warn' | 'exceeded' = 'ok';
+    if (percentMes >= 100) stateMes = 'exceeded';
+    else if (percentMes >= 80) stateMes = 'warn';
+
+    // Só notificar se houver meta do mês calculável (meta > 0)
+    const metaMesValor = this.getMetaValorMesAtual();
+    if (metaMesValor && metaMesValor > 0) {
+      if (this.lastMetaAlertStateMes !== stateMes) {
+        if (stateMes === 'warn') {
+          this.toastService.warning('Atenção: Meta (Mês) próxima', `Você atingiu ${percentMes}% da meta do mês (${this.gastoMetaPercentualMensal}% das entradas do mês ${this.gastoMetaMesReferencia}).`);
+        } else if (stateMes === 'exceeded') {
+          this.toastService.error('Meta (Mês) excedida', `Você ultrapassou a meta do mês (${percentMes}% da meta — Meta: ${this.gastoMetaPercentualMensal}% das entradas do mês ${this.gastoMetaMesReferencia}).`);
+        }
+        this.lastMetaAlertStateMes = stateMes;
+      }
+      this.lastPercentMetaUsedMes = percentMes;
+    }
+  }
+
+  // Atualiza getTotalAlertas para considerar ambas as vertentes de meta (contagem simples)
+  getTotalAlertas(): number {
+    const vencidas = this.despesasVencidas.length;
+    const proximas = this.despesasProximasVencimento.length;
+    const metaGeralExcedida = this.getPercentualMetaUsada() >= 100 ? 1 : 0;
+    const metaMesExcedida = this.getPercentualMetaUsadaMesAtual() >= 100 ? 1 : 0;
+    // Evitar dupla contagem quando ambas se referem ao mesmo número (raridade) — somamos ambos como alertas distintos
+    return vencidas + proximas + metaGeralExcedida + metaMesExcedida;
   }
 }

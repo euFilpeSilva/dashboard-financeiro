@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy }from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit }from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
@@ -40,6 +40,13 @@ import { ThemeService } from '../../services/theme.service';
             <span class="nav-text">Dados por Mês</span>
           </a>
           <a 
+            routerLink="/calculator" 
+            routerLinkActive="active"
+            class="nav-link calculator-link">
+            <span class="nav-icon">🧮</span>
+            <span class="nav-text">Calculadora</span>
+          </a>
+          <a 
             routerLink="/gestao" 
             routerLinkActive="active"
             class="nav-link">
@@ -49,7 +56,7 @@ import { ThemeService } from '../../services/theme.service';
         </div>
 
         <!-- Mobile Menu Button -->
-        <button class="mobile-menu-btn" (click)="toggleMobileMenu()">
+        <button class="mobile-menu-btn" (click)="toggleMobileMenu($event)">
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
           <span class="hamburger-line"></span>
@@ -82,6 +89,15 @@ import { ThemeService } from '../../services/theme.service';
               (click)="navigateToMonthlyData(); closeMobileMenu()">
               <span class="nav-icon">📅</span>
               <span>Dados por Mês</span>
+            </a>
+            
+            <a 
+              routerLink="/calculator" 
+              class="mobile-nav-link calculator-link"
+              [class.active]="isCurrentRoute('/calculator')"
+              (click)="closeMobileMenu()">
+              <span class="nav-icon">🧮</span>
+              <span>Calculadora</span>
             </a>
             
             <a 
@@ -173,10 +189,10 @@ import { ThemeService } from '../../services/theme.service';
               <span class="menu-icon">👤</span>
               <span>Perfil</span>
             </div>
-            <div class="menu-item">
+            <a routerLink="/configuracoes" class="menu-item" (click)="showUserMenu = false">
               <span class="menu-icon">⚙️</span>
               <span>Configurações</span>
-            </div>
+            </a>
             <div class="menu-divider"></div>
             <div class="menu-item logout" (click)="logout()">
               <span class="menu-icon">🚪</span>
@@ -189,8 +205,10 @@ import { ThemeService } from '../../services/theme.service';
   `,
   styleUrls: ['./navbar.component.scss']
 })
-export class NavbarComponent implements OnInit, OnDestroy {
+export class NavbarComponent implements OnInit, AfterViewInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  private _menuOriginalParent: HTMLElement | null = null;
+  
   
   isAuthenticated = false;
   user: any = null;
@@ -223,49 +241,96 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.currentTheme = tema;
       });
 
-    // Fechar menu ao clicar fora
-    document.addEventListener('click', this.onDocumentClick.bind(this));
+    // Mobile menu closing is handled by the overlay's click handler and the
+    // close button. Avoid a global document click listener which can race
+    // with open toggles and cause flaky behavior on mobile.
+  }
+
+  ngAfterViewInit(): void {
+    // Do not move menu to body by default; keep it inside the component so
+    // component-scoped styles (Angular emulated encapsulation) continue to apply.
+    // If menu was previously moved, restore it now.
+    setTimeout(() => this._restoreMobileMenuParent(), 0);
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-    document.removeEventListener('click', this.onDocumentClick.bind(this));
   }
 
   toggleUserMenu(): void {
     this.showUserMenu = !this.showUserMenu;
   }
 
-  toggleMobileMenu(): void {
+  toggleMobileMenu(event?: Event): void {
+    // Prevent any parent handlers from interfering with this click
+    event?.stopPropagation();
     this.showMobileMenu = !this.showMobileMenu;
     // Fechar menu de usuário se estiver aberto
     if (this.showMobileMenu) {
       this.showUserMenu = false;
+      // Ensure the menu lives inside the navbar container so component styles
+      // apply correctly (important for Angular emulated encapsulation)
+      setTimeout(() => this._restoreMobileMenuParent(), 0);
     }
   }
 
   closeMobileMenu(): void {
     this.showMobileMenu = false;
+    // Restore mobile menu elements back to the navbar so styles remain applied.
+    setTimeout(() => this._restoreMobileMenuParent(), 0);
   }
 
-  onDocumentClick(event: Event): void {
-    const target = event.target as HTMLElement;
-    const userMenuTrigger = document.querySelector('.user-info');
-    const userMenu = document.querySelector('.user-menu');
-    const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-    const mobileMenu = document.querySelector('.mobile-menu');
-    
-    // Fechar menu de usuário
-    if (!userMenuTrigger?.contains(target) && !userMenu?.contains(target)) {
-      this.showUserMenu = false;
-    }
-    
-    // Fechar menu mobile
-    if (!mobileMenuBtn?.contains(target) && !mobileMenu?.contains(target)) {
-      this.showMobileMenu = false;
+  private _moveMobileMenuToBody(): void {
+    try {
+      const mobileMenu = document.querySelector('.mobile-menu') as HTMLElement | null;
+      const mobileOverlay = document.querySelector('.mobile-menu-overlay') as HTMLElement | null;
+      if (!mobileMenu && !mobileOverlay) return;
+      const navbarContainer = document.querySelector('.navbar-container') as HTMLElement | null;
+      if (!this._menuOriginalParent && navbarContainer) {
+        this._menuOriginalParent = navbarContainer;
+      }
+
+      if (mobileOverlay && mobileOverlay.parentElement !== document.body) {
+        // remember original parent so we can restore later
+        if (!this._menuOriginalParent && mobileOverlay.parentElement) {
+          this._menuOriginalParent = mobileOverlay.parentElement as HTMLElement;
+        }
+        document.body.appendChild(mobileOverlay);
+      }
+
+      if (mobileMenu && mobileMenu.parentElement !== document.body) {
+        if (!this._menuOriginalParent && mobileMenu.parentElement) {
+          this._menuOriginalParent = mobileMenu.parentElement as HTMLElement;
+        }
+        document.body.appendChild(mobileMenu);
+      }
+    } catch (err) {
+      // silent fail - non-critical
+      // console.warn('Error moving mobile menu to body', err);
     }
   }
+
+  private _restoreMobileMenuParent(): void {
+    try {
+      const mobileMenu = document.querySelector('.mobile-menu') as HTMLElement | null;
+      const mobileOverlay = document.querySelector('.mobile-menu-overlay') as HTMLElement | null;
+      const parent = this._menuOriginalParent || document.querySelector('.navbar-container') as HTMLElement | null;
+      if (!parent) return;
+
+      if (mobileOverlay && mobileOverlay.parentElement !== parent) {
+        parent.appendChild(mobileOverlay);
+      }
+
+      if (mobileMenu && mobileMenu.parentElement !== parent) {
+        parent.appendChild(mobileMenu);
+      }
+    } catch (err) {
+      // silent
+    }
+  }
+
+  // Note: document-level click handling removed to avoid races on mobile.
 
   async logout(): Promise<void> {
     try {

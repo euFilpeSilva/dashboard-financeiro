@@ -121,7 +121,8 @@
   width: 100vw;
   height: 100vh;
   background: rgba(0, 0, 0, 0.5);
-  z-index: 999;
+  /* must be above other app overlays (some components use very large z-index values) */
+  z-index: 100010 !important;
   opacity: 0;
   transition: opacity 0.3s ease;
   
@@ -139,7 +140,8 @@
   width: 280px;
   height: 100vh;
   background: var(--bg-card);
-  z-index: 1000;
+  /* ensure mobile menu slides above any high-z elements in the page */
+  z-index: 100011 !important;
   transition: right 0.3s ease;
   box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
   overflow-y: auto;
@@ -196,6 +198,21 @@
         font-size: 1.2rem;
         width: 24px;
         text-align: center;
+      }
+
+      &.calculator-link {
+        background: linear-gradient(90deg, rgba(59,130,246,0.08), rgba(96,165,250,0.04));
+        border-radius: 8px;
+        margin: 6px 12px;
+
+        .nav-icon {
+          font-size: 1.4rem;
+          width: 28px;
+        }
+
+        &:hover {
+          background: linear-gradient(90deg, rgba(59,130,246,0.12), rgba(96,165,250,0.08));
+        }
       }
       
       &:hover {
@@ -575,39 +592,9 @@
   }
   
   // Melhorar exibição do botão Dados por Mês
-  .navbar {
-    .navbar-nav.desktop-nav {
-      display: flex;
-      flex: 1;
-      justify-content: center;
-      
-      .nav-link {
-        padding: 8px 12px;
-        border-radius: 8px;
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        white-space: nowrap;
-        
-        .nav-icon {
-          margin-right: 6px;
-          font-size: 1rem;
-        }
-        
-        .nav-text {
-          display: inline; // Mostrar texto no mobile
-        }
-        
-        &:hover, &.active {
-          background: var(--color-blue);
-          color: white;
-        }
-      }
-    }
-  }
+  /* On mobile we keep the desktop nav hidden to avoid duplicate/top-level links.
+     The calculator and other navigation options are available inside the hamburger menu
+     (see .mobile-menu .mobile-nav-link). */
 }
 
 @media (max-width: 480px) {

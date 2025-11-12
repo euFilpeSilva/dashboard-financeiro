@@ -1,13 +1,18 @@
 // Configuração do Firebase
 // IMPORTANTE: Substitua pelos valores do seu projeto Firebase
-export const firebaseConfig = {
-  apiKey: "AIzaSyAIvqp1MZ1r7guz3ABcCRk-3Gq7zLUBOsQ",
-  authDomain: "financeiro-app-64391.firebaseapp.com",
-  projectId: "financeiro-app-64391",
-  storageBucket: "financeiro-app-64391.firebasestorage.app",
-  messagingSenderId: "213152588465",
-  appId: "1:213152588465:web:a84fc2a937ae8876013890",
-  measurementId: "G-M1LBJCDGZD"
+// First, attempt to read runtime config injected into window.__env (created by index.html loader).
+declare const window: any;
+
+const runtime = (typeof window !== 'undefined' && window.__env) ? window.__env : null;
+
+export const firebaseConfig = runtime && runtime.firebase ? runtime.firebase : {
+  apiKey: 'REPLACE_WITH_RUNTIME_ENV',
+  authDomain: 'REPLACE_WITH_RUNTIME_ENV',
+  projectId: 'REPLACE_WITH_RUNTIME_ENV',
+  storageBucket: 'REPLACE_WITH_RUNTIME_ENV',
+  messagingSenderId: 'REPLACE_WITH_RUNTIME_ENV',
+  appId: 'REPLACE_WITH_RUNTIME_ENV',
+  measurementId: 'REPLACE_WITH_RUNTIME_ENV'
 };
 
 // Configurações específicas do Firestore

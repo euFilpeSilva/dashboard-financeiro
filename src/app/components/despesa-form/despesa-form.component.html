@@ -24,12 +24,11 @@
         <div class="form-group">
           <label for="valor">Valor *</label>
           <input 
-            type="number" 
+            type="text" 
             id="valor"
             formControlName="valor"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
+            placeholder="R$ 0,00"
+            appCurrencyMask
             [class.error]="valor?.invalid && valor?.touched">
           <div class="error-message" *ngIf="valor?.invalid && valor?.touched">
             <span *ngIf="valor?.errors?.['required']">Valor é obrigatório</span>
@@ -86,6 +85,15 @@
           <span class="checkmark"></span>
           Marcar como paga
         </label>
+      </div>
+
+      <div class="form-group" *ngIf="despesaForm.get('paga')?.value">
+        <label for="dataPagamento">Data do Pagamento</label>
+        <input
+          type="date"
+          id="dataPagamento"
+          formControlName="dataPagamento"
+          placeholder="Data do pagamento">
       </div>
 
       <div class="form-actions">

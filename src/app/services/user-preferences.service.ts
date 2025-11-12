@@ -3,6 +3,8 @@ import { BehaviorSubject, Observable, map, of } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
 import { AuthService } from './auth.service';
 import firebase from 'firebase/compat/app';
+import { ToastService } from './toast.service';
+import { LoggerService } from './logger.service';
 
 export interface UserPreferences {
   id?: string;
@@ -21,6 +23,13 @@ export interface UserPreferences {
   // Layout customizável
   dashboardLayoutConfig: any;
   customizableLayoutTheme: string;
+  // Meta de gastos (porcentagem do orçamento)
+  // Meta geral (considera todas as entradas/despesas)
+  gastoMetaPercentual?: number;
+  // Meta aplicada apenas ao mês de referência
+  gastoMetaPercentualMensal?: number;
+  // Mês de referência para a meta mensal no formato 'YYYY-MM'
+  gastoMetaMesReferencia?: string;
   
   // Timestamps
   createdAt: firebase.firestore.Timestamp;
@@ -41,7 +50,9 @@ export class UserPreferencesService {
 
   constructor(
     private firestore: AngularFirestore,
-    private authService: AuthService
+    private authService: AuthService,
+    private toastService: ToastService,
+    private logger: LoggerService
   ) {
     this.initializeListeners();
   }
@@ -80,7 +91,7 @@ export class UserPreferencesService {
   }
 
   private async createDefaultPreferences(userId: string): Promise<void> {
-    const defaultPreferences: Omit<UserPreferences, 'id'> = {
+  const defaultPreferences: Omit<UserPreferences, 'id'> = {
       userId,
       dashboardModoVisualizacao: 'grade',
       despesasModoVisualizacao: 'grade',
@@ -90,6 +101,9 @@ export class UserPreferencesService {
       dashboardMuralVisivel: true,
       dashboardLayoutConfig: null,
       customizableLayoutTheme: 'dark',
+      gastoMetaPercentual: 100,
+      gastoMetaPercentualMensal: 100,
+      gastoMetaMesReferencia: `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`,
       createdAt: firebase.firestore.Timestamp.now(),
       updatedAt: firebase.firestore.Timestamp.now()
     };
@@ -135,6 +149,27 @@ export class UserPreferencesService {
       }
     } catch (error) {
       console.error(`Erro ao atualizar preferência ${String(key)}:`, error);
+  const errAny = error as any;
+  const msg = (errAny && ((errAny.code === 'permission-denied') || (errAny.message && String(errAny.message).includes('Missing or insufficient permissions'))));
+      if (msg) {
+        // Fallback: salvar localmente e notificar o usuário
+        try {
+          const currentPrefs = this.preferencesSubject.value || ({} as UserPreferences);
+          const merged = {
+            ...currentPrefs,
+            [key]: value,
+            updatedAt: firebase.firestore.Timestamp.now()
+          } as UserPreferences;
+          // Save to localStorage for persistence on this device
+          const storageKey = `user-preferences-local-${user.uid}`;
+          localStorage.setItem(storageKey, JSON.stringify(merged));
+          this.preferencesSubject.next(merged);
+          this.toastService.warning('Preferência salva localmente', 'Não foi possível salvar no servidor. A preferência foi gravada localmente neste dispositivo.');
+          return;
+        } catch (inner) {
+          console.error('Falha ao salvar preferência localmente:', inner);
+        }
+      }
       throw error;
     }
   }
@@ -162,6 +197,26 @@ export class UserPreferencesService {
       }
     } catch (error) {
       console.error('Erro ao atualizar múltiplas preferências:', error);
+  const errAny = error as any;
+  const msg = (errAny && ((errAny.code === 'permission-denied') || (errAny.message && String(errAny.message).includes('Missing or insufficient permissions'))));
+      if (msg) {
+        // Fallback: salvar localmente
+        try {
+          const currentPrefs = this.preferencesSubject.value || ({} as UserPreferences);
+          const merged = {
+            ...currentPrefs,
+            ...updates,
+            updatedAt: firebase.firestore.Timestamp.now()
+          } as UserPreferences;
+          const storageKey = `user-preferences-local-${user.uid}`;
+          localStorage.setItem(storageKey, JSON.stringify(merged));
+          this.preferencesSubject.next(merged);
+          this.toastService.warning('Preferências salvas localmente', 'Não foi possível salvar no servidor. As preferências foram gravadas localmente neste dispositivo.');
+          return;
+        } catch (inner) {
+          console.error('Falha ao salvar preferências localmente:', inner);
+        }
+      }
       throw error;
     }
   }
@@ -236,6 +291,35 @@ export class UserPreferencesService {
     return this.getPreference('dashboardLayoutConfig');
   }
 
+  // === Meta de gastos (porcentagem) ===
+  async setGastoMetaPercentual(percentual: number): Promise<void> {
+    const p = Math.max(0, Math.min(100, Math.round(percentual)));
+    await this.updatePreference('gastoMetaPercentual', p as any);
+  }
+
+  getGastoMetaPercentual(): number {
+    return this.getPreference('gastoMetaPercentual') ?? 100;
+  }
+
+  // --- Meta mensal ---
+  async setGastoMetaPercentualMensal(percentual: number): Promise<void> {
+    const p = Math.max(0, Math.min(100, Math.round(percentual)));
+    await this.updatePreference('gastoMetaPercentualMensal', p as any);
+  }
+
+  getGastoMetaPercentualMensal(): number {
+    return this.getPreference('gastoMetaPercentualMensal') ?? this.getGastoMetaPercentual();
+  }
+
+  async setGastoMetaMesReferencia(yyyyMm: string): Promise<void> {
+    // expected format: 'YYYY-MM'
+    await this.updatePreference('gastoMetaMesReferencia', yyyyMm as any);
+  }
+
+  getGastoMetaMesReferencia(): string {
+    return this.getPreference('gastoMetaMesReferencia') || `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  }
+
   // === MIGRAÇÃO DO LOCALSTORAGE ===
 
   async migrarPreferenciasLocalStorage(): Promise<void> {
@@ -297,9 +381,9 @@ export class UserPreferencesService {
 
     // Aplicar migrações se houver dados
     if (Object.keys(migracoes).length > 0) {
-      console.log('🔄 Migrando preferências do localStorage para Firestore...');
+      this.logger.info('🔄 Migrando preferências do localStorage para Firestore...');
       await this.updateMultiplePreferences(migracoes);
-      console.log('✅ Migração de preferências concluída!');
+      this.logger.info('✅ Migração de preferências concluída!');
     }
   }
 }

@@ -1,0 +1,47 @@
+<div class="config-container">
+  <h2>⚙️ Configurações</h2>
+
+  <section class="config-section card">
+    <div class="card-header">
+      <h3>Meta de Gastos</h3>
+      <small>Use esta configuração para definir a porcentagem da meta que será usada como base para alertas e visualizações.</small>
+    </div>
+
+    <div class="card-body">
+      <div class="meta-row">
+        <div class="meta-control">
+          <label>Meta Geral (todas as entradas)</label>
+          <input id="gastoMetaRange" type="range" min="0" max="100" [(ngModel)]="gastoMetaPercentual">
+        </div>
+        <div class="meta-value">
+          <input id="gastoMeta" type="number" [(ngModel)]="gastoMetaPercentual" min="0" max="100">
+          <span class="percent">%</span>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-control">
+          <label>Meta Mensal (mês de referência)</label>
+          <input id="gastoMetaMensalRange" type="range" min="0" max="100" [(ngModel)]="gastoMetaPercentualMensal">
+        </div>
+        <div class="meta-value">
+          <input id="gastoMetaMensal" type="number" [(ngModel)]="gastoMetaPercentualMensal" min="0" max="100">
+          <span class="percent">%</span>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-control">
+          <label>Mês de Referência</label>
+          <input type="month" [(ngModel)]="gastoMetaMesReferencia">
+        </div>
+      </div>
+
+      <div class="meta-help">Defina uma meta geral (considera todos os registros) e uma meta específica para um mês de referência. O dashboard mostrará a meta mensal baseada no mês selecionado aqui.</div>
+
+      <div class="card-actions">
+        <button class="btn btn-primary" (click)="salvar()" [disabled]="loading">Salvar</button>
+      </div>
+    </div>
+  </section>
+</div>

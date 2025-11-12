@@ -1,13 +1,14 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CurrencyMaskDirective } from '../../directives/currency-mask.directive';
 import { Despesa, Categoria, Prioridade } from '../../models/despesa.model';
 import { CATEGORIAS_PADRAO } from '../../models/categorias.data';
 
 @Component({
   selector: 'app-despesa-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CurrencyMaskDirective],
   templateUrl: './despesa-form.component.html',
   styleUrl: './despesa-form.component.scss'
 })
@@ -43,7 +44,8 @@ export class DespesaFormComponent implements OnInit, OnChanges {
         categoriaId: this.despesa.categoria.id,
         dataVencimento: this.formatDateForInput(this.despesa.dataVencimento),
         prioridade: this.despesa.prioridade,
-        paga: this.despesa.paga
+        paga: this.despesa.paga,
+        dataPagamento: this.despesa.dataPagamento ? this.formatDateForInput(this.despesa.dataPagamento) : ''
       });
     } else {
       this.despesaForm.reset({
@@ -64,7 +66,8 @@ export class DespesaFormComponent implements OnInit, OnChanges {
       categoriaId: ['', Validators.required],
       dataVencimento: ['', Validators.required],
       prioridade: [Prioridade.MEDIA, Validators.required],
-      paga: [false]
+      paga: [false],
+      dataPagamento: ['']
     });
   }
 
@@ -89,7 +92,8 @@ export class DespesaFormComponent implements OnInit, OnChanges {
           dataVencimento: new Date(formValue.dataVencimento),
           prioridade: formValue.prioridade,
           paga: formValue.paga,
-          dataPagamento: formValue.paga ? new Date() : undefined
+          // If the expense is marked as paid, use provided payment date if present; otherwise use now
+          dataPagamento: formValue.paga ? (formValue.dataPagamento ? new Date(formValue.dataPagamento) : new Date()) : undefined
         };
 
         this.onSave.emit(despesaData);

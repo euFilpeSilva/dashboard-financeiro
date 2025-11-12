@@ -3,6 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import firebase from 'firebase/compat/app';
 import { FirebaseService } from './firebase.service';
+import { LoggerService } from './logger.service';
 
 export interface UserProfile {
   uid: string;
@@ -26,16 +27,17 @@ export class AuthService {
 
   constructor(
     private afAuth: AngularFireAuth,
-    private firebaseService: FirebaseService
+    private firebaseService: FirebaseService,
+    private logger: LoggerService
   ) {
     this.initAuthStateListener();
   }
 
   private initAuthStateListener(): void {
-    console.log('🔧 Inicializando listener de autenticação...');
+  this.logger.debug('🔧 Inicializando listener de autenticação...');
     
     this.afAuth.authState.subscribe((user: firebase.User | null) => {
-      console.log('🔧 Estado de autenticação mudou:', user ? user.email : 'Usuário deslogado');
+  this.logger.debug('🔧 Estado de autenticação mudou:', user ? user.email : 'Usuário deslogado');
       
       if (user) {
         const userProfile: UserProfile = {
@@ -48,11 +50,11 @@ export class AuthService {
         };
         this.currentUserSubject.next(userProfile);
         this.isAuthenticated$.next(true);
-        console.log('✅ Usuário autenticado:', userProfile.email);
+  this.logger.info('✅ Usuário autenticado:', userProfile.email);
       } else {
         this.currentUserSubject.next(null);
         this.isAuthenticated$.next(false);
-        console.log('❌ Usuário não autenticado');
+  this.logger.info('❌ Usuário não autenticado');
       }
       this.loadingSubject.next(false);
     });
@@ -93,8 +95,8 @@ export class AuthService {
   // Login com Google
   async signInWithGoogle(): Promise<UserProfile> {
     try {
-      console.log('🔍 Iniciando login com Google...');
-      console.log('🔧 Firebase config check:', {
+      this.logger.debug('🔍 Iniciando login com Google...');
+      this.logger.debug('🔧 Firebase config check:', {
         hasApiKey: !!firebase.apps.length,
         authDomain: firebase.apps[0]?.options ? (firebase.apps[0].options as any).authDomain : 'N/A'
       });
@@ -108,14 +110,14 @@ export class AuthService {
         prompt: 'select_account'
       });
       
-      console.log('🚀 Chamando signInWithPopup...');
+  this.logger.debug('🚀 Chamando signInWithPopup...');
       
       // Tentar popup primeiro, se falhar usar redirect
       let userCredential;
       try {
         userCredential = await this.afAuth.signInWithPopup(provider);
       } catch (popupError: any) {
-        console.warn('⚠️ Popup falhou, tentando redirect...', popupError);
+  this.logger.warn('⚠️ Popup falhou, tentando redirect...', popupError);
         if (popupError.code === 'auth/popup-blocked' || popupError.code === 'auth/popup-closed-by-user') {
           // Se popup for bloqueado, usar redirect
           await this.afAuth.signInWithRedirect(provider);
@@ -133,14 +135,14 @@ export class AuthService {
         }
       }
       
-      console.log('✅ Login realizado com sucesso:', userCredential.user?.email);
+  this.logger.info('✅ Login realizado com sucesso:', userCredential.user?.email);
       
       if (userCredential.user) {
         return this.mapFirebaseUserToProfile(userCredential.user);
       }
       throw new Error('Falha na autenticação Google');
     } catch (error: any) {
-      console.error('❌ Erro detalhado no Google Auth:', {
+      this.logger.error('❌ Erro detalhado no Google Auth:', {
         code: error.code,
         message: error.message,
         stack: error.stack
@@ -152,16 +154,16 @@ export class AuthService {
   // Logout
   async signOut(): Promise<void> {
     try {
-      console.log('🚪 Iniciando logout...');
+  this.logger.debug('🚪 Iniciando logout...');
       
       // Limpar estado imediatamente
       this.currentUserSubject.next(null);
       this.isAuthenticated$.next(false);
       
       await this.afAuth.signOut();
-      console.log('✅ Logout realizado com sucesso');
+  this.logger.info('✅ Logout realizado com sucesso');
     } catch (error: any) {
-      console.error('❌ Erro no logout:', error);
+  this.logger.error('❌ Erro no logout:', error);
       throw this.handleAuthError(error);
     }
   }
@@ -213,7 +215,7 @@ export class AuthService {
 
   // Tratar erros de autenticação
   private handleAuthError(error: any): Error {
-    console.error('🔧 Erro capturado:', error);
+  this.logger.error('🔧 Erro capturado:', error);
     let message = 'Erro de autenticação';
 
     switch (error.code) {

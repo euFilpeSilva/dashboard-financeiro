@@ -8,6 +8,23 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
+  <script>
+    // Load runtime env (synchronous XHR) before Angular bootstraps so code can read window.__env
+    (function (window) {
+      try {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/assets/runtime-env.json', false);
+        xhr.send(null);
+        if (xhr.status === 200) {
+          window.__env = JSON.parse(xhr.responseText);
+        } else {
+          window.__env = window.__env || {};
+        }
+      } catch (e) {
+        window.__env = window.__env || {};
+      }
+    })(window);
+  </script>
   <app-root></app-root>
 </body>
 </html>

@@ -8,9 +8,10 @@
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "deploy": "ng build --configuration production && firebase deploy --only hosting",
+  "deploy": "ng build --configuration production && firebase deploy --only hosting",
     "deploy:dev": "ng build --configuration development && firebase deploy --only hosting",
     "preview": "firebase serve --only hosting"
+  ,"env:generate": "node scripts/generate-runtime-env.js"
   },
   "private": true,
   "dependencies": {

@@ -24,12 +24,11 @@
         <div class="form-group">
           <label for="valor">Valor *</label>
           <input 
-            type="number" 
+            type="text" 
             id="valor"
             formControlName="valor"
-            step="0.01"
-            min="0"
-            placeholder="0,00"
+            placeholder="R$ 0,00"
+            appCurrencyMask
             [class.error]="valor?.invalid && valor?.touched">
           <div class="error-message" *ngIf="valor?.invalid && valor?.touched">
             <span *ngIf="valor?.errors?.['required']">Valor é obrigatório</span>

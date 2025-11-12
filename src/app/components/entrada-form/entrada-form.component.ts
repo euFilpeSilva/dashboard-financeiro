@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CurrencyMaskDirective } from '../../directives/currency-mask.directive';
 import { Entrada } from '../../models/despesa.model';
 
 // Fontes de entrada predefinidas
@@ -18,7 +19,7 @@ const FONTES_PADRAO = [
 @Component({
   selector: 'app-entrada-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, CurrencyMaskDirective],
   templateUrl: './entrada-form.component.html',
   styleUrl: './entrada-form.component.scss'
 })

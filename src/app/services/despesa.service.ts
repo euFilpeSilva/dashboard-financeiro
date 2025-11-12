@@ -16,6 +16,7 @@ import { CATEGORIAS_PADRAO } from '../models/categorias.data';
 import { FirestoreService } from './firestore.service';
 import { AuthService } from './auth.service';
 import { UserPreferencesService } from './user-preferences.service';
+import { LoggerService } from './logger.service';
 
 @Injectable({
   providedIn: 'root'
@@ -30,13 +31,15 @@ export class DespesaService {
   public despesas$ = this.firestoreService.despesas$;
   public entradas$ = this.firestoreService.entradas$;
   public periodoAtual$ = this.periodoAtualSubject.asObservable();
+  public auditLogs$ = this.firestoreService.auditLogs$;
 
   private migracaoRealizada = false;
 
   constructor(
     private firestoreService: FirestoreService,
     private authService: AuthService,
-    private userPreferencesService: UserPreferencesService
+    private userPreferencesService: UserPreferencesService,
+    private logger: LoggerService
   ) {
     this.inicializarDados();
   }
@@ -56,17 +59,17 @@ export class DespesaService {
       const anotacoesLocal = localStorage.getItem('dashboard-anotacoes');
       
       if (despesasLocal || anotacoesLocal) {
-        console.log('📦 Iniciando migração de dados do localStorage...');
+        this.logger.info('📦 Iniciando migração de dados do localStorage...');
         await this.firestoreService.migrarDadosLocalStorage();
-        console.log('✅ Migração concluída com sucesso!');
+        this.logger.info('✅ Migração concluída com sucesso!');
       }
 
       // Migrar preferências do usuário
-      console.log('🔧 Verificando migração de preferências...');
+      this.logger.info('🔧 Verificando migração de preferências...');
       await this.userPreferencesService.migrarPreferenciasLocalStorage();
-      console.log('✅ Verificação de preferências concluída!');
+      this.logger.info('✅ Verificação de preferências concluída!');
     } catch (error) {
-      console.error('❌ Erro na migração:', error);
+      this.logger.error('❌ Erro na migração:', error);
     }
   }
 
@@ -82,7 +85,7 @@ export class DespesaService {
     try {
       await this.firestoreService.adicionarDespesa(despesa);
     } catch (error) {
-      console.error('Erro ao adicionar despesa:', error);
+      this.logger.error('Erro ao adicionar despesa:', error);
       throw error;
     }
   }
@@ -91,7 +94,7 @@ export class DespesaService {
     try {
       await this.firestoreService.atualizarDespesa(id, updates);
     } catch (error) {
-      console.error('Erro ao atualizar despesa:', error);
+      this.logger.error('Erro ao atualizar despesa:', error);
       throw error;
     }
   }
@@ -100,7 +103,25 @@ export class DespesaService {
     try {
       await this.firestoreService.removerDespesa(id);
     } catch (error) {
-      console.error('Erro ao remover despesa:', error);
+      this.logger.error('Erro ao remover despesa:', error);
+      throw error;
+    }
+  }
+
+  async restaurarDespesa(id: string): Promise<void> {
+    try {
+      await this.firestoreService.restoreDespesa(id);
+    } catch (error) {
+      this.logger.error('Erro ao restaurar despesa:', error);
+      throw error;
+    }
+  }
+
+  async excluirDespesaPermanentemente(id: string): Promise<void> {
+    try {
+      await this.firestoreService.permanentlyDeleteDespesa(id);
+    } catch (error) {
+      this.logger.error('Erro ao excluir despesa permanentemente:', error);
       throw error;
     }
   }
@@ -109,7 +130,7 @@ export class DespesaService {
     try {
       await this.firestoreService.marcarComoPaga(id, paga);
     } catch (error) {
-      console.error('Erro ao marcar como paga:', error);
+      this.logger.error('Erro ao marcar como paga:', error);
       throw error;
     }
   }
@@ -118,7 +139,7 @@ export class DespesaService {
     try {
       await this.firestoreService.marcarComoPaga(id, false);
     } catch (error) {
-      console.error('Erro ao marcar como pendente:', error);
+      this.logger.error('Erro ao marcar como pendente:', error);
       throw error;
     }
   }
@@ -127,7 +148,7 @@ export class DespesaService {
     try {
       await this.firestoreService.atualizarDespesa(id, updates);
     } catch (error) {
-      console.error('Erro ao editar despesa:', error);
+      this.logger.error('Erro ao editar despesa:', error);
       throw error;
     }
   }
@@ -136,7 +157,7 @@ export class DespesaService {
     try {
       await this.firestoreService.adicionarEntrada(entrada);
     } catch (error) {
-      console.error('Erro ao adicionar entrada:', error);
+      this.logger.error('Erro ao adicionar entrada:', error);
       throw error;
     }
   }
@@ -145,7 +166,7 @@ export class DespesaService {
     try {
       await this.firestoreService.atualizarEntrada(id, updates);
     } catch (error) {
-      console.error('Erro ao atualizar entrada:', error);
+      this.logger.error('Erro ao atualizar entrada:', error);
       throw error;
     }
   }
@@ -154,7 +175,25 @@ export class DespesaService {
     try {
       await this.firestoreService.removerEntrada(id);
     } catch (error) {
-      console.error('Erro ao remover entrada:', error);
+      this.logger.error('Erro ao remover entrada:', error);
+      throw error;
+    }
+  }
+
+  async restaurarEntrada(id: string): Promise<void> {
+    try {
+      await this.firestoreService.restoreEntrada(id);
+    } catch (error) {
+      this.logger.error('Erro ao restaurar entrada:', error);
+      throw error;
+    }
+  }
+
+  async excluirEntradaPermanentemente(id: string): Promise<void> {
+    try {
+      await this.firestoreService.permanentlyDeleteEntrada(id);
+    } catch (error) {
+      this.logger.error('Erro ao excluir entrada permanentemente:', error);
       throw error;
     }
   }
