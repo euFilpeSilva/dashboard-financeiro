@@ -16,6 +16,7 @@ import {
   VisualizacaoTipo
 } from '../../models/despesa.model';
 import { ChartComponent } from '../chart/chart.component';
+import { ChartLineComponent } from '../chart-line/chart-line.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
 import { CustomizableLayoutComponent } from '../customizable-layout/customizable-layout.component';
@@ -32,7 +33,7 @@ interface Anotacao {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, DataDebugComponent, CustomizableLayoutComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, ChartLineComponent, CustomizableLayoutComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -136,11 +137,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
   gastoMetaPercentualGeral: number = 100;
   gastoMetaPercentualMensal: number = 100;
   gastoMetaMesReferencia: string = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,'0')}`;
+  // warn threshold (percent) used across UI and toast logic. Changeable if we want a different default.
+  metaWarnThreshold = 75;
   // estados do alerta de meta para evitar toasts repetidos (separados por vertente)
   private lastMetaAlertStateGeral: 'ok' | 'warn' | 'exceeded' | null = null;
   private lastMetaAlertStateMes: 'ok' | 'warn' | 'exceeded' | null = null;
   private lastPercentMetaUsedGeral: number = 0;
   private lastPercentMetaUsedMes: number = 0;
+  
+  // Period selector for dashboard aggregates (1,3,6,12 months)
+  periodOptions = [
+    { label: 'Último mês', value: 1 },
+    { label: 'Últimos 3 meses', value: 3 },
+    { label: 'Últimos 6 meses', value: 6 },
+    { label: 'Últimos 12 meses', value: 12 }
+  ];
+  selectedPeriodMonths = 3;
+  
+  // Computed metrics for the selected period
+  periodMetrics: any = {
+    entradas: 0,
+    despesas: 0,
+    saldo: 0,
+    entradasPrev: null,
+    despesasPrev: null,
+    entradasChange: null,
+    despesasChange: null,
+    topCategoryName: null,
+    topCategoryValue: 0,
+    topCategoryPercent: 0
+  };
 
   // listener remover para ESC
   private escUnlisten: (() => void) | null = null;
@@ -207,6 +233,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Escutar eventos de navegação da navbar
     window.addEventListener('dashboardNavigation', this.handleNavbarNavigation.bind(this));
+
+    // compute initial period metrics if monthly data already present
+    try { this.computePeriodMetrics(); } catch (e) { /* ignore */ }
   }
 
   handleNavbarNavigation(event: any): void {
@@ -286,8 +315,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.despesaService.getDadosMensais()
       .pipe(takeUntil(this.destroy$))
       .subscribe(dados => {
-        console.log('Dados mensais carregados:', dados);
         this.dadosMensais = dados;
+        // Recompute any period-based aggregates when monthly data arrives
+        try { this.computePeriodMetrics(); } catch (e) { /* ignore */ }
       });
 
     // Carregar destaques mensais
@@ -1001,9 +1031,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private checkMetaThresholds(): void {
     // Checar vertente GERAL
     const percentGeral = this.getPercentualMetaUsada();
-    let stateGeral: 'ok' | 'warn' | 'exceeded' = 'ok';
-    if (percentGeral >= 100) stateGeral = 'exceeded';
-    else if (percentGeral >= 80) stateGeral = 'warn';
+  let stateGeral: 'ok' | 'warn' | 'exceeded' = 'ok';
+  if (percentGeral >= 100) stateGeral = 'exceeded';
+  else if (percentGeral >= this.metaWarnThreshold) stateGeral = 'warn';
 
     if (this.lastMetaAlertStateGeral !== stateGeral) {
       if (stateGeral === 'warn') {
@@ -1017,9 +1047,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     // Checar vertente MÊS ATUAL
     const percentMes = this.getPercentualMetaUsadaMesAtual();
-    let stateMes: 'ok' | 'warn' | 'exceeded' = 'ok';
-    if (percentMes >= 100) stateMes = 'exceeded';
-    else if (percentMes >= 80) stateMes = 'warn';
+  let stateMes: 'ok' | 'warn' | 'exceeded' = 'ok';
+  if (percentMes >= 100) stateMes = 'exceeded';
+  else if (percentMes >= this.metaWarnThreshold) stateMes = 'warn';
 
     // Só notificar se houver meta do mês calculável (meta > 0)
     const metaMesValor = this.getMetaValorMesAtual();
@@ -1044,5 +1074,93 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const metaMesExcedida = this.getPercentualMetaUsadaMesAtual() >= 100 ? 1 : 0;
     // Evitar dupla contagem quando ambas se referem ao mesmo número (raridade) — somamos ambos como alertas distintos
     return vencidas + proximas + metaGeralExcedida + metaMesExcedida;
+  }
+
+  // ------- PERIOD METRICS / HELPERS -------
+  /** recomputa métricas (entradas/despesas/variações/top categoria) para o período selecionado */
+  computePeriodMetrics(): void {
+    const N = Number(this.selectedPeriodMonths) || 1;
+    if (!Array.isArray(this.dadosMensais) || this.dadosMensais.length === 0) {
+      this.periodMetrics = { ...this.periodMetrics, entradas: 0, despesas: 0, saldo: 0 };
+      return;
+    }
+
+    const currentSlice = this.dadosMensais.slice(0, N);
+    const prevSlice = this.dadosMensais.slice(N, N * 2);
+
+    const sum = (arr: any[], key: string) => arr.reduce((s, it) => s + (it && it[key] ? it[key] : 0), 0);
+
+    const entradasCurr = sum(currentSlice, 'entradas');
+    const despesasCurr = sum(currentSlice, 'despesas');
+    const entradasPrev = prevSlice.length ? sum(prevSlice, 'entradas') : null;
+    const despesasPrev = prevSlice.length ? sum(prevSlice, 'despesas') : null;
+
+    const entradasChange = (entradasPrev === null || entradasPrev === 0) ? null : Math.round(((entradasCurr - entradasPrev) / entradasPrev) * 100);
+    const despesasChange = (despesasPrev === null || despesasPrev === 0) ? null : Math.round(((despesasCurr - despesasPrev) / despesasPrev) * 100);
+
+    // Top category in the selected months (aggregate by category name)
+    const monthsSet = new Set<string>(currentSlice.map(d => `${d.mes}-${d.ano}`));
+    const catMap = new Map<string, number>();
+    if (Array.isArray(this.todasDespesas)) {
+      this.todasDespesas.forEach(d => {
+        if (!d) return;
+        let data: Date | null = null;
+        if (d.dataVencimento instanceof Date) data = d.dataVencimento as Date;
+        else if (typeof d.dataVencimento === 'string') data = new Date(d.dataVencimento);
+        else if (d.dataVencimento && (d.dataVencimento as any).toDate) data = (d.dataVencimento as any).toDate();
+        if (!data) return;
+        const key = `${data.getMonth() + 1}-${data.getFullYear()}`;
+        if (!monthsSet.has(key)) return;
+        const nome = (d.categoria && d.categoria.nome) ? d.categoria.nome : 'Outros';
+        const atual = catMap.get(nome) || 0;
+        catMap.set(nome, atual + (d.valor || 0));
+      });
+    }
+
+    let topName = null;
+    let topValue = 0;
+    catMap.forEach((v, k) => {
+      if (v > topValue) { topValue = v; topName = k; }
+    });
+
+    const despesasTotal = despesasCurr;
+    const topPercent = despesasTotal > 0 ? Math.round((topValue / despesasTotal) * 100) : 0;
+
+    this.periodMetrics = {
+      entradas: entradasCurr,
+      despesas: despesasCurr,
+      saldo: entradasCurr - despesasCurr,
+      entradasPrev,
+      despesasPrev,
+      entradasChange,
+      despesasChange,
+      topCategoryName: topName,
+      topCategoryValue: topValue,
+      topCategoryPercent: topPercent
+    };
+  }
+
+  onPeriodChange(): void {
+    this.computePeriodMetrics();
+  }
+
+  /** Simple linear projection: assumes uniform daily saldo change this month and projects to end of month */
+  getProjectionSaldo(): number | null {
+    // Use dadosMensais first entry as current month (dadosMensais is ordered newest-first)
+    if (!Array.isArray(this.dadosMensais) || this.dadosMensais.length === 0) return null;
+    const current = this.dadosMensais[0];
+    // If we don't have saldo or meses data, return null
+    if (typeof current.saldo !== 'number') return null;
+
+    // crude projection: daily average change over current month = saldo / days so far -> project to month-end
+    const now = new Date();
+    const diaHoje = now.getDate();
+    const diasNoMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    if (diaHoje <= 1) return current.saldo; // nothing to project
+
+    // estimate daily change based on saldo so far (saldo = entradas - despesas). We assume linear accumulation.
+    const dailyAvg = current.saldo / diaHoje;
+    const projected = current.saldo + dailyAvg * (diasNoMes - diaHoje);
+    return Math.round(projected * 100) / 100;
   }
 }

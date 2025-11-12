@@ -154,6 +154,23 @@
         }
       }
     }
+
+    /* Period control styles inserted for compact header */
+    .compact-period-controls {
+      padding: 8px 16px;
+      border-bottom: 1px solid rgba(148,163,184,0.04);
+      background: linear-gradient(90deg, rgba(15,23,42,0.6), rgba(15,23,42,0.5));
+      .select-period-compact {
+        padding: 6px 10px;
+        background: rgba(51,65,85,0.6);
+        color: #e6eef8;
+        border: 1px solid rgba(59,130,246,0.12);
+        border-radius: 8px;
+        font-size: 13px;
+      }
+      label { color: #94a3b8; font-size: 12px; }
+      .metric-brief { color: #cbd5e1; }
+    }
     
   .compact-layout {
   flex: 1;
@@ -1286,6 +1303,14 @@
                   color: #f1f5f9;
                 }
               }
+            }
+            /* clássico period selector style */
+            .select-period-classico {
+              padding: 6px 10px;
+              border-radius: 6px;
+              background: #334155;
+              color: #f1f5f9;
+              border: 1px solid #475569;
             }
           }
         }
