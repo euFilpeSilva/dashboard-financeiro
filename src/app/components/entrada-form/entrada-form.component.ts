@@ -7,12 +7,15 @@ import { Entrada } from '../../models/despesa.model';
 // Fontes de entrada predefinidas
 const FONTES_PADRAO = [
   { id: 'salario', nome: '💼 Salário', icone: '💼' },
+  { id: 'Adiantamento Quinzenal (Salário)', nome: '💰 Adiantamento Quinzenal (Salário)', icone: '💰' },
+    { id: 'Venda vale (Salário)', nome: '💰 Venda vale (Salário)', icone: '💰' },
   { id: 'freelance', nome: '💻 Freelance', icone: '💻' },
   { id: 'investimento', nome: '📈 Investimentos', icone: '📈' },
   { id: 'aluguel', nome: '🏠 Aluguel Recebido', icone: '🏠' },
   { id: 'vendas', nome: '🛒 Vendas', icone: '🛒' },
   { id: 'bonus', nome: '🎁 Bônus', icone: '🎁' },
   { id: 'pensao', nome: '👨‍👩‍👧‍👦 Pensão', icone: '👨‍👩‍👧‍👦' },
+  { id: 'Pix', nome: '💰 Pix', icone: '💰' },
   { id: 'outros', nome: '💰 Outros', icone: '💰' }
 ];
 

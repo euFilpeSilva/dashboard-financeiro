@@ -11,7 +11,9 @@ export const CATEGORIAS_PADRAO: Categoria[] = [
   { id: '8', nome: 'Outros', cor: '#C9CBCF', icon: '📦' },
   { id: '9', nome: 'Beleza', cor: '#C9CBCF', icon: '📦' },
   { id: '10', nome: 'Debito', cor: '#C9CBCF', icon: '📦' },
-  { id: '11', nome: 'Pix', cor: '#C9CBCF', icon: '📦' },
+    { id: '11', nome: 'Debito(Rolês)', cor: '#C9CBCF', icon: '📦' },
+  { id: '12', nome: 'Pix', cor: '#C9CBCF', icon: '📦' },
+    { id: '13', nome: 'Pix(Rolês)', cor: '#C9CBCF', icon: '📦' }
 ];
 
 export const CORES_GRAFICOS = [
