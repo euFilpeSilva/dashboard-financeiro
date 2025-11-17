@@ -51,13 +51,20 @@ export class GestaoComponent implements OnInit, OnDestroy {
   filtroStatusDespesa: 'todas' | 'pagas' | 'pendentes' | 'vencidas' = 'todas';
   filtroPrioridade: 'todas' | 'alta' | 'media' | 'baixa' = 'todas';
   filtroCategoria: string = 'todas';
-  // Filtros de data para despesas
+  // Filtros de data para despesas (Vencimento)
   filtroDataTipoDespesa: 'todos' | 'dia' | 'intervalo' = 'todos';
   filtroDataDiaDespesa: string = ''; // ISO date string yyyy-mm-dd
   filtroDataInicioDespesa: string = '';
   filtroDataFimDespesa: string = '';
-  // Validação de intervalo
+  // Validação de intervalo vencimento
   intervaloInvalidoDespesa = false;
+
+  // Filtros de data para pagamento (Pago em)
+  filtroPagoTipoDespesa: 'todos' | 'dia' | 'intervalo' = 'todos';
+  filtroPagoDiaDespesa: string = '';
+  filtroPagoInicioDespesa: string = '';
+  filtroPagoFimDespesa: string = '';
+  intervaloInvalidoPagoDespesa = false;
   
   // Filtros para entradas
   filtroFonte: string = 'todas';
@@ -69,8 +76,8 @@ export class GestaoComponent implements OnInit, OnDestroy {
   // Validação de intervalo
   intervaloInvalidoEntrada = false;
   
-  // Ordenação
-  ordenacaoAtual: 'data' | 'valor' | 'alfabetico' = 'data';
+  // Ordenação (string to allow multiple keys like dataVencimento/dataPagamento)
+  ordenacaoAtual: string = 'dataVencimento';
   direcaoOrdenacao: 'asc' | 'desc' = 'desc';
   
   // Busca
@@ -92,7 +99,9 @@ export class GestaoComponent implements OnInit, OnDestroy {
   ];
 
   opcoesOrdenacao = [
-    { value: 'data', label: '📅 Data' },
+    { value: 'dataVencimento', label: '📅 Vencimento' },
+    { value: 'dataPagamento', label: '✅ Pago em' },
+    { value: 'status', label: '🔖 Status' },
     { value: 'valor', label: '💰 Valor' },
     { value: 'alfabetico', label: '🔤 A-Z' }
   ];
@@ -433,6 +442,31 @@ export class GestaoComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Filtro por data de pagamento (Pago em)
+    this.intervaloInvalidoPagoDespesa = false;
+    if (this.filtroPagoTipoDespesa === 'dia' && this.filtroPagoDiaDespesa) {
+      const target = new Date(this.filtroPagoDiaDespesa);
+      despesasFiltradas = despesasFiltradas.filter(despesa => {
+        if (!despesa.dataPagamento) return false;
+        const d = new Date(despesa.dataPagamento);
+        return d.getFullYear() === target.getFullYear() && d.getMonth() === target.getMonth() && d.getDate() === target.getDate();
+      });
+    } else if (this.filtroPagoTipoDespesa === 'intervalo') {
+      if (!this.filtroPagoInicioDespesa || !this.filtroPagoFimDespesa) {
+        this.intervaloInvalidoPagoDespesa = true;
+      } else {
+        const inicioP = new Date(this.filtroPagoInicioDespesa);
+        const fimP = new Date(this.filtroPagoFimDespesa);
+        inicioP.setHours(0,0,0,0);
+        fimP.setHours(23,59,59,999);
+        despesasFiltradas = despesasFiltradas.filter(despesa => {
+          if (!despesa.dataPagamento) return false;
+          const d = new Date(despesa.dataPagamento);
+          return d.getTime() >= inicioP.getTime() && d.getTime() <= fimP.getTime();
+        });
+      }
+    }
+
     // Aplicar ordenação
     this.despesas = this.ordenarDespesas(despesasFiltradas);
   }
@@ -488,13 +522,29 @@ export class GestaoComponent implements OnInit, OnDestroy {
   ordenarDespesas(despesas: Despesa[]): Despesa[] {
     return despesas.sort((a, b) => {
       let resultado = 0;
-
       switch (this.ordenacaoAtual) {
-        case 'data':
+        case 'dataVencimento':
           resultado = new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime();
           break;
-        case 'valor':
-          resultado = a.valor - b.valor;
+        case 'dataPagamento':
+          // push items without payment date to the end
+          if (!a.dataPagamento && !b.dataPagamento) {
+            resultado = 0;
+          } else if (!a.dataPagamento) {
+            resultado = 1;
+          } else if (!b.dataPagamento) {
+            resultado = -1;
+          } else {
+            resultado = new Date(a.dataPagamento).getTime() - new Date(b.dataPagamento).getTime();
+          }
+          break;
+        case 'status':
+          // paid items after unpaid (or vice-versa depending on direction)
+          if (a.paga === b.paga) {
+            resultado = 0;
+          } else {
+            resultado = a.paga ? 1 : -1;
+          }
           break;
         case 'alfabetico':
           resultado = a.descricao.localeCompare(b.descricao);
@@ -511,6 +561,9 @@ export class GestaoComponent implements OnInit, OnDestroy {
 
       switch (this.ordenacaoAtual) {
         case 'data':
+        case 'dataVencimento':
+        case 'dataPagamento':
+          // treat all as entrada.data for entradas list
           resultado = new Date(a.data).getTime() - new Date(b.data).getTime();
           break;
         case 'valor':
@@ -546,7 +599,7 @@ export class GestaoComponent implements OnInit, OnDestroy {
     this.aplicarFiltrosEntradas();
   }
 
-  alterarOrdenacao(ordenacao: 'data' | 'valor' | 'alfabetico'): void {
+  alterarOrdenacao(ordenacao: string): void {
     if (this.ordenacaoAtual === ordenacao) {
       this.direcaoOrdenacao = this.direcaoOrdenacao === 'asc' ? 'desc' : 'asc';
     } else {
@@ -580,7 +633,7 @@ export class GestaoComponent implements OnInit, OnDestroy {
     this.filtroPrioridade = 'todas';
     this.filtroCategoria = 'todas';
     this.filtroFonte = 'todas';
-    this.ordenacaoAtual = 'data';
+  this.ordenacaoAtual = 'dataVencimento';
     this.direcaoOrdenacao = 'desc';
     // limpar filtros de data
     this.filtroDataTipoDespesa = 'todos';

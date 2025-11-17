@@ -129,6 +129,24 @@
               <div *ngIf="intervaloInvalidoDespesa" class="filtro-erro">Preencha início e fim do intervalo para aplicar o filtro.</div>
             </div>
           </div>
+
+          <!-- Pago em (Filtro por data de pagamento) -->
+          <div class="filtro-group">
+            <label>Pago em:</label>
+            <select [(ngModel)]="filtroPagoTipoDespesa" (change)="aplicarFiltros()" class="select-filtro">
+              <option value="todos">📅 Todos</option>
+              <option value="dia">📆 Dia</option>
+              <option value="intervalo">↔️ Intervalo</option>
+            </select>
+
+            <input *ngIf="filtroPagoTipoDespesa === 'dia'" type="date" [(ngModel)]="filtroPagoDiaDespesa" (change)="aplicarFiltros()" class="input-data">
+
+            <div *ngIf="filtroPagoTipoDespesa === 'intervalo'" class="intervalo-datas">
+              <input [class.input-error]="intervaloInvalidoPagoDespesa && (!filtroPagoInicioDespesa || !filtroPagoFimDespesa)" type="date" [(ngModel)]="filtroPagoInicioDespesa" (change)="aplicarFiltros()" class="input-data">
+              <input [class.input-error]="intervaloInvalidoPagoDespesa && (!filtroPagoInicioDespesa || !filtroPagoFimDespesa)" type="date" [(ngModel)]="filtroPagoFimDespesa" (change)="aplicarFiltros()" class="input-data">
+              <div *ngIf="intervaloInvalidoPagoDespesa" class="filtro-erro">Preencha início e fim do intervalo para aplicar o filtro.</div>
+            </div>
+          </div>
         </div>
 
         <div class="filtros-row">
@@ -248,10 +266,18 @@
           <div class="lista-header">
             <div class="header-col">Descrição</div>
             <div class="header-col">Categoria</div>
-            <div class="header-col">Valor</div>
-            <div class="header-col">Vencimento</div>
-            <div class="header-col">Pago em</div>
-            <div class="header-col">Status</div>
+            <div class="header-col">
+              <button class="header-sort" (click)="alterarOrdenacao('valor')">Valor <span *ngIf="ordenacaoAtual==='valor'">{{ direcaoOrdenacao === 'desc' ? '↓' : '↑' }}</span></button>
+            </div>
+            <div class="header-col">
+              <button class="header-sort" (click)="alterarOrdenacao('dataVencimento')">Vencimento <span *ngIf="ordenacaoAtual==='dataVencimento'">{{ direcaoOrdenacao === 'desc' ? '↓' : '↑' }}</span></button>
+            </div>
+            <div class="header-col">
+              <button class="header-sort" (click)="alterarOrdenacao('dataPagamento')">Pago em <span *ngIf="ordenacaoAtual==='dataPagamento'">{{ direcaoOrdenacao === 'desc' ? '↓' : '↑' }}</span></button>
+            </div>
+            <div class="header-col">
+              <div class="header-label">Status</div>
+            </div>
             <div class="header-col">Ações</div>
           </div>
           
