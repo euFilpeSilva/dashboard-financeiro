@@ -84,6 +84,19 @@ export class EntradaFormComponent implements OnInit, OnChanges {
     return `${year}-${month}-${day}`;
   }
 
+  /**
+   * Parse a YYYY-MM-DD string as a local date (midnight local time).
+   * This avoids the UTC interpretation `new Date('YYYY-MM-DD')` which can shift the day
+   * backwards when serialized/read across timezones.
+   */
+  private parseDateFromInput(value: string): Date {
+    if (!value) return new Date();
+    const parts = (value || '').split('-').map(p => Number(p));
+    if (parts.length < 3 || parts.some(isNaN)) return new Date(value);
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+
   onSubmit(): void {
     if (this.entradaForm.valid) {
       const formValue = this.entradaForm.value;
@@ -92,7 +105,7 @@ export class EntradaFormComponent implements OnInit, OnChanges {
         descricao: formValue.descricao,
         valor: formValue.valor,
         fonte: formValue.fonte,
-        data: new Date(formValue.data)
+        data: this.parseDateFromInput(formValue.data)
       };
 
       this.onSave.emit(entradaData);

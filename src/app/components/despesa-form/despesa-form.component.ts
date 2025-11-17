@@ -79,6 +79,19 @@ export class DespesaFormComponent implements OnInit, OnChanges {
     return `${year}-${month}-${day}`;
   }
 
+  /**
+   * Parse a YYYY-MM-DD string as a local-date (midnight local time).
+   * Using `new Date('YYYY-MM-DD')` can be interpreted as UTC in some environments,
+   * which causes the stored instant to shift backwards when converted to local time.
+   */
+  private parseDateFromInput(value: string): Date {
+    if (!value) return new Date();
+    const parts = (value || '').split('-').map(p => Number(p));
+    if (parts.length < 3 || parts.some(isNaN)) return new Date(value);
+    const [year, month, day] = parts;
+    return new Date(year, month - 1, day);
+  }
+
   onSubmit(): void {
     if (this.despesaForm.valid) {
       const formValue = this.despesaForm.value;
@@ -89,11 +102,11 @@ export class DespesaFormComponent implements OnInit, OnChanges {
           descricao: formValue.descricao,
           valor: formValue.valor,
           categoria: categoria,
-          dataVencimento: new Date(formValue.dataVencimento),
+          dataVencimento: this.parseDateFromInput(formValue.dataVencimento),
           prioridade: formValue.prioridade,
           paga: formValue.paga,
           // If the expense is marked as paid, use provided payment date if present; otherwise use now
-          dataPagamento: formValue.paga ? (formValue.dataPagamento ? new Date(formValue.dataPagamento) : new Date()) : undefined
+          dataPagamento: formValue.paga ? (formValue.dataPagamento ? this.parseDateFromInput(formValue.dataPagamento) : new Date()) : undefined
         };
 
         this.onSave.emit(despesaData);
