@@ -100,6 +100,17 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .12s ease;
+
+    &.active {
+      background: var(--color-blue);
+      color: #fff;
+      border-color: rgba(79,195,247,0.25);
+      box-shadow: 0 4px 12px rgba(79,195,247,0.12);
+      transform: translateY(-2px);
+    }
     }
 
   @media (max-width: 600px) {
