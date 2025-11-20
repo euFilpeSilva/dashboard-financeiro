@@ -102,7 +102,7 @@ export class CurrencyMaskDirective implements OnInit {
   onBlur(): void {
     const input = this.el.nativeElement;
     const raw = input.value || '';
-    const cleaned = raw.replace(/[^\\d.,]/g, '');
+    const cleaned = raw.replace(/[^\d.,]/g, '');
 
     if (!cleaned) {
       this.control.control?.setValue(null, { emitEvent: true });
