@@ -79,6 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   
   // Novos dados para seção mensal
   dadosMensais: DadosMensais[] = [];
+  dadosMensais$?: Observable<DadosMensais[]>;
   // observable-backed destaques for async pipe usage
   destaquesMensais$?: Observable<DestaqueMensal[]>;
   destaquesMensais: DestaqueMensal[] = [];
@@ -344,13 +345,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Carregar dados mensais (mantemos subscribe para efeitos colaterais de cálculos)
-    this.despesaService.getDadosMensais()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(dados => {
+    // Carregar dados mensais como observable e usar `tap` para efeitos colaterais
+    this.dadosMensais$ = this.despesaService.getDadosMensais().pipe(
+      tap(dados => {
         this.dadosMensais = dados;
         try { this.computePeriodMetrics(); } catch (e) { /* ignore */ }
-      });
+      })
+    );
 
     // Destaques mensais (observable for template async)
     this.destaquesMensais$ = this.despesaService.getDestaquesMensais();
