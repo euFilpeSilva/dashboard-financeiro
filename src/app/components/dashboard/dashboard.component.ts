@@ -69,6 +69,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasPorCategoria$?: Observable<DespesaPorCategoria[]>;
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
+  despesasVencidas$?: Observable<Despesa[]>;
+  despesasProximasVencimento$?: Observable<Despesa[]>;
   despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
   despesasDoMes$?: Observable<Despesa[]>;
   
@@ -279,19 +281,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Despesas por categoria (exposto como observable para uso com async pipe)
     this.despesasPorCategoria$ = this.despesaService.getDespesasPorCategoria();
 
-    // Carregar despesas vencidas
-    this.despesaService.getDespesasVencidas()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(vencidas => {
-        this.despesasVencidas = vencidas;
-      });
+    // Expor despesas vencidas/proximas como observables e atualizar arrays locais via tap
+    this.despesasVencidas$ = this.despesaService.getDespesasVencidas().pipe(
+      tap(vencidas => { this.despesasVencidas = vencidas; })
+    );
 
-    // Carregar despesas próximas ao vencimento
-    this.despesaService.getDespesasProximasVencimento()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(proximas => {
-        this.despesasProximasVencimento = proximas;
-      });
+    this.despesasProximasVencimento$ = this.despesaService.getDespesasProximasVencimento().pipe(
+      tap(proximas => { this.despesasProximasVencimento = proximas; })
+    );
 
     // Carregar período atual
     this.despesaService.periodoAtual$
@@ -315,16 +312,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.todasDespesas = despesas; // Armazenar para uso na visualização detalhada
       });
 
-    // Carregar todas as entradas
-    this.despesaService.entradas$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(entradas => {
-        this.todasEntradas = entradas; // Armazenar para uso na visualização detalhada
-        this.filtrarEntradasDoMesAtual(entradas); // Para o layout compacto
-      });
-
-    // Expose entradasDoMes as observable (filter current month)
+    // Expose entradasDoMes as observable and update local array via tap
     this.entradasDoMes$ = this.despesaService.entradas$.pipe(
+      tap((entradas: any[]) => { this.todasEntradas = entradas; this.filtrarEntradasDoMesAtual(entradas); }),
       map((entradas: any[]) => {
         const agora = new Date();
         const mesAtual = agora.getMonth() + 1;
@@ -379,11 +369,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Métodos de navegação
   mostrarDadosMensais(): void {
-    console.log('Clicou em Dados por Mês');
-    console.log('dadosMensais:', this.dadosMensais);
-    console.log('destaquesMensais:', this.destaquesMensais);
     this.showDadosMensais = true;
-    console.log('showDadosMensais agora é:', this.showDadosMensais);
   }
 
   voltarDashboard(): void {
@@ -520,13 +506,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return mesData === mesAtual && anoData === anoAtual;
     });
     
-    console.log('Debug Entradas do Mês Atual:', {
-      totalEntradas: entradas.length,
-      entradasDoMesAtual: this.entradasDoMes.length,
-      mesAtual,
-      anoAtual,
-      entradas: this.entradasDoMes
-    });
+    // debug logs removed
   }
 
   private calcularResumoMesDetalhado(): void {
