@@ -1,9 +1,9 @@
-import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, Observable, takeUntil, combineLatest, of, take } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
 import { UserPreferencesService } from '../../services/user-preferences.service';
@@ -21,11 +21,10 @@ import { toDate, formatDateForInput, isSameMonthYear } from '../../utils/date-ut
 import { ChartComponent } from '../chart/chart.component';
 import { ChartLineComponent } from '../chart-line/chart-line.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
-import { DataDebugComponent } from '../data-debug/data-debug.component';
+// DataDebugComponent removed from imports — unused in this component
 import { CustomizableLayoutComponent } from '../customizable-layout/customizable-layout.component';
 import { AlertsModalComponent } from '../alerts-modal/alerts-modal.component';
 import { NotesMuralComponent } from '../notes-mural/notes-mural.component';
-import { tap } from 'rxjs/operators';
 import { ToastService } from '../../services/toast.service';
 
 // Anotações are now handled by `NotesMuralComponent`.
@@ -48,6 +47,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private _percentualMetaUsadaMesAtual: number = 0;
   private _metaMesRestante: number = 0;
   private _totalAlertas: number = 0;
+  private _percentualMetaUsadaGeral: number = 0;
   // caches de coleções (substituem arrays públicos legados)
   private _todasDespesas: Despesa[] = [];
   private _todasEntradas: Entrada[] = [];
@@ -101,6 +101,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
   dadosMensais$?: Observable<DadosMensais[]>;
   // observable-backed destaques for async pipe usage
   destaquesMensais$?: Observable<DestaqueMensal[]>;
+  // Derived observables for general meta (global)
+  metaBudgetValor$?: Observable<number>;
+  percentualMetaUsada$?: Observable<number>;
+  metaProgressWidth$?: Observable<number>;
   
   // Estados de navegação
   showDadosMensais = false;
@@ -212,8 +216,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private router: Router,
     private themeService: ThemeService,
     private userPreferencesService: UserPreferencesService,
-    private toastService: ToastService,
-    private renderer: Renderer2
+    private toastService: ToastService
   ) {
     // Gerar lista de anos (últimos 5 anos + próximos 2 anos)
     const anoAtual = new Date().getFullYear();
@@ -393,13 +396,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.totalAlertas$ = combineLatest([
       this.despesasVencidas$ ?? of([]),
       this.despesasProximasVencimento$ ?? of([]),
-      this.resumo$ ?? of(this.resumo)
+      this.resumo$ ?? of(this.resumo),
+      this.percentualMetaUsada$ ?? of(0),
+      this.percentualMetaUsadaMesAtual$ ?? of(0)
     ]).pipe(
-      map(([vencidas, proximas, resumo]) => {
+      map(([vencidas, proximas, resumo, percentualGeral, percentualMes]) => {
         const venc = (vencidas || []).length;
         const prox = (proximas || []).length;
-        const metaGeralExcedida = (this.getPercentualMetaUsada() >= 100) ? 1 : 0;
-        const metaMesExcedida = (this.getPercentualMetaUsadaMesAtual() >= 100) ? 1 : 0;
+        const metaGeralExcedida = (percentualGeral >= 100) ? 1 : 0;
+        const metaMesExcedida = (percentualMes >= 100) ? 1 : 0;
         return venc + prox + metaGeralExcedida + metaMesExcedida;
       })
     );
@@ -413,6 +418,38 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.percentualMetaUsadaMesAtual$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._percentualMetaUsadaMesAtual = v || 0);
     this.metaMesRestante$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._metaMesRestante = v || 0);
     this.totalAlertas$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._totalAlertas = v || 0);
+
+    // Derived observables for global meta (budget based on entradas)
+    this.metaBudgetValor$ = this.resumo$?.pipe(
+      map(resumo => {
+        const metaPercent = this.gastoMetaPercentualGeral ?? 100;
+        const entradasGeral = (Array.isArray(this._todasEntradas) && this._todasEntradas.length > 0)
+          ? this._todasEntradas.reduce((s: number, e: any) => s + (e.valor || 0), 0)
+          : (resumo?.totalEntradas > 0 ? resumo.totalEntradas : 0);
+        if (!entradasGeral || entradasGeral === 0) return 0;
+        return Math.round((entradasGeral * (metaPercent / 100)) * 100) / 100;
+      })
+    );
+
+    this.percentualMetaUsada$ = combineLatest([
+      this.resumo$ ?? of(this.resumo),
+      this.metaBudgetValor$ ?? of(0)
+    ]).pipe(
+      map(([resumo, meta]) => {
+        if (!meta || meta === 0) return 0;
+        const gastosGeral = (Array.isArray(this._todasDespesas) && this._todasDespesas.length > 0)
+          ? this._todasDespesas.reduce((s, d) => s + (d.valor || 0), 0)
+          : (resumo.totalDespesas || 0);
+        return Math.round((gastosGeral / meta) * 100);
+      })
+    );
+
+    this.metaProgressWidth$ = this.percentualMetaUsada$?.pipe(
+      map(pct => Math.min(Math.max(pct, 0), 200))
+    );
+
+    // Keep caches in sync for legacy synchronous access
+    this.percentualMetaUsada$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._percentualMetaUsadaGeral = v || 0);
 
     // Carregar dados mensais como observable e usar `tap` para efeitos colaterais
     this.dadosMensais$ = this.despesaService.getDadosMensais().pipe(
@@ -754,13 +791,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.router.navigate(['/gestao']);
   }
 
-  contarDespesasPagas(): number {
-    return this._contarDespesasPagas;
-  }
-
-  contarDespesasPendentes(): number {
-    return this._contarDespesasPendentes;
-  }
 
   // Adicionar método para voltar ao dashboard
   voltarAoDashboard(): void {
@@ -770,39 +800,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Funções para o card de alertas
   // Funções para o card de alertas
 
-  /** Retorna largura da barra de progresso (em %) limitada a 200% para visual */
-  getMetaProgressWidth(): number {
-    const pct = this.getPercentualMetaUsada();
-    return Math.min(Math.max(pct, 0), 200);
-  }
-
-  // --- Meta do mês atual (baseada nas entradas/despesas do mês atual) ---
-  getMetaValorMesAtual(): number {
-    return this._metaValorMesAtual;
-  }
-
-  getPercentualMetaUsadaMesAtual(): number {
-    return this._percentualMetaUsadaMesAtual;
-  }
-
-  getMetaMesAtualProgressWidth(): number {
-    return Math.min(Math.max(this._percentualMetaUsadaMesAtual, 0), 200);
-  }
-
-  getMetaMesAtualRestante(): number {
-    return this._metaMesRestante;
-  }
-
-  getGastosDoMesTotal(): number {
-    // Retornar somente o total das despesas do mês atual.
-    // Não utilizar o resumo geral como fallback — desta forma a vertente mensal fica restrita ao mês.
-    return this._gastosDoMesTotal;
-  }
-
-  getEntradasDoMesTotal(): number {
-    // Retornar somente o total das entradas do mês atual.
-    return this._entradasDoMesTotal;
-  }
+  // Observables derivados substituem vários getters legados (meta/total do mês).
 
   // --- Helpers para meta mensal baseada em mês de referência configurado ---
   private parseReferenciaMes(ref: string): { mes: number; ano: number } {
@@ -823,8 +821,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private getEntradasParaReferenciaMes(): number {
     const { mes, ano } = this.parseReferenciaMes(this.gastoMetaMesReferencia);
-    if (!Array.isArray(this.todasEntradas) || this.todasEntradas.length === 0) return 0;
-    return this.todasEntradas.reduce((s: number, entrada: any) => {
+    if (!Array.isArray(this._todasEntradas) || this._todasEntradas.length === 0) return 0;
+    return this._todasEntradas.reduce((s: number, entrada: any) => {
       let data: Date | null = null;
       if (!entrada) return s;
       if (entrada.data instanceof Date) data = entrada.data as Date;
@@ -838,8 +836,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private getDespesasParaReferenciaMes(): number {
     const { mes, ano } = this.parseReferenciaMes(this.gastoMetaMesReferencia);
-    if (!Array.isArray(this.todasDespesas) || this.todasDespesas.length === 0) return 0;
-    return this.todasDespesas.reduce((s: number, despesa: Despesa) => {
+    if (!Array.isArray(this._todasDespesas) || this._todasDespesas.length === 0) return 0;
+    return this._todasDespesas.reduce((s: number, despesa: Despesa) => {
       if (!despesa) return s;
       let data: Date | null = null;
       if (despesa.dataVencimento instanceof Date) data = despesa.dataVencimento as Date;
@@ -892,36 +890,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     return Math.round((percentualOrcamento / meta) * 100);
   }
 
-  // --- NOVO: Cálculos mais claros para a meta ---
-  /** retorna o valor monetário da meta (R$) — por exemplo, 28% das entradas */
-  getMetaBudgetValor(): number {
-    const metaPercent = this.gastoMetaPercentualGeral ?? 100;
-    // Vertente geral: usar o total agregado de entradas (resumo) ou, se disponível, somatório de todasEntradas
-    const entradasGeral = (Array.isArray(this._todasEntradas) && this._todasEntradas.length > 0)
-      ? this._todasEntradas.reduce((s: number, e: any) => s + (e.valor || 0), 0)
-      : (this.resumo.totalEntradas > 0 ? this.resumo.totalEntradas : 0);
-
-    if (!entradasGeral || entradasGeral === 0) return 0;
-    return Math.round((entradasGeral * (metaPercent / 100)) * 100) / 100; // arredondar para centavos
-  }
-
-  /** Percentual da meta já usado: (totalDespesas / metaBudget) * 100 */
-  getPercentualMetaUsada(): number {
-    const metaValor = this.getMetaBudgetValor();
-    if (!metaValor || metaValor === 0) return 0;
-    const gastosGeral = (Array.isArray(this._todasDespesas) && this._todasDespesas.length > 0)
-      ? this._todasDespesas.reduce((s, d) => s + (d.valor || 0), 0)
-      : (this.resumo.totalDespesas || 0);
-    return Math.round((gastosGeral / metaValor) * 100);
-  }
+  // Cálculos da meta global agora expostos como observables: `metaBudgetValor$` e `percentualMetaUsada$`.
 
   /** Checa thresholds de meta e emite toasts quando cruzados (80% e 100%). */
   private checkMetaThresholds(): void {
-    // Checar vertente GERAL
-    const percentGeral = this.getPercentualMetaUsada();
-  let stateGeral: 'ok' | 'warn' | 'exceeded' = 'ok';
-  if (percentGeral >= 100) stateGeral = 'exceeded';
-  else if (percentGeral >= this.metaWarnThreshold) stateGeral = 'warn';
+    // Checar vertente GERAL usando caches atualizados pelas subscriptions
+    const percentGeral = this._percentualMetaUsadaGeral;
+    let stateGeral: 'ok' | 'warn' | 'exceeded' = 'ok';
+    if (percentGeral >= 100) stateGeral = 'exceeded';
+    else if (percentGeral >= this.metaWarnThreshold) stateGeral = 'warn';
 
     if (this.lastMetaAlertStateGeral !== stateGeral) {
       if (stateGeral === 'warn') {
@@ -933,14 +910,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
     this.lastPercentMetaUsedGeral = percentGeral;
 
-    // Checar vertente MÊS ATUAL
-    const percentMes = this.getPercentualMetaUsadaMesAtual();
-  let stateMes: 'ok' | 'warn' | 'exceeded' = 'ok';
-  if (percentMes >= 100) stateMes = 'exceeded';
-  else if (percentMes >= this.metaWarnThreshold) stateMes = 'warn';
+    // Checar vertente MÊS ATUAL usando caches
+    const percentMes = this._percentualMetaUsadaMesAtual;
+    let stateMes: 'ok' | 'warn' | 'exceeded' = 'ok';
+    if (percentMes >= 100) stateMes = 'exceeded';
+    else if (percentMes >= this.metaWarnThreshold) stateMes = 'warn';
 
     // Só notificar se houver meta do mês calculável (meta > 0)
-    const metaMesValor = this.getMetaValorMesAtual();
+    const metaMesValor = this._metaValorMesAtual;
     if (metaMesValor && metaMesValor > 0) {
       if (this.lastMetaAlertStateMes !== stateMes) {
         if (stateMes === 'warn') {

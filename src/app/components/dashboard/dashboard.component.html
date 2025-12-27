@@ -7,8 +7,8 @@
                     [gastoMetaPercentualMensal]="gastoMetaPercentualMensal"
                     [gastoMetaMesReferencia]="gastoMetaMesReferencia"
                     [resumo]="(resumo$ | async)"
-                    [metaPercentUsed]="getPercentualMetaUsada()"
-                    [metaMesPercentUsed]="getPercentualMetaUsadaMesAtual()"
+                    [metaPercentUsed]="(percentualMetaUsada$ | async) || 0"
+                    [metaMesPercentUsed]="(percentualMetaUsadaMesAtual$ | async) || 0"
                     (close)="closeAlertsModal()"></app-alerts-modal>
   
   <!-- Layout Customizável (Draggable/Widgets) -->
@@ -229,36 +229,36 @@
             <!-- Meta de gastos (sempre visível) -->
             <div class="alert-item meta"
                  [ngClass]="{
-                   'exceeded': getPercentualMetaUsada() >= 100,
-                   'warn': getPercentualMetaUsada() >= metaWarnThreshold && getPercentualMetaUsada() < 100,
-                   'ok': getPercentualMetaUsada() < metaWarnThreshold
+                   'exceeded': ((percentualMetaUsada$ | async) || 0) >= 100,
+                   'warn': ((percentualMetaUsada$ | async) || 0) >= metaWarnThreshold && ((percentualMetaUsada$ | async) || 0) < 100,
+                   'ok': ((percentualMetaUsada$ | async) || 0) < metaWarnThreshold
                  }">
               <span class="alert-emoji">📊</span>
               <div class="alert-info">
                 <span class="alert-desc">Meta de gastos</span>
-                <span class="alert-date">Meta: {{ gastoMetaPercentualGeral }}% das entradas (R$ {{ formatarMoeda(getMetaBudgetValor()) }})</span>
-                <span class="alert-date">Gasto atual: {{ formatarMoeda(resumo.totalDespesas) }} — Restante: {{ formatarMoeda(getMetaBudgetValor() - resumo.totalDespesas) }}</span>
+                <span class="alert-date">Meta: {{ gastoMetaPercentualGeral }}% das entradas (R$ {{ formatarMoeda((metaBudgetValor$ | async) || 0) }})</span>
+                <span class="alert-date">Gasto atual: {{ formatarMoeda(((resumo$ | async)?.totalDespesas) || 0) }} — Restante: {{ formatarMoeda(((metaBudgetValor$ | async) || 0) - (((resumo$ | async)?.totalDespesas) || 0)) }}</span>
 
                 <div class="meta-progress" aria-hidden="false">
                   <div class="meta-progress-bar"
                        role="progressbar"
-                       [attr.aria-valuenow]="getPercentualMetaUsada()"
+                        [attr.aria-valuenow]="(percentualMetaUsada$ | async) || 0"
                        aria-valuemin="0"
                        aria-valuemax="100"
-                       [style.width.%]="getMetaProgressWidth()"></div>
+                        [style.width.%]="(metaProgressWidth$ | async) || 0"></div>
                 </div>
 
-                <small class="alert-sub">{{ getPercentualMetaUsada() }}% da meta usada</small>
+                      <small class="alert-sub">{{ (percentualMetaUsada$ | async) || 0 }}% da meta usada</small>
               </div>
-              <span class="alert-amount">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+              <span class="alert-amount">{{ formatarMoeda(((resumo$ | async)?.totalDespesas) || 0) }}</span>
             </div>
 
             <!-- Meta do mês atual (mesmo esquema) -->
             <div class="alert-item meta meta-month"
                  [ngClass]="{
-                   'exceeded': getPercentualMetaUsadaMesAtual() >= 100,
-                   'warn': getPercentualMetaUsadaMesAtual() >= metaWarnThreshold && getPercentualMetaUsadaMesAtual() < 100,
-                   'ok': getPercentualMetaUsadaMesAtual() < metaWarnThreshold
+                   'exceeded': ((percentualMetaUsadaMesAtual$ | async) || 0) >= 100,
+                   'warn': ((percentualMetaUsadaMesAtual$ | async) || 0) >= metaWarnThreshold && ((percentualMetaUsadaMesAtual$ | async) || 0) < 100,
+                   'ok': ((percentualMetaUsadaMesAtual$ | async) || 0) < metaWarnThreshold
                  }">
               <span class="alert-emoji">🗓️</span>
               <div class="alert-info">
