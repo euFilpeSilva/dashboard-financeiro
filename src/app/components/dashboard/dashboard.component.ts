@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, Observable, takeUntil, combineLatest, of } from 'rxjs';
+import { Subject, Observable, takeUntil, combineLatest, of, take } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
@@ -48,6 +48,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private _percentualMetaUsadaMesAtual: number = 0;
   private _metaMesRestante: number = 0;
   private _totalAlertas: number = 0;
+  // caches de coleções (substituem arrays públicos legados)
+  private _todasDespesas: Despesa[] = [];
+  private _todasEntradas: Entrada[] = [];
   
   // Propriedades de layout e tema
   currentTheme = 'compacto';
@@ -74,13 +77,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // Observable-backed resumo for template async pipe
   resumo$: import('rxjs').Observable<ResumoDashboard> | null = null;
 
-  despesasPorCategoria: DespesaPorCategoria[] = [];
   despesasPorCategoria$?: Observable<DespesaPorCategoria[]>;
-  despesasVencidas: Despesa[] = [];
-  despesasProximasVencimento: Despesa[] = [];
   despesasVencidas$?: Observable<Despesa[]>;
   despesasProximasVencimento$?: Observable<Despesa[]>;
-  despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
   despesasDoMes$?: Observable<Despesa[]>;
   // Observables derived for template metrics
   contarDespesasPagas$?: Observable<number>;
@@ -94,9 +93,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   metaMesRestante$?: Observable<number>;
   metaMesProgressWidth$?: Observable<number>;
   
-  // Propriedades para armazenar todos os dados
-  todasDespesas: Despesa[] = [];
-  todasEntradas: Entrada[] = [];
+  // Propriedades para armazenar todos os dados (migradas para caches privados)
   periodoAtual: PeriodoFinanceiro = { mes: 0, ano: 0, descricao: '' };
   
   // Novos dados para seção mensal
@@ -104,7 +101,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   dadosMensais$?: Observable<DadosMensais[]>;
   // observable-backed destaques for async pipe usage
   destaquesMensais$?: Observable<DestaqueMensal[]>;
-  destaquesMensais: DestaqueMensal[] = [];
   
   // Estados de navegação
   showDadosMensais = false;
@@ -128,7 +124,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   anoSelecionado: number = new Date().getFullYear();
   despesasDoMesDetalhado: Despesa[] = [];
   entradasDoMesDetalhado: Entrada[] = [];
-  entradasDoMes: Entrada[] = []; // Alias para compatibilidade
+  // entradasDoMes alias removed — use `entradasDoMes$` instead
   entradasDoMes$?: Observable<Entrada[]>;
   resumoMesDetalhado = {
     totalEntradas: 0,
@@ -302,13 +298,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.despesasPorCategoria$ = this.despesaService.getDespesasPorCategoria();
 
     // Expor despesas vencidas/proximas como observables e atualizar arrays locais via tap
-    this.despesasVencidas$ = this.despesaService.getDespesasVencidas().pipe(
-      tap(vencidas => { this.despesasVencidas = vencidas; })
-    );
+    this.despesasVencidas$ = this.despesaService.getDespesasVencidas();
 
-    this.despesasProximasVencimento$ = this.despesaService.getDespesasProximasVencimento().pipe(
-      tap(proximas => { this.despesasProximasVencimento = proximas; })
-    );
+    this.despesasProximasVencimento$ = this.despesaService.getDespesasProximasVencimento();
 
     // Carregar período atual
     this.despesaService.periodoAtual$
@@ -321,20 +313,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // `despesas$` contém todas as despesas do usuário; para a listagem compacta do mês
     // usamos o observable específico que já filtra pelo mês atual.
     // Expose despesasDoMes as observable and update local array via tap
-    this.despesasDoMes$ = this.despesaService.getDespesasDoMes().pipe(
-      tap(despesasMes => { this.despesasDoMes = despesasMes; })
-    );
+    this.despesasDoMes$ = this.despesaService.getDespesasDoMes();
 
     // Ainda armazenamos todas as despesas para uso em visualizações detalhadas
     this.despesaService.despesas$
       .pipe(takeUntil(this.destroy$))
       .subscribe(despesas => {
-        this.todasDespesas = despesas; // Armazenar para uso na visualização detalhada
+        this._todasDespesas = despesas || [];
       });
 
     // Expose entradasDoMes as observable and update local array via tap
     this.entradasDoMes$ = this.despesaService.entradas$.pipe(
-      tap((entradas: any[]) => { this.todasEntradas = entradas; this.filtrarEntradasDoMesAtual(entradas); }),
+      tap((entradas: any[]) => { this._todasEntradas = entradas; this.filtrarEntradasDoMesAtual(entradas); }),
       map((entradas: any[]) => {
         const agora = new Date();
         const mesAtual = agora.getMonth() + 1;
@@ -494,20 +484,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   carregarDadosMesDetalhado(): void {
-    if (this.todasDespesas.length === 0 && this.todasEntradas.length === 0) {
-      // Se os dados ainda não foram carregados, aguardar um pouco e tentar novamente
-      setTimeout(() => {
-        if (this.todasDespesas.length > 0 || this.todasEntradas.length > 0) {
-          this.carregarDadosMesDetalhado();
-        }
-      }, 500);
+    if (this._todasDespesas.length === 0 && this._todasEntradas.length === 0) {
+      // Aguardar uma emissão das streams de despesas/entradas e então filtrar
+      combineLatest([
+        this.despesaService.despesas$.pipe(take(1)),
+        this.despesaService.entradas$.pipe(take(1))
+      ]).pipe(take(1)).subscribe(([despesas, entradas]) => {
+        this._todasDespesas = despesas || [];
+        this._todasEntradas = entradas || [];
+        this.filtrarDadosPorMes(this._todasDespesas);
+        this.filtrarEntradasPorMes(this._todasEntradas);
+        this.filtrarEntradasDoMesAtual(this._todasEntradas);
+      });
       return;
     }
-    
-    // Usar os dados já disponíveis nas propriedades locais
-    this.filtrarDadosPorMes(this.todasDespesas);
-    this.filtrarEntradasPorMes(this.todasEntradas);
-    this.filtrarEntradasDoMesAtual(this.todasEntradas); // Para o layout compacto
+
+    // Usar os dados já disponíveis nas caches privadas
+    this.filtrarDadosPorMes(this._todasDespesas);
+    this.filtrarEntradasPorMes(this._todasEntradas);
+    this.filtrarEntradasDoMesAtual(this._todasEntradas); // Para o layout compacto
   }
 
   private filtrarDadosPorMes(despesas: Despesa[]): void {
@@ -563,8 +558,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       return mesData === this.mesSelecionado && anoData === this.anoSelecionado;
     });
 
-    // Sync com alias para compatibilidade
-    this.entradasDoMes = [...this.entradasDoMesDetalhado];
+    // Não armazenamos mais `entradasDoMes` globalmente — usar `entradasDoMesDetalhado` ou `entradasDoMes$` quando necessário
 
     // Recalcular resumo após carregar entradas
     this.calcularResumoMesDetalhado();
@@ -576,7 +570,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const mesAtual = agora.getMonth() + 1;
     const anoAtual = agora.getFullYear();
     
-    this.entradasDoMes = entradas.filter(entrada => {
+    const entradasFiltradas = entradas.filter(entrada => {
       let dataEntrada: Date;
       
       // Lidar com diferentes formatos de data
@@ -596,7 +590,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       
       return mesData === mesAtual && anoData === anoAtual;
     });
-    
     // debug logs removed
   }
 
@@ -904,8 +897,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   getMetaBudgetValor(): number {
     const metaPercent = this.gastoMetaPercentualGeral ?? 100;
     // Vertente geral: usar o total agregado de entradas (resumo) ou, se disponível, somatório de todasEntradas
-    const entradasGeral = (Array.isArray(this.todasEntradas) && this.todasEntradas.length > 0)
-      ? this.todasEntradas.reduce((s: number, e: any) => s + (e.valor || 0), 0)
+    const entradasGeral = (Array.isArray(this._todasEntradas) && this._todasEntradas.length > 0)
+      ? this._todasEntradas.reduce((s: number, e: any) => s + (e.valor || 0), 0)
       : (this.resumo.totalEntradas > 0 ? this.resumo.totalEntradas : 0);
 
     if (!entradasGeral || entradasGeral === 0) return 0;
@@ -916,8 +909,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   getPercentualMetaUsada(): number {
     const metaValor = this.getMetaBudgetValor();
     if (!metaValor || metaValor === 0) return 0;
-    const gastosGeral = (Array.isArray(this.todasDespesas) && this.todasDespesas.length > 0)
-      ? this.todasDespesas.reduce((s, d) => s + (d.valor || 0), 0)
+    const gastosGeral = (Array.isArray(this._todasDespesas) && this._todasDespesas.length > 0)
+      ? this._todasDespesas.reduce((s, d) => s + (d.valor || 0), 0)
       : (this.resumo.totalDespesas || 0);
     return Math.round((gastosGeral / metaValor) * 100);
   }
@@ -991,8 +984,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Top category in the selected months (aggregate by category name)
     const monthsSet = new Set<string>(currentSlice.map(d => `${d.mes}-${d.ano}`));
     const catMap = new Map<string, number>();
-    if (Array.isArray(this.todasDespesas)) {
-      this.todasDespesas.forEach(d => {
+    if (Array.isArray(this._todasDespesas)) {
+      this._todasDespesas.forEach(d => {
         if (!d) return;
         let data: Date | null = null;
         if (d.dataVencimento instanceof Date) data = d.dataVencimento as Date;
