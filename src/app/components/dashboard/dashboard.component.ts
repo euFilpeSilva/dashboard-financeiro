@@ -39,6 +39,15 @@ import { ToastService } from '../../services/toast.service';
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
+  // caches para valores derivados (mantêm compatibilidade com métodos síncronos existentes)
+  private _gastosDoMesTotal: number = 0;
+  private _entradasDoMesTotal: number = 0;
+  private _contarDespesasPagas: number = 0;
+  private _contarDespesasPendentes: number = 0;
+  private _metaValorMesAtual: number = 0;
+  private _percentualMetaUsadaMesAtual: number = 0;
+  private _metaMesRestante: number = 0;
+  private _totalAlertas: number = 0;
   
   // Propriedades de layout e tema
   currentTheme = 'compacto';
@@ -405,6 +414,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
       })
     );
 
+    // Subscribir caches para permitir chamadas síncronas legadas no componente
+    this.gastosDoMesTotal$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._gastosDoMesTotal = v || 0);
+    this.entradasDoMesTotal$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._entradasDoMesTotal = v || 0);
+    this.contarDespesasPagas$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._contarDespesasPagas = v || 0);
+    this.contarDespesasPendentes$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._contarDespesasPendentes = v || 0);
+    this.metaValorMesAtual$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._metaValorMesAtual = v || 0);
+    this.percentualMetaUsadaMesAtual$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._percentualMetaUsadaMesAtual = v || 0);
+    this.metaMesRestante$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._metaMesRestante = v || 0);
+    this.totalAlertas$?.pipe(takeUntil(this.destroy$)).subscribe(v => this._totalAlertas = v || 0);
+
     // Carregar dados mensais como observable e usar `tap` para efeitos colaterais
     this.dadosMensais$ = this.despesaService.getDadosMensais().pipe(
       tap(dados => {
@@ -743,11 +762,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   contarDespesasPagas(): number {
-    return this.despesasDoMes.filter(d => d.paga).length;
+    return this._contarDespesasPagas;
   }
 
   contarDespesasPendentes(): number {
-    return this.despesasDoMes.filter(d => !d.paga).length;
+    return this._contarDespesasPendentes;
   }
 
   // Adicionar método para voltar ao dashboard
@@ -766,47 +785,30 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // --- Meta do mês atual (baseada nas entradas/despesas do mês atual) ---
   getMetaValorMesAtual(): number {
-    const metaPercent = this.gastoMetaPercentualMensal ?? this.gastoMetaPercentualGeral ?? 100;
-    const entradasMes = this.getEntradasParaReferenciaMes();
-    // Vertente do mês atual: usar APENAS entradas do mês. Se não houver entradas do mês, retornar 0
-    if (!entradasMes || entradasMes === 0) return 0;
-    return Math.round((entradasMes * (metaPercent / 100)) * 100) / 100;
+    return this._metaValorMesAtual;
   }
 
   getPercentualMetaUsadaMesAtual(): number {
-    const metaValor = this.getMetaValorMesAtual();
-    // Se meta do mês for zero (por falta de entradas do mês), consideramos 0%
-    if (!metaValor || metaValor === 0) return 0;
-    const gastosMes = this.getGastosDoMesTotal();
-    return Math.round((gastosMes / metaValor) * 100);
+    return this._percentualMetaUsadaMesAtual;
   }
 
   getMetaMesAtualProgressWidth(): number {
-    const pct = this.getPercentualMetaUsadaMesAtual();
-    return Math.min(Math.max(pct, 0), 200);
+    return Math.min(Math.max(this._percentualMetaUsadaMesAtual, 0), 200);
   }
 
   getMetaMesAtualRestante(): number {
-    const meta = this.getMetaValorMesAtual();
-    const gastos = this.getGastosDoMesTotal();
-    return Math.round((meta - gastos) * 100) / 100;
+    return this._metaMesRestante;
   }
 
   getGastosDoMesTotal(): number {
     // Retornar somente o total das despesas do mês atual.
     // Não utilizar o resumo geral como fallback — desta forma a vertente mensal fica restrita ao mês.
-    if (Array.isArray(this.despesasDoMes) && this.despesasDoMes.length > 0) {
-      return this.despesasDoMes.reduce((s, d) => s + (d.valor || 0), 0);
-    }
-    return 0;
+    return this._gastosDoMesTotal;
   }
 
   getEntradasDoMesTotal(): number {
     // Retornar somente o total das entradas do mês atual.
-    if (Array.isArray(this.entradasDoMes) && this.entradasDoMes.length > 0) {
-      return this.entradasDoMes.reduce((s, e) => s + (e.valor || 0), 0);
-    }
-    return 0;
+    return this._entradasDoMesTotal;
   }
 
   // --- Helpers para meta mensal baseada em mês de referência configurado ---
@@ -961,12 +963,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // Atualiza getTotalAlertas para considerar ambas as vertentes de meta (contagem simples)
   getTotalAlertas(): number {
-    const vencidas = this.despesasVencidas.length;
-    const proximas = this.despesasProximasVencimento.length;
-    const metaGeralExcedida = this.getPercentualMetaUsada() >= 100 ? 1 : 0;
-    const metaMesExcedida = this.getPercentualMetaUsadaMesAtual() >= 100 ? 1 : 0;
-    // Evitar dupla contagem quando ambas se referem ao mesmo número (raridade) — somamos ambos como alertas distintos
-    return vencidas + proximas + metaGeralExcedida + metaMesExcedida;
+    return this._totalAlertas;
   }
 
   // ------- PERIOD METRICS / HELPERS -------
