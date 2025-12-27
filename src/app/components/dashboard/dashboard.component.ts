@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, Observable, takeUntil } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
 import { UserPreferencesService } from '../../services/user-preferences.service';
@@ -73,6 +74,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
   despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
+  despesasDoMes$?: Observable<Despesa[]>;
   
   // Propriedades para armazenar todos os dados
   todasDespesas: Despesa[] = [];
@@ -112,6 +114,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasDoMesDetalhado: Despesa[] = [];
   entradasDoMesDetalhado: Entrada[] = [];
   entradasDoMes: Entrada[] = []; // Alias para compatibilidade
+  entradasDoMes$?: Observable<Entrada[]>;
   resumoMesDetalhado = {
     totalEntradas: 0,
     totalDespesas: 0,
@@ -315,6 +318,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
       .subscribe(despesasMes => {
         this.despesasDoMes = despesasMes;
       });
+    // Also expose as observable for template bindings
+    this.despesasDoMes$ = this.despesaService.getDespesasDoMes();
 
     // Ainda armazenamos todas as despesas para uso em visualizações detalhadas
     this.despesaService.despesas$
@@ -330,6 +335,26 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.todasEntradas = entradas; // Armazenar para uso na visualização detalhada
         this.filtrarEntradasDoMesAtual(entradas); // Para o layout compacto
       });
+
+    // Expose entradasDoMes as observable (filter current month)
+    this.entradasDoMes$ = this.despesaService.entradas$.pipe(
+      map((entradas: any[]) => {
+        const agora = new Date();
+        const mesAtual = agora.getMonth() + 1;
+        const anoAtual = agora.getFullYear();
+        return (entradas || []).filter(entrada => {
+          let dataEntrada: Date | null = null;
+          if (!entrada) return false;
+          if (entrada.data instanceof Date) dataEntrada = entrada.data as Date;
+          else if (typeof entrada.data === 'string') dataEntrada = new Date(entrada.data);
+          else if (entrada.data && (entrada.data as any).toDate) dataEntrada = (entrada.data as any).toDate();
+          if (!dataEntrada) return false;
+          const mesData = dataEntrada.getMonth() + 1;
+          const anoData = dataEntrada.getFullYear();
+          return mesData === mesAtual && anoData === anoAtual;
+        });
+      })
+    );
 
     // Carregar dados mensais (mantemos subscribe para efeitos colaterais de cálculos)
     this.despesaService.getDadosMensais()

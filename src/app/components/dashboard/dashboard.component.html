@@ -75,11 +75,11 @@
         <!-- 1. Métricas compactas -->
         <div class="mobile-metrics">
           <div class="metric-card">
-            <div class="metric-number">{{ despesasDoMes.length }}</div>
+            <div class="metric-number">{{ ((despesasDoMes$ | async) || []).length }}</div>
             <div class="metric-label">Despesas</div>
           </div>
           <div class="metric-card">
-            <div class="metric-number">{{ entradasDoMes.length }}</div>
+            <div class="metric-number">{{ ((entradasDoMes$ | async) || []).length }}</div>
             <div class="metric-label">Entradas</div>
           </div>
           <div class="metric-card">
@@ -95,13 +95,13 @@
         <!-- modal moved to root to avoid being clipped by transformed ancestors -->
         
         <!-- 2. Lista de despesas otimizada -->
-        <div class="mobile-despesas">
+          <div class="mobile-despesas">
           <div class="mobile-header">
             <h4>📋 Despesas</h4>
-            <span class="count-badge">{{ despesasDoMes.length }}</span>
+            <span class="count-badge">{{ ((despesasDoMes$ | async) || []).length }}</span>
           </div>
           <div class="mobile-list">
-            <div *ngFor="let despesa of despesasDoMes.slice(0, 6)" 
+            <div *ngFor="let despesa of ((despesasDoMes$ | async) || []).slice(0, 6)" 
                  class="mobile-item" 
                  [ngClass]="getDespesaStatusClass(despesa)">
               <div class="item-info">
@@ -156,12 +156,12 @@
         </div>
         
         <!-- 5. Entradas compactas -->
-        <div class="mobile-entradas" *ngIf="entradasDoMes.length > 0">
+          <div class="mobile-entradas" *ngIf="((entradasDoMes$ | async) || []).length > 0">
           <div class="entradas-header">
-            <div class="entradas-title">💰 Entradas ({{ entradasDoMes.length }})</div>
+            <div class="entradas-title">💰 Entradas ({{ ((entradasDoMes$ | async) || []).length }})</div>
           </div>
           <div class="entradas-list">
-            <div *ngFor="let entrada of entradasDoMes.slice(0, 4)" class="entrada-item">
+            <div *ngFor="let entrada of ((entradasDoMes$ | async) || []).slice(0, 4)" class="entrada-item">
               <div class="entrada-fonte">{{ entrada.fonte }}</div>
               <div class="entrada-valor">{{ formatarMoeda(entrada.valor) }}</div>
             </div>
@@ -176,12 +176,12 @@
         <div class="compact-card despesas-compact">
         <div class="compact-header">
           <h4>📋 Despesas</h4>
-          <span class="count-badge">{{ despesasDoMes.length }}</span>
+          <span class="count-badge">{{ ((despesasDoMes$ | async) || []).length }}</span>
         </div>
         <div class="compact-content">
           <!-- Lista de despesas (reduzida) -->
           <div class="despesas-mini-list">
-            <div *ngFor="let despesa of despesasDoMes.slice(0, 3)" 
+              <div *ngFor="let despesa of ((despesasDoMes$ | async) || []).slice(0, 3)" 
                  class="mini-despesa" 
                  [ngClass]="getDespesaStatusClass(despesa)">
               <span class="mini-icon">{{ despesa.categoria.icon }}</span>
@@ -317,10 +317,10 @@
           <!-- Seção de entradas integrada -->
           <div class="entradas-section">
             <div class="entradas-header">
-              <span class="entradas-title">💰 Entradas ({{ entradasDoMes.length }})</span>
+              <span class="entradas-title">💰 Entradas ({{ ((entradasDoMes$ | async) || []).length }})</span>
             </div>
             <div class="entradas-mini-list">
-              <div *ngFor="let entrada of entradasDoMes.slice(0, 3)" class="mini-entrada-compact">
+              <div *ngFor="let entrada of ((entradasDoMes$ | async) || []).slice(0, 3)" class="mini-entrada-compact">
                 <span class="entrada-fonte-compact">{{ entrada.fonte }}</span>
                 <span class="entrada-valor-compact">{{ formatarMoeda(entrada.valor) }}</span>
               </div>
@@ -471,7 +471,7 @@
           <div class="main-card table-card">
             <div class="card-header">
               <h3>📋 Registro de Despesas</h3>
-              <span class="card-subtitle">{{ despesasDoMes.length }} registros</span>
+              <span class="card-subtitle">{{ ((despesasDoMes$ | async) || []).length }} registros</span>
             </div>
             <div class="card-content">
               <div class="classico-table">
@@ -481,7 +481,7 @@
                   <span>Valor</span>
                   <span>Status</span>
                 </div>
-                <div *ngFor="let despesa of despesasDoMes.slice(0, 8)" 
+                 <div *ngFor="let despesa of ((despesasDoMes$ | async) || []).slice(0, 8)" 
                      class="table-row" 
                      [ngClass]="getDespesaStatusClass(despesa)">
                   <span class="table-cell categoria">
@@ -797,7 +797,7 @@
                   ☰ Lista
                 </button>
               </div>
-              <span class="total-count">{{ despesasDoMes.length }} despesas</span>
+              <span class="total-count">{{ ((despesasDoMes$ | async) || []).length }} despesas</span>
               <button class="btn btn-primary" (click)="irParaGestao()">➕ Nova Despesa</button>
             </div>
           </div>
@@ -805,8 +805,8 @@
           <div class="card-body">
             <!-- Visualização em Grade -->
             <div *ngIf="modoVisualizacaoDespesas === 'grade'">
-              <div class="despesas-grid-otimizada" *ngIf="despesasDoMes.length > 0; else noDespesas">
-                <div *ngFor="let despesa of despesasDoMes" class="despesa-card-compact" [ngClass]="getDespesaStatusClass(despesa)">
+              <div class="despesas-grid-otimizada" *ngIf="((despesasDoMes$ | async) || []).length > 0; else noDespesas">
+                <div *ngFor="let despesa of ((despesasDoMes$ | async) || [])" class="despesa-card-compact" [ngClass]="getDespesaStatusClass(despesa)">
                 <div class="despesa-header-compact">
                   <div class="categoria-info">
                     <div class="categoria-icon-compact" [style.background-color]="despesa.categoria.cor">
@@ -864,7 +864,7 @@
 
             <!-- Visualização em Lista -->
             <div *ngIf="modoVisualizacaoDespesas === 'lista'">
-              <div class="despesas-lista" *ngIf="despesasDoMes.length > 0; else noDespesas">
+              <div class="despesas-lista" *ngIf="((despesasDoMes$ | async) || []).length > 0; else noDespesas">
               <div class="lista-header">
                 <div class="header-col col-categoria">Categoria</div>
                 <div class="header-col col-descricao">Descrição</div>
@@ -876,7 +876,7 @@
               </div>
               
               <div class="lista-body">
-                <div *ngFor="let despesa of despesasDoMes" class="despesa-row" [ngClass]="getDespesaStatusClass(despesa)">
+                <div *ngFor="let despesa of ((despesasDoMes$ | async) || [])" class="despesa-row" [ngClass]="getDespesaStatusClass(despesa)">
                   <div class="row-col col-categoria">
                     <div class="categoria-compact">
                       <div class="categoria-icon-small" [style.background-color]="despesa.categoria.cor">
