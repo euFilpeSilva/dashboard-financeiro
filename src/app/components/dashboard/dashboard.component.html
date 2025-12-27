@@ -207,7 +207,7 @@
           <!-- Alertas mais descritivos e compactos -->
           <div class="alerts-list">
             <!-- Despesas vencidas -->
-            <div *ngFor="let despesa of despesasVencidas.slice(0, 1)" class="alert-item vencida">
+            <div *ngFor="let despesa of (((despesasVencidas$ | async) || []).slice(0, 1))" class="alert-item vencida">
               <span class="alert-emoji">🔴</span>
               <div class="alert-info">
                 <span class="alert-desc">{{ despesa.descricao }}</span>
@@ -217,7 +217,7 @@
             </div>
             
             <!-- Despesas próximas ao vencimento -->
-            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 1)" class="alert-item proxima">
+            <div *ngFor="let despesa of (((despesasProximasVencimento$ | async) || []).slice(0, 1))" class="alert-item proxima">
               <span class="alert-emoji">🟡</span>
               <div class="alert-info">
                 <span class="alert-desc">{{ despesa.descricao }}</span>
@@ -309,7 +309,7 @@
               <span class="stat-label">Pendentes</span>
             </div>
             <div class="stat-item">
-              <span class="stat-number">{{ despesasVencidas.length }}</span>
+              <span class="stat-number">{{ ((despesasVencidas$ | async) || []).length }}</span>
               <span class="stat-label">Vencidas</span>
             </div>
           </div>
@@ -399,10 +399,10 @@
         </div>
 
         <!-- Alertas -->
-        <div class="sidebar-section alerts" *ngIf="despesasVencidas.length > 0">
+        <div class="sidebar-section alerts" *ngIf="((despesasVencidas$ | async) || []).length > 0">
           <h3>⚠️ Alertas</h3>
           <div class="alert-list">
-            <div *ngFor="let despesa of despesasVencidas.slice(0, 3)" class="alert-item">
+            <div *ngFor="let despesa of ((despesasVencidas$ | async) || []).slice(0, 3)" class="alert-item">
               <span class="alert-badge">VENCIDA</span>
               <span class="alert-desc">{{ despesa.descricao }}</span>
               <span class="alert-value">{{ formatarMoeda(despesa.valor) }}</span>
@@ -758,9 +758,9 @@
     </div>
 
     <!-- Alertas -->
-    <div *ngIf="despesasProximasVencimento.length > 0" class="alertas proximas">
+    <div *ngIf="((despesasProximasVencimento$ | async) || []).length > 0" class="alertas proximas">
       <h4>🔔 Próximas ao Vencimento</h4>
-      <div *ngFor="let despesa of despesasProximasVencimento" class="alerta-item proxima">
+      <div *ngFor="let despesa of ((despesasProximasVencimento$ | async) || [])" class="alerta-item proxima">
         {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }} - Vence: {{ formatarData(despesa.dataVencimento) }}
       </div>
     </div>
@@ -945,9 +945,9 @@
       </div>
 
     <!-- Alertas de Vencimento -->
-    <div *ngIf="despesasVencidas.length > 0" class="alertas vencidas">
+    <div *ngIf="((despesasVencidas$ | async) || []).length > 0" class="alertas vencidas">
       <h4>⚠️ Despesas Vencidas</h4>
-      <div *ngFor="let despesa of despesasVencidas" class="alerta-item vencida">
+      <div *ngFor="let despesa of ((despesasVencidas$ | async) || [])" class="alerta-item vencida">
         {{ despesa.descricao }} - {{ formatarMoeda(despesa.valor) }}
       </div>
     </div>
