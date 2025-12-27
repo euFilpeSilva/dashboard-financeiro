@@ -1,0 +1,10 @@
+.mural-anotacoes { border-top: 1px solid rgba(0,0,0,0.06); padding: 12px; margin-top: 18px; }
+.mural-header { display:flex; justify-content:space-between; align-items:center }
+.mural-title h3 { margin:0 }
+.mural-content { margin-top:10px }
+.mural-actions { display:flex; gap:8px }
+.anotacao-card { padding:10px; border-radius:6px; margin-bottom:8px; color:#fff }
+.anotacao-top { display:flex; justify-content:space-between; align-items:center }
+.anotacao-text { margin-top:6px }
+.anotacao-edit input { width:70%; margin-right:6px }
+.sem-anotacoes { text-align:center; color:var(--muted) }

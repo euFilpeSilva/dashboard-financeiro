@@ -1,0 +1,44 @@
+<section class="mural-anotacoes" [class.minimizado]="!mostrarMuralAnotacoes">
+  <div class="mural-header">
+    <div class="mural-title">
+      <h3>📝 Mural de Anotações</h3>
+      <span class="contador-anotacoes">{{ anotacoes.length }} anotações</span>
+    </div>
+    <div class="mural-controls">
+      <button class="btn-toggle-mural" (click)="toggleMuralAnotacoes()" [title]="mostrarMuralAnotacoes ? 'Minimizar mural' : 'Expandir mural'">{{ mostrarMuralAnotacoes ? '▼' : '▶' }}</button>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarMuralAnotacoes" class="mural-content">
+    <div class="mural-actions">
+      <input type="text" placeholder="Nova anotação..." [(ngModel)]="novaAnotacao" />
+      <button class="btn-add" (click)="adicionarAnotacao()">Adicionar</button>
+    </div>
+
+    <div class="anotacoes-container" *ngIf="anotacoes.length > 0; else semAnotacoes">
+      <div *ngFor="let anotacao of anotacoes; trackBy: trackByAnotacao" class="anotacao-card" [style.background]="anotacao.cor">
+        <div class="anotacao-top">
+          <small class="anotacao-time">{{ formatarDataHora(anotacao.dataHora) }}</small>
+          <div class="anotacao-actions">
+            <button class="btn-edit" (click)="iniciarEdicao(anotacao)">✏️</button>
+            <button class="btn-delete" (click)="removerAnotacao(anotacao.id)">🗑️</button>
+          </div>
+        </div>
+        <div *ngIf="editandoAnotacao !== anotacao.id" class="anotacao-text">{{ anotacao.texto }}</div>
+        <div *ngIf="editandoAnotacao === anotacao.id" class="anotacao-edit">
+          <input [(ngModel)]="textoEdicao" />
+          <button class="btn-save" (click)="salvarEdicao()">Salvar</button>
+          <button class="btn-cancel" (click)="cancelarEdicao()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #semAnotacoes>
+      <div class="sem-anotacoes">
+        <div class="sem-anotacoes-icon">📋</div>
+        <h4>Nenhuma anotação</h4>
+        <p>Adicione suas observações rápidas aqui.</p>
+      </div>
+    </ng-template>
+  </div>
+</section>

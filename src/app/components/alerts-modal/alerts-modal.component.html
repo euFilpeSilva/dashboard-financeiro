@@ -8,7 +8,7 @@
       <button class="modal-close" (click)="onClose()" aria-label="Fechar">✕</button>
     </div>
     <div class="alerts-modal-body">
-      <div *ngIf="despesasVencidas?.length > 0">
+      <div *ngIf="despesasVencidas && despesasVencidas.length > 0">
         <h5>Vencidas</h5>
         <div *ngFor="let d of despesasVencidas" class="alert-item vencida">
           <div class="alert-left">
@@ -24,7 +24,7 @@
         </div>
       </div>
 
-      <div *ngIf="despesasProximasVencimento?.length > 0" style="margin-top:12px">
+      <div *ngIf="despesasProximasVencimento && despesasProximasVencimento.length > 0" style="margin-top:12px">
         <h5>Próximas do vencimento</h5>
         <div *ngFor="let d of despesasProximasVencimento" class="alert-item proxima">
           <div class="alert-left">
