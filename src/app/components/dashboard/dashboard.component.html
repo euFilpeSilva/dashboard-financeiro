@@ -197,7 +197,7 @@
           <div class="alerts-header">
             <div class="alerts-header-left">
               <span class="alerts-title">⚠️ Alertas</span>
-              <span class="alerts-count" *ngIf="getTotalAlertas() > 0">{{ getTotalAlertas() }}</span>
+              <span class="alerts-count" *ngIf="((totalAlertas$ | async) || 0) > 0">{{ (totalAlertas$ | async) || 0 }}</span>
             </div>
             <div class="alerts-header-controls">
               <button class="btn-view-all" (click)="openAlertsModal()" aria-label="Ver todos os alertas">VER TODOS</button>
@@ -264,7 +264,7 @@
               <div class="alert-info">
                 <span class="alert-desc">Meta do mês atual</span>
                 <span class="alert-date">Meta: {{ gastoMetaPercentualMensal }}% das entradas do mês (R$ {{ formatarMoeda(getMetaValorMesAtual()) }})</span>
-                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda(getGastosDoMesTotal()) }} — Restante: {{ formatarMoeda(getMetaMesAtualRestante()) }}</span>
+                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda((gastosDoMesTotal$ | async) || 0) }} — Restante: {{ formatarMoeda(getMetaMesAtualRestante()) }}</span>
 
                 <div class="meta-progress" aria-hidden="false">
                   <div class="meta-progress-bar"
@@ -277,11 +277,11 @@
 
                 <small class="alert-sub">{{ getPercentualMetaUsadaMesAtual() }}% da meta do mês usada</small>
               </div>
-              <span class="alert-amount">{{ formatarMoeda(getGastosDoMesTotal()) }}</span>
+              <span class="alert-amount">{{ formatarMoeda((gastosDoMesTotal$ | async) || 0) }}</span>
             </div>
             
             <!-- Quando não há alertas -->
-            <div *ngIf="getTotalAlertas() === 0" class="alert-item no-alerts">
+            <div *ngIf="((totalAlertas$ | async) || 0) === 0" class="alert-item no-alerts">
               <span class="alert-emoji">✅</span>
               <div class="alert-info">
                 <span class="alert-desc">Tudo em dia!</span>
@@ -301,11 +301,11 @@
           <!-- Estatísticas principais -->
           <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-number">{{ contarDespesasPagas() }}</span>
+              <span class="stat-number">{{ (contarDespesasPagas$ | async) || 0 }}</span>
               <span class="stat-label">Pagas</span>
             </div>
             <div class="stat-item">
-              <span class="stat-number">{{ contarDespesasPendentes() }}</span>
+              <span class="stat-number">{{ (contarDespesasPendentes$ | async) || 0 }}</span>
               <span class="stat-label">Pendentes</span>
             </div>
             <div class="stat-item">
@@ -328,7 +328,7 @@
           </div>
             <!-- Saldo evolution chart -->
             <div class="saldo-evolution" style="margin-top:12px;">
-              <app-chart-line [dadosMensais]="dadosMensais" [projection]="getProjectionSaldo()"></app-chart-line>
+              <app-chart-line [dadosMensais]="(dadosMensais$ | async) || []" [projection]="getProjectionSaldo()"></app-chart-line>
             </div>
         </div>
         </div>
@@ -415,11 +415,11 @@
           <h3>📊 Estatísticas</h3>
           <div class="stats-grid">
             <div class="stat-card">
-              <span class="stat-value">{{ contarDespesasPagas() }}</span>
+              <span class="stat-value">{{ (contarDespesasPagas$ | async) || 0 }}</span>
               <span class="stat-label">Pagas</span>
             </div>
             <div class="stat-card">
-              <span class="stat-value">{{ contarDespesasPendentes() }}</span>
+              <span class="stat-value">{{ (contarDespesasPendentes$ | async) || 0 }}</span>
               <span class="stat-label">Pendentes</span>
             </div>
             <div class="stat-card">
@@ -656,7 +656,7 @@
 
       <!-- Cards mensais -->
       <section class="monthly-cards">
-        <div *ngFor="let dado of dadosMensais" class="monthly-card">
+        <div *ngFor="let dado of ((dadosMensais$ | async) || [])" class="monthly-card">
           <div class="monthly-header">
             <h4>{{ dado.descricao }}</h4>
             <div class="monthly-values">

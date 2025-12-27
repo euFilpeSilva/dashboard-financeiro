@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, Observable, takeUntil } from 'rxjs';
+import { Subject, Observable, takeUntil, combineLatest, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
@@ -73,6 +73,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   despesasProximasVencimento$?: Observable<Despesa[]>;
   despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
   despesasDoMes$?: Observable<Despesa[]>;
+  // Observables derived for template metrics
+  contarDespesasPagas$?: Observable<number>;
+  contarDespesasPendentes$?: Observable<number>;
+  gastosDoMesTotal$?: Observable<number>;
+  entradasDoMesTotal$?: Observable<number>;
+  totalAlertas$?: Observable<number>;
   
   // Propriedades para armazenar todos os dados
   todasDespesas: Despesa[] = [];
@@ -330,6 +336,37 @@ export class DashboardComponent implements OnInit, OnDestroy {
           const anoData = dataEntrada.getFullYear();
           return mesData === mesAtual && anoData === anoAtual;
         });
+      })
+    );
+
+    // Derived observables for template metrics
+    this.contarDespesasPagas$ = this.despesasDoMes$?.pipe(
+      map(arr => (arr || []).filter(d => d.paga).length)
+    );
+
+    this.contarDespesasPendentes$ = this.despesasDoMes$?.pipe(
+      map(arr => (arr || []).filter(d => !d.paga).length)
+    );
+
+    this.gastosDoMesTotal$ = this.despesasDoMes$?.pipe(
+      map(arr => (arr || []).reduce((s, d) => s + (d.valor || 0), 0))
+    );
+
+    this.entradasDoMesTotal$ = this.entradasDoMes$?.pipe(
+      map(arr => (arr || []).reduce((s, e) => s + (e.valor || 0), 0))
+    );
+
+    this.totalAlertas$ = combineLatest([
+      this.despesasVencidas$ ?? of([]),
+      this.despesasProximasVencimento$ ?? of([]),
+      this.resumo$ ?? of(this.resumo)
+    ]).pipe(
+      map(([vencidas, proximas, resumo]) => {
+        const venc = (vencidas || []).length;
+        const prox = (proximas || []).length;
+        const metaGeralExcedida = (this.getPercentualMetaUsada() >= 100) ? 1 : 0;
+        const metaMesExcedida = (this.getPercentualMetaUsadaMesAtual() >= 100) ? 1 : 0;
+        return venc + prox + metaGeralExcedida + metaMesExcedida;
       })
     );
 
