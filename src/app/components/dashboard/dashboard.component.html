@@ -263,19 +263,19 @@
               <span class="alert-emoji">🗓️</span>
               <div class="alert-info">
                 <span class="alert-desc">Meta do mês atual</span>
-                <span class="alert-date">Meta: {{ gastoMetaPercentualMensal }}% das entradas do mês (R$ {{ formatarMoeda(getMetaValorMesAtual()) }})</span>
-                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda((gastosDoMesTotal$ | async) || 0) }} — Restante: {{ formatarMoeda(getMetaMesAtualRestante()) }}</span>
+                <span class="alert-date">Meta: {{ gastoMetaPercentualMensal }}% das entradas do mês (R$ {{ formatarMoeda((metaValorMesAtual$ | async) || 0) }})</span>
+                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda((gastosDoMesTotal$ | async) || 0) }} — Restante: {{ formatarMoeda((metaMesRestante$ | async) || 0) }}</span>
 
                 <div class="meta-progress" aria-hidden="false">
                   <div class="meta-progress-bar"
                        role="progressbar"
-                       [attr.aria-valuenow]="getPercentualMetaUsadaMesAtual()"
+                       [attr.aria-valuenow]="(percentualMetaUsadaMesAtual$ | async) || 0"
                        aria-valuemin="0"
                        aria-valuemax="100"
-                       [style.width.%]="getMetaMesAtualProgressWidth()"></div>
+                       [style.width.%]="(metaMesProgressWidth$ | async) || 0"></div>
                 </div>
 
-                <small class="alert-sub">{{ getPercentualMetaUsadaMesAtual() }}% da meta do mês usada</small>
+                <small class="alert-sub">{{ (percentualMetaUsadaMesAtual$ | async) || 0 }}% da meta do mês usada</small>
               </div>
               <span class="alert-amount">{{ formatarMoeda((gastosDoMesTotal$ | async) || 0) }}</span>
             </div>

@@ -79,6 +79,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   gastosDoMesTotal$?: Observable<number>;
   entradasDoMesTotal$?: Observable<number>;
   totalAlertas$?: Observable<number>;
+  // Derived observables for monthly meta calculations
+  metaValorMesAtual$?: Observable<number>;
+  percentualMetaUsadaMesAtual$?: Observable<number>;
+  metaMesRestante$?: Observable<number>;
+  metaMesProgressWidth$?: Observable<number>;
   
   // Propriedades para armazenar todos os dados
   todasDespesas: Despesa[] = [];
@@ -354,6 +359,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
     this.entradasDoMesTotal$ = this.entradasDoMes$?.pipe(
       map(arr => (arr || []).reduce((s, e) => s + (e.valor || 0), 0))
+    );
+
+    // Derived observables for meta do mês (valor, percentual, restante, progress width)
+    this.metaValorMesAtual$ = this.entradasDoMesTotal$?.pipe(
+      map(totalEntradasMes => {
+        const metaPercent = this.gastoMetaPercentualMensal ?? this.gastoMetaPercentualGeral ?? 100;
+        if (!totalEntradasMes || totalEntradasMes === 0) return 0;
+        return Math.round((totalEntradasMes * (metaPercent / 100)) * 100) / 100;
+      })
+    );
+
+    this.percentualMetaUsadaMesAtual$ = combineLatest([
+      this.gastosDoMesTotal$ ?? of(0),
+      this.metaValorMesAtual$ ?? of(0)
+    ]).pipe(
+      map(([gastos, meta]) => {
+        if (!meta || meta === 0) return 0;
+        return Math.round((gastos / meta) * 100);
+      })
+    );
+
+    this.metaMesRestante$ = combineLatest([
+      this.metaValorMesAtual$ ?? of(0),
+      this.gastosDoMesTotal$ ?? of(0)
+    ]).pipe(
+      map(([meta, gastos]) => Math.round((meta - gastos) * 100) / 100)
+    );
+
+    this.metaMesProgressWidth$ = this.percentualMetaUsadaMesAtual$?.pipe(
+      map(pct => Math.min(Math.max(pct, 0), 200))
     );
 
     this.totalAlertas$ = combineLatest([
