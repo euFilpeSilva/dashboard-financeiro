@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, takeUntil } from 'rxjs';
+import { Subject, Observable, takeUntil } from 'rxjs';
 import { DespesaService } from '../../services/despesa.service';
 import { ThemeService, LayoutConfig } from '../../services/theme.service';
 import { UserPreferencesService } from '../../services/user-preferences.service';
@@ -13,13 +13,16 @@ import {
   PeriodoFinanceiro,
   DadosMensais,
   DestaqueMensal,
-  VisualizacaoTipo
+  VisualizacaoTipo,
+  Entrada
 } from '../../models/despesa.model';
+import { toDate, formatDateForInput, isSameMonthYear } from '../../utils/date-utils';
 import { ChartComponent } from '../chart/chart.component';
 import { ChartLineComponent } from '../chart-line/chart-line.component';
 import { ChartBarComponent } from '../chart-bar/chart-bar.component';
 import { DataDebugComponent } from '../data-debug/data-debug.component';
 import { CustomizableLayoutComponent } from '../customizable-layout/customizable-layout.component';
+import { AlertsModalComponent } from '../alerts-modal/alerts-modal.component';
 import { ToastService } from '../../services/toast.service';
 
 // Interface para as anotações
@@ -33,7 +36,7 @@ interface Anotacao {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, ChartLineComponent, CustomizableLayoutComponent],
+  imports: [CommonModule, FormsModule, ChartComponent, ChartBarComponent, ChartLineComponent, CustomizableLayoutComponent, AlertsModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -62,19 +65,24 @@ export class DashboardComponent implements OnInit, OnDestroy {
     despesasVencidas: 0,
     despesasProximasVencimento: 0
   };
+  // Observable-backed resumo for template async pipe
+  resumo$: import('rxjs').Observable<ResumoDashboard> | null = null;
 
   despesasPorCategoria: DespesaPorCategoria[] = [];
+  despesasPorCategoria$?: Observable<DespesaPorCategoria[]>;
   despesasVencidas: Despesa[] = [];
   despesasProximasVencimento: Despesa[] = [];
   despesasDoMes: Despesa[] = []; // Nova propriedade para despesas do mês atual
   
   // Propriedades para armazenar todos os dados
   todasDespesas: Despesa[] = [];
-  todasEntradas: any[] = [];
+  todasEntradas: Entrada[] = [];
   periodoAtual: PeriodoFinanceiro = { mes: 0, ano: 0, descricao: '' };
   
   // Novos dados para seção mensal
   dadosMensais: DadosMensais[] = [];
+  // observable-backed destaques for async pipe usage
+  destaquesMensais$?: Observable<DestaqueMensal[]>;
   destaquesMensais: DestaqueMensal[] = [];
   
   // Estados de navegação
@@ -102,8 +110,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
   mesSelecionado: number = new Date().getMonth() + 1;
   anoSelecionado: number = new Date().getFullYear();
   despesasDoMesDetalhado: Despesa[] = [];
-  entradasDoMesDetalhado: any[] = [];
-  entradasDoMes: any[] = []; // Alias para compatibilidade
+  entradasDoMesDetalhado: Entrada[] = [];
+  entradasDoMes: Entrada[] = []; // Alias para compatibilidade
   resumoMesDetalhado = {
     totalEntradas: 0,
     totalDespesas: 0,
@@ -155,7 +163,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
   selectedPeriodMonths = 3;
   
   // Computed metrics for the selected period
-  periodMetrics: any = {
+  periodMetrics: {
+    entradas: number;
+    despesas: number;
+    saldo: number;
+    entradasPrev: number | null;
+    despesasPrev: number | null;
+    entradasChange: number | null;
+    despesasChange: number | null;
+    topCategoryName: string | null;
+    topCategoryValue: number;
+    topCategoryPercent: number;
+  } = {
     entradas: 0,
     despesas: 0,
     saldo: 0,
@@ -168,8 +187,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     topCategoryPercent: 0
   };
 
-  // listener remover para ESC
-  private escUnlisten: (() => void) | null = null;
+  // listener remover para ESC (moved to AlertsModalComponent)
+  // referência armazenada para o handler de navegação (para remover corretamente)
+  private navbarListener: ((event: any) => void) | null = null;
   // flag para saber se o overlay foi movimentado para body
   // overlayAppendedToBody removed: avoid moving DOM nodes out of Angular's view
 
@@ -232,7 +252,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
 
     // Escutar eventos de navegação da navbar
-    window.addEventListener('dashboardNavigation', this.handleNavbarNavigation.bind(this));
+    // armazenamos a função ligada para que possamos removê-la posteriormente
+    this.navbarListener = this.handleNavbarNavigation.bind(this);
+    window.addEventListener('dashboardNavigation', this.navbarListener);
 
     // compute initial period metrics if monthly data already present
     try { this.computePeriodMetrics(); } catch (e) { /* ignore */ }
@@ -244,27 +266,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    window.removeEventListener('dashboardNavigation', this.handleNavbarNavigation.bind(this));
+    if (this.navbarListener) {
+      try { window.removeEventListener('dashboardNavigation', this.navbarListener); } catch (e) { /* ignore */ }
+      this.navbarListener = null;
+    }
     this.destroy$.next();
     this.destroy$.complete();
   }
 
   private carregarDados(): void {
-    // Carregar resumo do dashboard
-    this.despesaService.getResumoDashboard()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(resumo => {
-        this.resumo = resumo;
-        // checar limites da meta sempre que os números mudam
-        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
-      });
+    // Expose resumo as an observable (use async pipe in template)
+    this.resumo$ = this.despesaService.getResumoDashboard();
+    // Keep a short-lived subscription for side-effects (to trigger meta checks)
+    this.resumo$?.pipe(takeUntil(this.destroy$)).subscribe(resumo => {
+      this.resumo = resumo;
+      try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
+    });
 
-    // Carregar despesas por categoria
-    this.despesaService.getDespesasPorCategoria()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(categorias => {
-        this.despesasPorCategoria = categorias;
-      });
+    // Despesas por categoria (exposto como observable para uso com async pipe)
+    this.despesasPorCategoria$ = this.despesaService.getDespesasPorCategoria();
 
     // Carregar despesas vencidas
     this.despesaService.getDespesasVencidas()
@@ -311,22 +331,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.filtrarEntradasDoMesAtual(entradas); // Para o layout compacto
       });
 
-    // Carregar dados mensais
+    // Carregar dados mensais (mantemos subscribe para efeitos colaterais de cálculos)
     this.despesaService.getDadosMensais()
       .pipe(takeUntil(this.destroy$))
       .subscribe(dados => {
         this.dadosMensais = dados;
-        // Recompute any period-based aggregates when monthly data arrives
         try { this.computePeriodMetrics(); } catch (e) { /* ignore */ }
       });
 
-    // Carregar destaques mensais
-    this.despesaService.getDestaquesMensais()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(destaques => {
-        console.log('Destaques mensais carregados:', destaques);
-        this.destaquesMensais = destaques;
-      });
+    // Destaques mensais (observable for template async)
+    this.destaquesMensais$ = this.despesaService.getDestaquesMensais();
   }
 
   formatarMoeda(valor: number): string {
@@ -761,23 +775,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   openAlertsModal(): void {
     this.showAlertsModal = true;
-    // Install ESC handler to close modal (if not already installed)
-    if (!this.escUnlisten) {
-      this.escUnlisten = this.renderer.listen('window', 'keydown', (ev: KeyboardEvent) => {
-        if (ev.key === 'Escape' || ev.key === 'Esc') {
-          this.closeAlertsModal();
-        }
-      });
-    }
   }
 
   closeAlertsModal(): void {
     this.showAlertsModal = false;
-    // remove ESC listener if present
-    if (this.escUnlisten) {
-      try { this.escUnlisten(); } catch (e) { /* ignore */ }
-      this.escUnlisten = null;
-    }
   }
 
   // Helper para formatar referência 'YYYY-MM' para 'MMM/YYYY'

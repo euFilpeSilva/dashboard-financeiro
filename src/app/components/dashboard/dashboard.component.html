@@ -1,78 +1,15 @@
 <div class="dashboard-container" [attr.data-theme]="currentTheme">
-  <!-- Global Alerts Modal Overlay (root-level) -->
-  <div class="alerts-modal-overlay" *ngIf="showAlertsModal" (click)="closeAlertsModal()">
-    <div class="alerts-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Lista completa de alertas">
-      <div class="alerts-modal-header">
-        <div class="alerts-modal-title">
-          <h4>Todos os Alertas</h4>
-          <small class="modal-subtitle">Resumo de vencimentos, próximas datas e metas</small>
-        </div>
-        <button class="modal-close" (click)="closeAlertsModal()" aria-label="Fechar">✕</button>
-      </div>
-      <div class="alerts-modal-body">
-        <div *ngIf="despesasVencidas.length > 0">
-          <h5>Vencidas</h5>
-          <div *ngFor="let d of despesasVencidas" class="alert-item vencida">
-            <div class="alert-left">
-              <span class="alert-emoji">🔴</span>
-              <div class="alert-info">
-                <span class="alert-desc">{{ d.descricao }}</span>
-                <span class="alert-date">Venceu {{ getDiasVencimento(d) }}</span>
-              </div>
-            </div>
-            <div class="alert-right">
-              <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="despesasProximasVencimento.length > 0" style="margin-top:12px">
-          <h5>Próximas do vencimento</h5>
-          <div *ngFor="let d of despesasProximasVencimento" class="alert-item proxima">
-            <div class="alert-left">
-              <span class="alert-emoji">🟡</span>
-              <div class="alert-info">
-                <span class="alert-desc">{{ d.descricao }}</span>
-                <span class="alert-date">Vence {{ getDiasParaVencimento(d) }}</span>
-              </div>
-            </div>
-            <div class="alert-right">
-              <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="margin-top:12px">
-          <h5>Metas</h5>
-          <div class="alert-item meta" [ngClass]="{ 'exceeded': getPercentualMetaUsada() >= 100 }">
-            <div class="alert-left">
-              <span class="alert-emoji">📊</span>
-              <div class="alert-info">
-                <span class="alert-desc">Meta geral: {{ gastoMetaPercentualGeral }}% — R$ {{ formatarMoeda(getMetaBudgetValor()) }}</span>
-                <span class="alert-date">Gasto atual: {{ formatarMoeda(resumo.totalDespesas) }} — {{ getPercentualMetaUsada() }}% da meta</span>
-              </div>
-            </div>
-            <div class="alert-right">
-              <span class="alert-amount">{{ formatarMoeda(resumo.totalDespesas) }}</span>
-            </div>
-          </div>
-
-          <div class="alert-item meta" style="margin-top:8px" [ngClass]="{ 'exceeded': getPercentualMetaUsadaMesAtual() >= 100 }">
-            <div class="alert-left">
-              <span class="alert-emoji">🗓️</span>
-              <div class="alert-info">
-                <span class="alert-desc">Meta do mês ({{ formatMonth(gastoMetaMesReferencia) }}): {{ gastoMetaPercentualMensal }}% — R$ {{ formatarMoeda(getMetaValorMesAtual()) }}</span>
-                <span class="alert-date">Gasto atual (mês): {{ formatarMoeda(getGastosDoMesTotal()) }} — {{ getPercentualMetaUsadaMesAtual() }}% da meta</span>
-              </div>
-            </div>
-            <div class="alert-right">
-              <span class="alert-amount">{{ formatarMoeda(getGastosDoMesTotal()) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Alerts modal extracted to standalone component -->
+  <app-alerts-modal *ngIf="showAlertsModal"
+                    [despesasVencidas]="despesasVencidas"
+                    [despesasProximasVencimento]="despesasProximasVencimento"
+                    [gastoMetaPercentualGeral]="gastoMetaPercentualGeral"
+                    [gastoMetaPercentualMensal]="gastoMetaPercentualMensal"
+                    [gastoMetaMesReferencia]="gastoMetaMesReferencia"
+                    [resumo]="resumo"
+                    [metaPercentUsed]="getPercentualMetaUsada()"
+                    [metaMesPercentUsed]="getPercentualMetaUsadaMesAtual()"
+                    (close)="closeAlertsModal()"></app-alerts-modal>
   
   <!-- Layout Customizável (Draggable/Widgets) -->
   <div *ngIf="currentTheme === 'customizavel' && !showDadosMensais" class="layout-container layout-customizavel">
@@ -86,17 +23,17 @@
       <div class="status-metrics">
         <div class="metric entrada">
           <span class="metric-icon">💰</span>
-          <span class="metric-value">{{ formatarMoeda(resumo.totalEntradas) }}</span>
+          <span class="metric-value">{{ formatarMoeda((resumo$ | async)?.totalEntradas || 0) }}</span>
           <span class="metric-label">Entradas</span>
         </div>
         <div class="metric despesa">
           <span class="metric-icon">💸</span>
-          <span class="metric-value">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+          <span class="metric-value">{{ formatarMoeda((resumo$ | async)?.totalDespesas || 0) }}</span>
           <span class="metric-label">Despesas</span>
         </div>
         <div class="metric saldo">
           <span class="metric-icon">📊</span>
-          <span class="metric-value" [ngClass]="getSaldoClass()">{{ formatarMoeda(resumo.saldoPrevisto) }}</span>
+          <span class="metric-value" [ngClass]="getSaldoClass()">{{ formatarMoeda((resumo$ | async)?.saldoPrevisto || 0) }}</span>
           <span class="metric-label">Saldo</span>
         </div>
         <div class="metric alert" *ngIf="despesasVencidas.length > 0">
@@ -214,7 +151,7 @@
             <h4>📊 Distribuição de Despesas</h4>
           </div>
           <div class="chart-container">
-            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
+            <app-chart [despesasPorCategoria]="(despesasPorCategoria$ | async) || []" chartType="doughnut"></app-chart>
           </div>
         </div>
         
@@ -402,10 +339,10 @@
         <div class="compact-card chart-compact full-width">
           <div class="compact-header">
             <h4>📊 Despesas por Categoria</h4>
-            <span class="chart-summary">{{ despesasPorCategoria.length }} categorias</span>
+            <span class="chart-summary">{{ (despesasPorCategoria$ | async)?.length || 0 }} categorias</span>
           </div>
           <div class="compact-content chart-layout">
-            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="doughnut"></app-chart>
+            <app-chart [despesasPorCategoria]="(despesasPorCategoria$ | async) || []" chartType="doughnut"></app-chart>
           </div>
         </div>
       </div>
@@ -426,21 +363,21 @@
               <div class="summary-icon">💵</div>
               <div class="summary-data">
                 <span class="summary-label">Entradas</span>
-                <span class="summary-value positive">{{ formatarMoeda(resumo.totalEntradas) }}</span>
+                <span class="summary-value positive">{{ formatarMoeda((resumo$ | async)?.totalEntradas || 0) }}</span>
               </div>
             </div>
             <div class="summary-item despesa">
               <div class="summary-icon">💳</div>
               <div class="summary-data">
                 <span class="summary-label">Despesas</span>
-                <span class="summary-value negative">{{ formatarMoeda(resumo.totalDespesas) }}</span>
+                <span class="summary-value negative">{{ formatarMoeda((resumo$ | async)?.totalDespesas || 0) }}</span>
               </div>
             </div>
             <div class="summary-item saldo">
               <div class="summary-icon">📊</div>
               <div class="summary-data">
                 <span class="summary-label">Saldo</span>
-                <span class="summary-value" [ngClass]="getSaldoClass()">{{ formatarMoeda(resumo.saldoPrevisto) }}</span>
+                <span class="summary-value" [ngClass]="getSaldoClass()">{{ formatarMoeda((resumo$ | async)?.saldoPrevisto || 0) }}</span>
               </div>
             </div>
           </div>
@@ -486,7 +423,7 @@
               <span class="stat-label">Pendentes</span>
             </div>
             <div class="stat-card">
-              <span class="stat-value">{{ despesasPorCategoria.length }}</span>
+              <span class="stat-value">{{ (despesasPorCategoria$ | async)?.length || 0 }}</span>
               <span class="stat-label">Categorias</span>
             </div>
           </div>
@@ -526,7 +463,7 @@
               <h3>📊 Distribuição por Categoria</h3>
             </div>
             <div class="card-content">
-              <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
+              <app-chart [despesasPorCategoria]="(despesasPorCategoria$ | async) || []" chartType="pie"></app-chart>
             </div>
           </div>
 
@@ -753,7 +690,7 @@
       <section class="monthly-highlights">
         <h3>📈 Destaques do Mês</h3>
         <div class="highlights-grid">
-          <div *ngFor="let destaque of destaquesMensais" class="highlight-item">
+          <div *ngFor="let destaque of (destaquesMensais$ | async) || []" class="highlight-item">
             <div class="highlight-value">{{ formatarMoeda(destaque.valor) }}</div>
             <div class="highlight-label">{{ destaque.descricao }}</div>
             <small class="highlight-month">{{ destaque.mes }}</small>
@@ -835,7 +772,7 @@
         <!-- Card do Gráfico de Despesas -->
         <section class="card-grafico">
           <div class="card-body">
-            <app-chart [despesasPorCategoria]="despesasPorCategoria" chartType="pie"></app-chart>
+            <app-chart [despesasPorCategoria]="(despesasPorCategoria$ | async) || []" chartType="pie"></app-chart>
           </div>
         </section>
 

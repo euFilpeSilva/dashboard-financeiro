@@ -1,0 +1,73 @@
+<div class="alerts-modal-overlay" (click)="onClose()">
+  <div class="alerts-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-label="Lista completa de alertas">
+    <div class="alerts-modal-header">
+      <div class="alerts-modal-title">
+        <h4>Todos os Alertas</h4>
+        <small class="modal-subtitle">Resumo de vencimentos, próximas datas e metas</small>
+      </div>
+      <button class="modal-close" (click)="onClose()" aria-label="Fechar">✕</button>
+    </div>
+    <div class="alerts-modal-body">
+      <div *ngIf="despesasVencidas?.length > 0">
+        <h5>Vencidas</h5>
+        <div *ngFor="let d of despesasVencidas" class="alert-item vencida">
+          <div class="alert-left">
+            <span class="alert-emoji">🔴</span>
+            <div class="alert-info">
+              <span class="alert-desc">{{ d.descricao }}</span>
+              <span class="alert-date">Venceu {{ d.dataVencimento | date:'dd/MM' }}</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="despesasProximasVencimento?.length > 0" style="margin-top:12px">
+        <h5>Próximas do vencimento</h5>
+        <div *ngFor="let d of despesasProximasVencimento" class="alert-item proxima">
+          <div class="alert-left">
+            <span class="alert-emoji">🟡</span>
+            <div class="alert-info">
+              <span class="alert-desc">{{ d.descricao }}</span>
+              <span class="alert-date">Vence {{ d.dataVencimento | date:'dd/MM' }}</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="alert-amount">{{ formatarMoeda(d.valor) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <h5>Metas</h5>
+        <div class="alert-item meta">
+          <div class="alert-left">
+            <span class="alert-emoji">📊</span>
+            <div class="alert-info">
+              <span class="alert-desc">Meta geral: {{ gastoMetaPercentualGeral }}% — R$ {{ formatarMoeda(0) }}</span>
+              <span class="alert-date">Gasto atual: {{ formatarMoeda(resumo?.totalDespesas || 0) }} — {{ metaPercentUsed ?? 0 }}% da meta</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="alert-amount">{{ formatarMoeda(resumo?.totalDespesas || 0) }}</span>
+          </div>
+        </div>
+
+        <div class="alert-item meta" style="margin-top:8px">
+          <div class="alert-left">
+            <span class="alert-emoji">🗓️</span>
+            <div class="alert-info">
+              <span class="alert-desc">Meta do mês ({{ gastoMetaMesReferencia ? (gastoMetaMesReferencia | date:'MM/yyyy') : gastoMetaMesReferencia }}): {{ gastoMetaPercentualMensal }}% — R$ {{ formatarMoeda(0) }}</span>
+              <span class="alert-date">Gasto atual (mês): {{ formatarMoeda(0) }} — {{ metaMesPercentUsed ?? 0 }}% da meta</span>
+            </div>
+          </div>
+          <div class="alert-right">
+            <span class="alert-amount">{{ formatarMoeda(0) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
