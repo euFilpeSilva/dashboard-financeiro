@@ -1,12 +1,12 @@
 <div class="dashboard-container" [attr.data-theme]="currentTheme">
   <!-- Alerts modal extracted to standalone component -->
   <app-alerts-modal *ngIf="showAlertsModal"
-                    [despesasVencidas]="despesasVencidas"
-                    [despesasProximasVencimento]="despesasProximasVencimento"
+                    [despesasVencidas]="(despesasVencidas$ | async) || []"
+                    [despesasProximasVencimento]="(despesasProximasVencimento$ | async) || []"
                     [gastoMetaPercentualGeral]="gastoMetaPercentualGeral"
                     [gastoMetaPercentualMensal]="gastoMetaPercentualMensal"
                     [gastoMetaMesReferencia]="gastoMetaMesReferencia"
-                    [resumo]="resumo"
+                    [resumo]="(resumo$ | async)"
                     [metaPercentUsed]="getPercentualMetaUsada()"
                     [metaMesPercentUsed]="getPercentualMetaUsadaMesAtual()"
                     (close)="closeAlertsModal()"></app-alerts-modal>
@@ -36,9 +36,9 @@
           <span class="metric-value" [ngClass]="getSaldoClass()">{{ formatarMoeda((resumo$ | async)?.saldoPrevisto || 0) }}</span>
           <span class="metric-label">Saldo</span>
         </div>
-        <div class="metric alert" *ngIf="despesasVencidas.length > 0">
+        <div class="metric alert" *ngIf="((despesasVencidas$ | async) || []).length > 0">
           <span class="metric-icon">⚠️</span>
-          <span class="metric-value">{{ despesasVencidas.length }}</span>
+          <span class="metric-value">{{ ((despesasVencidas$ | async) || []).length }}</span>
           <span class="metric-label">Vencidas</span>
         </div>
       </div>
@@ -82,12 +82,12 @@
             <div class="metric-number">{{ ((entradasDoMes$ | async) || []).length }}</div>
             <div class="metric-label">Entradas</div>
           </div>
-          <div class="metric-card">
-            <div class="metric-number">{{ resumo.despesasPagas }}</div>
+            <div class="metric-card">
+            <div class="metric-number">{{ ((resumo$ | async)?.despesasPagas) || 0 }}</div>
             <div class="metric-label">Pagas</div>
           </div>
           <div class="metric-card">
-            <div class="metric-number">{{ despesasVencidas.length }}</div>
+            <div class="metric-number">{{ ((despesasVencidas$ | async) || []).length }}</div>
             <div class="metric-label">Vencidas</div>
           </div>
         </div>
@@ -120,13 +120,13 @@
         </div>
         
         <!-- 3. Alertas compactos -->
-        <div class="mobile-alerts" *ngIf="despesasVencidas.length > 0 || despesasProximasVencimento.length > 0">
+        <div class="mobile-alerts" *ngIf="(((despesasVencidas$ | async) || []).length > 0) || (((despesasProximasVencimento$ | async) || []).length > 0)">
           <div class="alerts-header">
             <div class="alerts-title">⚠️ Alertas</div>
-            <div class="alerts-count">{{ despesasVencidas.length + despesasProximasVencimento.length }}</div>
+            <div class="alerts-count">{{ ((despesasVencidas$ | async) || []).length + ((despesasProximasVencimento$ | async) || []).length }}</div>
           </div>
           <div class="alerts-list">
-            <div *ngFor="let despesa of despesasVencidas.slice(0, 2)" class="alert-item">
+            <div *ngFor="let despesa of ((despesasVencidas$ | async) || []).slice(0, 2)" class="alert-item">
               <div class="alert-icon">🔴</div>
               <div class="alert-content">
                 <div class="alert-text">{{ despesa.descricao }}</div>
@@ -134,7 +134,7 @@
               </div>
               <div class="alert-amount">{{ formatarMoeda(despesa.valor) }}</div>
             </div>
-            <div *ngFor="let despesa of despesasProximasVencimento.slice(0, 2)" class="alert-item">
+            <div *ngFor="let despesa of ((despesasProximasVencimento$ | async) || []).slice(0, 2)" class="alert-item">
               <div class="alert-icon">🟡</div>
               <div class="alert-content">
                 <div class="alert-text">{{ despesa.descricao }}</div>
