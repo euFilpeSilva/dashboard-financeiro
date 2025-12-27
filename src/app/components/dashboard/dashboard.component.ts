@@ -268,12 +268,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private carregarDados(): void {
     // Expose resumo as an observable (use async pipe in template)
-    this.resumo$ = this.despesaService.getResumoDashboard();
-    // Keep a short-lived subscription for side-effects (to trigger meta checks)
-    this.resumo$?.pipe(takeUntil(this.destroy$)).subscribe(resumo => {
-      this.resumo = resumo;
-      try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
-    });
+    // Use `tap` to update local state and trigger meta checks without manual subscribe
+    this.resumo$ = this.despesaService.getResumoDashboard().pipe(
+      tap(resumo => {
+        this.resumo = resumo;
+        try { this.checkMetaThresholds(); } catch (e) { /* fail silently */ }
+      })
+    );
 
     // Despesas por categoria (exposto como observable para uso com async pipe)
     this.despesasPorCategoria$ = this.despesaService.getDespesasPorCategoria();
