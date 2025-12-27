@@ -303,13 +303,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     // Carregar todas as despesas para a listagem do mês
     // `despesas$` contém todas as despesas do usuário; para a listagem compacta do mês
     // usamos o observable específico que já filtra pelo mês atual.
-    this.despesaService.getDespesasDoMes()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(despesasMes => {
-        this.despesasDoMes = despesasMes;
-      });
-    // Also expose as observable for template bindings
-    this.despesasDoMes$ = this.despesaService.getDespesasDoMes();
+    // Expose despesasDoMes as observable and update local array via tap
+    this.despesasDoMes$ = this.despesaService.getDespesasDoMes().pipe(
+      tap(despesasMes => { this.despesasDoMes = despesasMes; })
+    );
 
     // Ainda armazenamos todas as despesas para uso em visualizações detalhadas
     this.despesaService.despesas$
@@ -660,22 +657,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.modoVisualizacaoDespesas = modoSalvo;
     }
   }
-
-  // === MÉTODOS PARA MURAL DE ANOTAÇÕES ===
-  
-
-
-
-
-
-
-
-
-
-
-
-
-    // Mural behavior moved to NotesMuralComponent
 
   // Métodos para o layout compacto
   mostrarDetalhes(): void {
